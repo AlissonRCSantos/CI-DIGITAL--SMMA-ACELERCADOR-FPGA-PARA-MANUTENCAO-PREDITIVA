@@ -1,17 +1,13 @@
 // ============================================================================
-// Module: LMS_Control_FSM
+// Module: LMS_Control_FSM_v2
 // Description: Global Counter-Based Scheduler for a folded 8-tap LMS filter,
 //              incorporating the counter-based coordination concept from Lms5.pdf.
 //
-// Operation Cycles (modulo-17):
-//   - IDLE (Count = 0): Waiting for "sample_valid" from ADC/codec.
-//   - Cycles 0 to 7: Phase 1 - FIR Filtering (Convolutions).
-//     * Injects sequential taps x(n-k) and weights w_k(n) into the PE.
-//     * Controls accumulator storage of partial products.
-//   - Cycle 8: Intermediate - Lock Error & Scale (mu * e(n)).
-//   - Cycles 9 to 16: Phase 2 - Weight Update.
-//     * Injects error scaling and sequential taps x(n-k) into the PE.
-//     * Generates write-enable addresses to save new weights in storage.
+// Features:
+//   - Uses flat pipeline registers for 'wr_addr_pipe' to prevent compiler/EDA
+//     interpretation bugs and ensure 100% fail-safe synthesis.
+//   - Employs a single driver continuous assignment for the 'wr_addr' output 
+//     to avoid multiple-driver conflicts in simulation.
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -32,7 +28,7 @@ module LMS_Control_FSM (
     output reg          clear_acc,    // Resets accumulator register before convolution starts
 
     // Control to Weight Storage
-    output reg  [2:0]   wr_addr,      // Write address for updated weight
+    output wire [2:0]   wr_addr,      // Write address for updated weight (driven continuously)
     output reg          wr_en_gate,   // Global gate for weight write-enable (pipelined)
     
     // Status
@@ -91,7 +87,6 @@ module LMS_Control_FSM (
         pe_sel     = 1'b0;
         pe_valid   = 1'b0;
         clear_acc  = 1'b0;
-        wr_addr    = 3'b000;
         wr_en_gate = 1'b0;
 
         if (state == STATE_RUNNING) begin
@@ -125,35 +120,36 @@ module LMS_Control_FSM (
     end
 
     // --------------------------------------------------------------------
-    // 3. Write Address Pipeline Routing
+    // 3. Write Address Pipeline Routing (Flat Registers)
     // --------------------------------------------------------------------
     // The Processing Element (PE) has an internal latency of 5 clock cycles
     // during weight update (Phase 2). Thus, when we request update of weight
     // 'k' at cycle T, the updated weight is only ready at the PE output at T+5.
-    // We must pipeline the write address 'wr_addr' to match this exact latency.
+    // Flat registers are used to implement the 5-stage shift delay line.
     // --------------------------------------------------------------------
-    reg [2:0] wr_addr_pipe [0:4];
-    integer i;
+    reg [2:0] wr_addr_pipe0;
+    reg [2:0] wr_addr_pipe1;
+    reg [2:0] wr_addr_pipe2;
+    reg [2:0] wr_addr_pipe3;
+    reg [2:0] wr_addr_pipe4;
 
     always @(posedge clk) begin
         if (rst) begin
-            for (i = 0; i < 5; i = i + 1) begin
-                wr_addr_pipe[i] <= 3'd0;
-            end
+            wr_addr_pipe0 <= 3'd0;
+            wr_addr_pipe1 <= 3'd0;
+            wr_addr_pipe2 <= 3'd0;
+            wr_addr_pipe3 <= 3'd0;
+            wr_addr_pipe4 <= 3'd0;
         end else begin
-            // Input to address pipeline is the tap index being processed in Phase 2
-            // Shift pipeline
-            wr_addr_pipe[0] <= rd_addr;
-            wr_addr_pipe[1] <= wr_addr_pipe[0];
-            wr_addr_pipe[2] <= wr_addr_pipe[1];
-            wr_addr_pipe[3] <= wr_addr_pipe[2];
-            wr_addr_pipe[4] <= wr_addr_pipe[3];
+            wr_addr_pipe0 <= rd_addr;
+            wr_addr_pipe1 <= wr_addr_pipe0;
+            wr_addr_pipe2 <= wr_addr_pipe1;
+            wr_addr_pipe3 <= wr_addr_pipe2;
+            wr_addr_pipe4 <= wr_addr_pipe3;
         end
     end
 
-    // Route the pipelined write address directly to the storage module
-    always @(*) begin
-        wr_addr = wr_addr_pipe[4]; // Alinhado com a latência de 5 ciclos da PE
-    end
+    // Route the pipelined write address directly to the output via wire assignment
+    assign wr_addr = wr_addr_pipe4; // Alinhado com a latência de 5 ciclos da PE
 
 endmodule

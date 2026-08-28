@@ -6,6 +6,7 @@ LMS_Processing_Element.v
 LMS_Weight_Storage.v
 LMS_Accumulator_Error_Scale.v
 LMS_Control_FSM.v
+LMS_Filter_Top.v
 //testbench
 
 tb_FP_Arith_Unit.v
@@ -15,3 +16,4 @@ tb_LMS_Processing_Element.v
 tb_LMS_Weight_Storage.v
 tb_LMS_Accumulator_Error_Scale.v
 tb_LMS_Control_FSM.v
+tb_LMS_Filter_Top.v
