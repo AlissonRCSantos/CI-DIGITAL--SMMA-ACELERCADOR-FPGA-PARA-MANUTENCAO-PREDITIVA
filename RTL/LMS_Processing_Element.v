@@ -12,8 +12,9 @@
 // Sychronization Internals:
 //   - Automatically delays the 'sel' and 'valid_in' signals to align with
 //     the 3-cycle multiplier latency and 2-cycle adder latency.
-//   - Automatically delays the input weight 'in_w' by 3 cycles to align with
-//     the calculated weight increment (delta_w) at the adder input.
+//   - Automatically delays the input weight 'in_w' by 3 cycles so that
+//     the adder receives the weight w_k(n) and its increment delta_w at 
+//     the exact same clock cycle, even when valid_in goes low (non-gated shift).
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -71,6 +72,8 @@ module LMS_Processing_Element #(
     // ============================================================================
     // Since multiplier has a latency of 3 cycles, we must delay the weight 'in_w'
     // by 3 cycles so that the adder receives w_k(n) and delta_w simultaneously.
+    // This shift register must run unconditionally on every clock cycle to allow
+    // trailing pipeline values to exit correctly when valid_in transitions to low.
     reg signed [WIDTH-1:0] w_delay [0:2];
     integer i;
 
@@ -79,7 +82,7 @@ module LMS_Processing_Element #(
             for (i = 0; i < 3; i = i + 1) begin
                 w_delay[i] <= {WIDTH{1'b0}};
             end
-        end else if (valid_in) begin
+        end else begin
             w_delay[0] <= in_w;
             w_delay[1] <= w_delay[0];
             w_delay[2] <= w_delay[1];
