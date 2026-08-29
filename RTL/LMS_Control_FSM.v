@@ -1,9 +1,21 @@
 // ============================================================================
-// Module: LMS_Control_FSM_v2
+// Module: LMS_Control_FSM_v3
 // Description: Global Counter-Based Scheduler for a folded 8-tap LMS filter,
-//              incorporating the counter-based coordination concept from Lms5.pdf.
+//              incorporating a complete industrial-grade handshake interface:
 //
-// Features:
+// Handshake & Control Interface Ports:
+//   - clk: System clock (50 MHz)
+//   - rst: Synchronous active-high reset
+//   - start: Pulses high for 1 cycle to trigger the filtering/update operation.
+//   - enable: Global clock-enable. High enables FSM; low freezes execution.
+//   - valid_in: Indicates that input data (sample) is valid.
+//   - ready: Goes high when the output sample is ready and stable (Cycle 9).
+//            Clears when a new start transaction begins.
+//   - busy: Active high during the 17-cycle calculation process.
+//   - valid_out: 1-cycle active-high strobe when the output sample is ready (Cycle 9).
+//
+// Scheduler Design:
+//   - Based on the counter-based coordination concept from Lms5.pdf.
 //   - Uses flat pipeline registers for 'wr_addr_pipe' to prevent compiler/EDA
 //     interpretation bugs and ensure 100% fail-safe synthesis.
 //   - Employs a single driver continuous assignment for the 'wr_addr' output 
@@ -15,9 +27,18 @@
 module LMS_Control_FSM (
     input  wire         clk,          // System clock (50 MHz)
     input  wire         rst,          // Synchronous reset (active-high)
-    input  wire         sample_valid, // Pulses high for 1 cycle when new sample arrives
+    
+    // Handshake & Control Ports
+    input  wire         start,        // Pulses high for 1 cycle to start operation
+    input  wire         enable,       // Active high global module enable (clock-enable)
+    input  wire         valid_in,     // Active high when input sample is valid
+    
+    output reg          ready,        // High when output is ready and stable
+    output reg          busy,         // High during calculation window (17 cycles)
+    output reg          valid_out,    // Pulses high for 1 cycle when output is ready (strobe)
 
     // Control to Input Delay Line
+    output reg          load_sample,  // Trigger to shift/load sample in delay line (1 cycle)
     output reg  [2:0]   rd_addr,      // Selects which tap x(n-1-k) to read
 
     // Control to Processing Element (PE)
@@ -29,10 +50,7 @@ module LMS_Control_FSM (
 
     // Control to Weight Storage
     output wire [2:0]   wr_addr,      // Write address for updated weight (driven continuously)
-    output reg          wr_en_gate,   // Global gate for weight write-enable (pipelined)
-    
-    // Status
-    output reg          filter_busy   // High during the 17-cycle calculation window
+    output reg          wr_en_gate    // Global gate for weight write-enable (pipelined)
 );
 
     // State definitions
@@ -43,33 +61,50 @@ module LMS_Control_FSM (
     reg [4:0]  counter; // Counts from 0 to 17 to schedule all actions
 
     // --------------------------------------------------------------------
-    // 1. Scheduler Counter & State Transition Logic
+    // 1. Scheduler Counter & State Transition Logic (with Handshake)
     // --------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
             state       <= STATE_IDLE;
             counter     <= 5'd0;
-            filter_busy <= 1'b0;
-        end else begin
+            busy        <= 1'b0;
+            ready       <= 1'b1; // Initially ready to accept a transaction
+            valid_out   <= 1'b0;
+            load_sample <= 1'b0;
+        end else if (enable) begin
             case (state)
                 STATE_IDLE: begin
-                    counter <= 5'd0;
-                    if (sample_valid) begin
+                    counter     <= 5'd0;
+                    busy        <= 1'b0;
+                    valid_out   <= 1'b0;
+                    load_sample <= 1'b0;
+                    
+                    if (start && valid_in) begin
                         state       <= STATE_RUNNING;
-                        filter_busy <= 1'b1;
-                    end else begin
-                        filter_busy <= 1'b0;
+                        busy        <= 1'b1;
+                        ready       <= 1'b0; // Clears when starting new computation
+                        load_sample <= 1'b1; // Trigger sample shift in delay line
                     end
                 end
 
                 STATE_RUNNING: begin
+                    load_sample <= 1'b0;
+                    
+                    // valid_out strobe is high for exactly 1 cycle at Cycle 9 (when y(n) is ready)
+                    if (counter == 5'd9) begin
+                        valid_out   <= 1'b1;
+                        ready       <= 1'b1; // Output sample is ready for another module
+                    end else begin
+                        valid_out   <= 1'b0;
+                    end
+
                     if (counter == 5'd17) begin
                         state       <= STATE_IDLE;
                         counter     <= 5'd0;
-                        filter_busy <= 1'b0;
+                        busy        <= 1'b0;
                     end else begin
                         counter     <= counter + 1'b1;
-                        filter_busy <= 1'b1;
+                        busy        <= 1'b1;
                     end
                 end
 
@@ -140,7 +175,7 @@ module LMS_Control_FSM (
             wr_addr_pipe2 <= 3'd0;
             wr_addr_pipe3 <= 3'd0;
             wr_addr_pipe4 <= 3'd0;
-        end else begin
+        end else if (enable) begin
             wr_addr_pipe0 <= rd_addr;
             wr_addr_pipe1 <= wr_addr_pipe0;
             wr_addr_pipe2 <= wr_addr_pipe1;
