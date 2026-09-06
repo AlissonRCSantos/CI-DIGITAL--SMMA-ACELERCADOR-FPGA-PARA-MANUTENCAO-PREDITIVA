@@ -1,8 +1,10 @@
 // ============================================================================
-// Module: tb_LMS_Control_FSM_v4
+// Module: tb_LMS_Control_FSM_v5
 // Description: Self-checking testbench to validate the LMS_Control_FSM_v3 module
 //              in Verilog. Tests handshake protocol (start, ready, busy, valid_out),
 //              natural transitions, reset, and the clock-enable freezing mechanism.
+//              Version 5 - Corrected IDLE flushing latency to prevent "don't care"
+//              wr_addr pipeline remnants (7 instead of 0) on subsequent cold runs.
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -202,7 +204,11 @@ module tb_LMS_Control_FSM;
             $display("[PASS] FSM successfully returned to IDLE, set ready=1, and lowered busy.");
         end
 
-        #(CLK_PERIOD * 2);
+        // CORREÇÃO DE LATÊNCIA: Aguarda 6 ciclos de clock em IDLE para esvaziar totalmente
+        // a linha de atraso 'wr_addr_pipe' que transporta os endereços de atualização 
+        // dos últimos taps processados. Sem essa espera (de pelo menos 5 ciclos),
+        // o endereço residual continuaria no pipeline no início do Teste 3.
+        #(CLK_PERIOD * 6);
 
         // --------------------------------------------------------------------
         // TESTE 3: Congelamento Síncrono de Operação (Pino Enable)
@@ -215,6 +221,7 @@ module tb_LMS_Control_FSM;
         
         @(posedge clk); #1;
         // Entrou em RUN, counter = 0
+        // O pipeline está completamente limpo agora, então wr_addr deve ser 0!
         check_outputs(5'd0, 1'b1, 1'b0, 1'b0, 1'b1, 3'd0, 1'b0, 1'b1, 1'b1, 3'd0, 1'b0);
 
         @(negedge clk);
@@ -258,7 +265,8 @@ module tb_LMS_Control_FSM;
         #1;
         $display("[PASS] FSM successfully resumed and finished computation.");
 
-        #(CLK_PERIOD * 2);
+        // Aguarda 6 ciclos em IDLE para esvaziar o pipeline antes do Teste 4
+        #(CLK_PERIOD * 6);
 
         // --------------------------------------------------------------------
         // TESTE 4: Reset Síncrono no Meio da Execução

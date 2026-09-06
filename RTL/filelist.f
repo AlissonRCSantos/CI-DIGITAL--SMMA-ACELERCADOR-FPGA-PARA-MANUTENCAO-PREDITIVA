@@ -1,7 +1,6 @@
 FP_Arith_Unit.v
 FP_Mult_Unit.v
 LMS_Input_Delay_Line.v
-LMS_Input_Delay_Line.v
 LMS_Processing_Element.v
 LMS_Weight_Storage.v
 LMS_Accumulator_Error_Scale.v

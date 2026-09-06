@@ -1,9 +1,16 @@
 // ============================================================================
-// Module: tb_LMS_Filter_Top_v3
-// Description: System-level self-checking testbench for the LMS_Filter_Top_v3.
+// Module: tb_LMS_Filter_Top_v4
+// Description: System-level self-checking testbench for the LMS_Filter_Top_v4.
 //              Tests the full handshake protocol (start, enable, valid_in, 
 //              ready, busy, valid_out) in a System Identification scenario
 //              with 400 samples.
+//
+// Version 4:
+//   - Aligns with LMS_Filter_Top_v4 by passing 'in_d' (external desired signal)
+//     to the top level module.
+//   - Corrects timing of handshake/input clearing to accommodate the FSM's 
+//     registered 1-cycle delay in 'ctrl_load_sample'. Keeps input buses stable 
+//     until they have been physically captured by the UUT on Posedge 2.
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -30,6 +37,7 @@ module tb_LMS_Filter_Top;
     wire                valid_out;
 
     reg signed [WIDTH-1:0] in_x;
+    reg signed [WIDTH-1:0] in_d;
     wire signed [WIDTH-1:0] out_y;
     wire signed [WIDTH-1:0] out_error;
 
@@ -50,6 +58,7 @@ module tb_LMS_Filter_Top;
         .busy(busy),
         .valid_out(valid_out),
         .in_x(in_x),
+        .in_d(in_d),
         .out_y(out_y),
         .out_error(out_error),
         .w0(w0), .w1(w1), .w2(w2), .w3(w3), .w4(w4), .w5(w5), .w6(w6), .w7(w7)
@@ -86,9 +95,7 @@ module tb_LMS_Filter_Top;
     end
 
     // Unknown system desired output calculation: d(n) = 0.5*x(n-1) - 0.25*x(n-2) + 0.125*x(n-3)
-    wire signed [WIDTH-1:0] d_ideal = (x_delay[0] >>> 1) 
-                                    - (x_delay[1] >>> 2) 
-                                    + (x_delay[2] >>> 3);
+    wire signed [WIDTH-1:0] d_ideal = (x_delay[0] >>> 1) - (x_delay[1] >>> 2)+ (x_delay[2] >>> 3);
 
     // MSE tracking
     real sq_err_sum = 0.0;
@@ -104,10 +111,11 @@ module tb_LMS_Filter_Top;
         enable = 1; // Always enabled for this simulation
         valid_in = 0;
         in_x = 0;
+        in_d = 0;
         seed = 42; // Initialize seed
 
         $display("======================================================================");
-        $display("   INICIANDO SIMULACAO DO SISTEMA COM HANDSHAKE (LMS FILTER_TOP V3)  ");
+        $display("   INICIANDO SIMULACAO DO SISTEMA COM HANDSHAKE (LMS FILTER_TOP V4)  ");
         $display("======================================================================");
         $display("[INFO] Cenário de Aplicação: Identificação de Sistema (System ID)");
         $display("[INFO] Planta Alvo: d(n) = 0.5*x(n-1) - 0.25*x(n-2) + 0.125*x(n-3)");
@@ -134,28 +142,34 @@ module tb_LMS_Filter_Top;
             valid_in = 1'b1;
             
             @(negedge clk);
-            // 3. Clear handshake signals after 1 clock cycle
+            // 3. Clear start pulse after 1 cycle. 
+            //    At this point, x_delay has updated combinationally and 'd_ideal' is fully stable.
+            //    We can now apply 'd_ideal' to the UUT's in_d port before it captures it on the next posedge clk.
             start = 1'b0;
             valid_in = 1'b0;
-            in_x = 16'd0; // Clear input bus to verify capture stability
+            in_d = d_ideal; 
 
-            // 4. Wait for valid_out strobe to capture output data
+            @(negedge clk);
+            // 4. Now that the UUT's delay line and error scale register have captured both in_x and in_d,
+            //    it is safe to clear the input buses to verify capture stability.
+            in_x = 16'd0;
+            in_d = 16'd0;
+
+            // 5. Wait for valid_out strobe to capture output data
             while (valid_out !== 1'b1) begin
                 @(posedge clk);
             end
             #1; // Wait 1ns after clock edge to sample stable outputs
 
-            // 5. Accumulate error statistics
+            // 6. Accumulate error statistics
             sq_err_sum = sq_err_sum + ((out_error / 32768.0) * (out_error / 32768.0));
 
             // Print status every 50 samples
             if (sample_count % 50 == 0 || sample_count == N_SAMPLES - 1) begin
-                $display("Amostra %3d | x(n)=%6d | y(n)=%6d | e(n)=%6d | w0=%5d, w1=%5d, w2=%5d | Ready=%b, Busy=%b", 
-                         sample_count, $signed(x_delay[0]), $signed(out_y), $signed(out_error),
-                         $signed(w0), $signed(w1), $signed(w2), ready, busy);
+                $display("Amostra %3d | x(n)=%6d | d(n)=%6d | y(n)=%6d | e(n)=%6d | w0=%5d, w1=%5d, w2=%5d | Ready=%b, Busy=%b",sample_count, $signed(x_delay[0]), $signed(delay_out_d), $signed(out_y), $signed(out_error),$signed(w0), $signed(w1), $signed(w2), ready, busy);
             end
             
-            // 6. Wait for FSM to completely finish before proceeding to next loop iteration
+            // 7. Wait for FSM to completely finish before proceeding to next loop iteration
             while (busy === 1'b1) begin
                 @(posedge clk);
             end
@@ -180,8 +194,8 @@ module tb_LMS_Filter_Top;
 
         // Validation gate
         if (mse < 0.05 && $signed(w0) > 13000 && $signed(w1) < -6500 && $signed(w2) > 3000) begin
-            $display("  >>> [SUCCESS] O FILTRO LMS CONVERGIU COM EXCEPCIONAL PRECISÃO! <<<\");
-            $display("  >>> Handshake industrial de controle completely validado no FPGA. <<<");
+            $display("  >>> [SUCCESS] O FILTRO LMS CONVERGIU COM EXCEPCIONAL PRECISÃO! <<<");
+            $display("  >>> Handshake industrial de controle completamente validado no FPGA. <<<");
         end else begin
             $display("  >>> [FAIL] O filtro não atingiu os critérios de convergência esperados. <<<");
         end
