@@ -1,10 +1,8 @@
 // ============================================================================
-// Module: tb_LMS_Control_FSM_v5
-// Description: Self-checking testbench to validate the LMS_Control_FSM_v3 module
+// Module: tb_LMS_Control_FSM
+// Description: Self-checking testbench to validate the LMS_Control_FSM module
 //              in Verilog. Tests handshake protocol (start, ready, busy, valid_out),
 //              natural transitions, reset, and the clock-enable freezing mechanism.
-//              Version 5 - Corrected IDLE flushing latency to prevent "don't care"
-//              wr_addr pipeline remnants (7 instead of 0) on subsequent cold runs.
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -112,7 +110,7 @@ module tb_LMS_Control_FSM;
         valid_in = 0;
 
         $display("======================================================================");
-        $display("  INICIANDO SIMULACAO DA UNIDADE DE CONTROLE (LMS FSM V3) - 50 MHz    ");
+        $display("  INICIANDO SIMULACAO DA UNIDADE DE CONTROLE (LMS FSM) - 50 MHz        ");
         $display("======================================================================");
 
         #(CLK_PERIOD * 3);
@@ -141,12 +139,8 @@ module tb_LMS_Control_FSM;
         start = 1'b1;
         valid_in = 1'b1;
         
-        // No ciclo seguinte à detecção na borda de descida do testbench (borda de subida do hardware)
         @(posedge clk); #1;
         // uut.counter = 0 (primeiro ciclo de corrida)
-        // O load_sample deve estar ativo para deslocar na delay line
-        // rd_addr = 0, pe_sel = 0 (filtragem), pe_valid = 1, clear_acc = 1, wr_addr = 0, wr_en_gate = 0
-        // busy = 1, ready = 0, valid_out = 0
         check_outputs(5'd0, 1'b1, 1'b0, 1'b0, 1'b1, 3'd0, 1'b0, 1'b1, 1'b1, 3'd0, 1'b0);
 
         @(negedge clk);
@@ -163,7 +157,7 @@ module tb_LMS_Control_FSM;
         @(posedge clk); #1; check_outputs(5'd4, 1'b1, 1'b0, 1'b0, 1'b0, 3'd4, 1'b0, 1'b1, 1'b0, 3'd0, 1'b0);
         @(posedge clk); #1; check_outputs(5'd5, 1'b1, 1'b0, 1'b0, 1'b0, 3'd5, 1'b0, 1'b1, 1'b0, 3'd0, 1'b0);
 
-        // Ciclo 6: rd_addr=6, wr_addr=1 (devido a wr_addr_pipe4)
+        // Ciclo 6: rd_addr=6, wr_addr=1
         @(posedge clk); #1; check_outputs(5'd6, 1'b1, 1'b0, 1'b0, 1'b0, 3'd6, 1'b0, 1'b1, 1'b0, 3'd1, 1'b0);
 
         // Ciclo 7: rd_addr=7, wr_addr=2
@@ -176,11 +170,9 @@ module tb_LMS_Control_FSM;
         @(posedge clk); #1; check_outputs(5'd9, 1'b1, 1'b0, 1'b0, 1'b0, 3'd0, 1'b1, 1'b1, 1'b0, 3'd4, 1'b1);
 
         // Ciclo 10: O valid_out deve subir agora! E o ready deve ir para 1!
-        // counter = 10, pe_sel = 1, pe_valid = 1, wr_en_gate = 1, wr_addr = 5, rd_addr = 1
         @(posedge clk); #1; check_outputs(5'd10, 1'b1, 1'b1, 1'b1, 1'b0, 3'd1, 1'b1, 1'b1, 1'b0, 3'd5, 1'b1);
 
         // Ciclo 11: valid_out desce de volta a 0. ready continua em 1.
-        // counter = 11, rd_addr = 2, wr_addr = 6
         @(posedge clk); #1; check_outputs(5'd11, 1'b1, 1'b1, 1'b0, 1'b0, 3'd2, 1'b1, 1'b1, 1'b0, 3'd6, 1'b1);
 
         // Ciclos 12 a 16
@@ -193,7 +185,7 @@ module tb_LMS_Control_FSM;
         // Ciclo 17: Fim do cálculo, último ciclo ativo, pe_valid = 0, wr_en_gate = 0, wr_addr = 3
         @(posedge clk); #1; check_outputs(5'd17, 1'b1, 1'b1, 1'b0, 1'b0, 3'd0, 1'b0, 1'b0, 1'b0, 3'd3, 1'b0);
 
-        // Retorno ao IDLE (counter = 0, busy = 0, ready = 1)
+        // Retorno ao IDLE
         @(posedge clk); #1;
         total_tests = total_tests + 1;
         if (busy !== 1'b0 || ready !== 1'b1 || uut.counter !== 5'd0 || uut.state !== 1'b0) begin
@@ -204,10 +196,7 @@ module tb_LMS_Control_FSM;
             $display("[PASS] FSM successfully returned to IDLE, set ready=1, and lowered busy.");
         end
 
-        // CORREÇÃO DE LATÊNCIA: Aguarda 6 ciclos de clock em IDLE para esvaziar totalmente
-        // a linha de atraso 'wr_addr_pipe' que transporta os endereços de atualização 
-        // dos últimos taps processados. Sem essa espera (de pelo menos 5 ciclos),
-        // o endereço residual continuaria no pipeline no início do Teste 3.
+        // Flushing delay
         #(CLK_PERIOD * 6);
 
         // --------------------------------------------------------------------
@@ -220,24 +209,19 @@ module tb_LMS_Control_FSM;
         valid_in = 1'b1;
         
         @(posedge clk); #1;
-        // Entrou em RUN, counter = 0
-        // O pipeline está completamente limpo agora, então wr_addr deve ser 0!
         check_outputs(5'd0, 1'b1, 1'b0, 1'b0, 1'b1, 3'd0, 1'b0, 1'b1, 1'b1, 3'd0, 1'b0);
 
         @(negedge clk);
         start = 1'b0;
         valid_in = 1'b0;
 
-        // Avança até o ciclo 4
         repeat (4) @(posedge clk); #1;
-        // Agora estamos no ciclo 4
         check_outputs(5'd4, 1'b1, 1'b0, 1'b0, 1'b0, 3'd4, 1'b0, 1'b1, 1'b0, 3'd0, 1'b0);
 
         $display("[INFO] Desabilitando pino ENABLE (enable = 0) no ciclo 4...");
         @(negedge clk);
         enable = 1'b0;
 
-        // Bate 3 ciclos de clock com o circuito desabilitado
         repeat (3) begin
             @(posedge clk); #1;
             total_tests = total_tests + 1;
@@ -254,18 +238,15 @@ module tb_LMS_Control_FSM;
         @(negedge clk);
         enable = 1'b1;
 
-        // No ciclo seguinte, deve avançar para o ciclo 5
         @(posedge clk); #1;
         check_outputs(5'd5, 1'b1, 1'b0, 1'b0, 1'b0, 3'd5, 1'b0, 1'b1, 1'b0, 3'd0, 1'b0);
 
-        // Deixa rodar até o final
         while (busy === 1'b1) begin
             @(posedge clk);
         end
         #1;
         $display("[PASS] FSM successfully resumed and finished computation.");
 
-        // Aguarda 6 ciclos em IDLE para esvaziar o pipeline antes do Teste 4
         #(CLK_PERIOD * 6);
 
         // --------------------------------------------------------------------
@@ -282,7 +263,6 @@ module tb_LMS_Control_FSM;
         start = 1'b0;
         valid_in = 1'b0;
 
-        // Deixa rodar até o ciclo 8
         repeat (8) @(posedge clk); #1;
         check_outputs(5'd8, 1'b1, 1'b0, 1'b0, 1'b0, 3'd0, 1'b0, 1'b0, 1'b0, 3'd3, 1'b0);
 
@@ -317,7 +297,7 @@ module tb_LMS_Control_FSM;
         $display("======================================================================");
 
         if (fail_count == 0 && total_tests > 0) begin
-            $display("  >>> [CONGRATS] A UNIDADE DE CONTROLE (FSM V3) PASSOU EM TODOS OS TESTES! <<<");
+            $display("  >>> [CONGRATS] A UNIDADE DE CONTROLE (LMS FSM) PASSOU EM TODOS OS TESTES! <<<");
             $display("  >>> Interface de Handshake, Sinais de Status e Congelamento por Enable OK! <<<");
         end else begin
             $display("  >>> [ERROR] Falhas identificadas no comportamento do Controlador. <<<");
