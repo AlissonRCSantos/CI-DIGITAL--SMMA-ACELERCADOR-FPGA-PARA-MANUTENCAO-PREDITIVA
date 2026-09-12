@@ -6,23 +6,24 @@
 
 FILELIST="filelist.f"
 DO_CLEAN=false
+USE_GUI=true
 TB_TOP=""
 
 # Função de Ajuda
 show_help() {
     echo "======================================================================"
-    echo " USO: $0 [-c|--clean] [-top <nome_do_modulo>] [nome_do_modulo]"
+    echo " USO: $0 [-c|--clean] [-cmd] [-top <nome_do_modulo>] [nome_do_modulo]"
     echo "======================================================================"
     echo " Opções:"
     echo "   -c, --clean    Limpa arquivos de compilação/logs temporários antigos"
+    echo "   -cmd           Executa em modo linha de comando (sem interface gráfica GUI)"
     echo "   -top <modulo>  Especifica o módulo Top/Testbench"
-    echo "   -h, --help     Exibe esta ajuda"
+    echo "   -h, --help     Exibe esta mensagem de ajuda"
     echo ""
-    echo " Formas de Uso Válidas:"
-    echo "   $0 FP_Arith_Unit"
-    echo "   $0 -c FP_Arith_Unit"
-    echo "   $0 -c -top FP_Arith_Unit"
-    echo "   $0 -c                     (Apenas limpa a pasta)"
+    echo " Exemplos:"
+    echo "   $0 tb_LMS_Control_FSM             --> Roda com interface gráfica (SimVision)"
+    echo "   $0 -cmd tb_LMS_Control_FSM        --> Roda em modo texto no terminal"
+    echo "   $0 -c -cmd -top tb_LMS_Control_FSM--> Limpa e roda em modo texto"
     echo "======================================================================"
     exit 0
 }
@@ -41,15 +42,18 @@ clean_files() {
     echo "[CLEAN] Limpeza concluída!"
 }
 
-# --- PROCESSAMENTO INTELIGENTE DOS ARGUMENTOS ---
+# --- PROCESSAMENTO DOS ARGUMENTOS ---
 while [ $# -gt 0 ]; do
     case "$1" in
         -c|--clean)
             DO_CLEAN=true
             shift
             ;;
+        -cmd|--cmd)
+            USE_GUI=false
+            shift
+            ;;
         -top)
-            # Se usou "-top nome", pega o próximo parâmetro
             TB_TOP="$2"
             shift 2
             ;;
@@ -57,7 +61,6 @@ while [ $# -gt 0 ]; do
             show_help
             ;;
         *)
-            # Se não começa com '-', é o nome do topo
             if [ -z "$TB_TOP" ]; then
                 TB_TOP="$1"
             fi
@@ -69,7 +72,6 @@ done
 # 1. Executa limpeza se foi solicitada
 if [ "$DO_CLEAN" = true ]; then
     clean_files
-    # Se passou apenas -c (sem topo), encerra
     if [ -z "$TB_TOP" ]; then
         exit 0
     fi
@@ -82,10 +84,18 @@ if [ -z "$TB_TOP" ]; then
     exit 1
 fi
 
-# 3. Execução do Xcelium
-echo "[XRUN] Compilando e abrindo SimVision para o topo: '$TB_TOP'..."
+# 3. Definição do modo de execução (GUI vs Batch)
+GUI_FLAG=""
+if [ "$USE_GUI" = true ]; then
+    GUI_FLAG="-gui"
+    echo "[XRUN] Compilando e iniciando interface SimVision para o topo: '$TB_TOP'..."
+else
+    GUI_FLAG=""
+    echo "[XRUN] Compilando e simulando em Modo Texto (CLI) para o topo: '$TB_TOP'..."
+fi
 
-xrun -gui \
+# 4. Execução do Xcelium
+xrun $GUI_FLAG \
      -access +rwc \
      -timescale 1ns/1ps \
      -f $FILELIST \
