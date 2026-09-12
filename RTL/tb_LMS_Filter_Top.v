@@ -166,7 +166,7 @@ module tb_LMS_Filter_Top;
 
             // Print status every 50 samples
             if (sample_count % 50 == 0 || sample_count == N_SAMPLES - 1) begin
-                $display("Amostra %3d | x(n)=%6d | d(n)=%6d | y(n)=%6d | e(n)=%6d | w0=%5d, w1=%5d, w2=%5d | Ready=%b, Busy=%b",sample_count, $signed(x_delay[0]), $signed(delay_out_d), $signed(out_y), $signed(out_error),$signed(w0), $signed(w1), $signed(w2), ready, busy);
+                $display("Amostra %3d | x(n)=%6d | d(n)=%6d | y(n)=%6d | e(n)=%6d | w0=%5d, w1=%5d, w2=%5d | Ready=%b, Busy=%b",sample_count, $signed(x_delay[0]), $signed(d_ideal), $signed(out_y), $signed(out_error), $signed(w0), $signed(w1), $signed(w2), ready, busy);
             end
             
             // 7. Wait for FSM to completely finish before proceeding to next loop iteration
