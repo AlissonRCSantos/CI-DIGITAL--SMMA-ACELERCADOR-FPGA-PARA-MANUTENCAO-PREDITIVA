@@ -153,4 +153,5 @@ module LMS_Processing_Element #(
         .in_B(delta_w),     // Weight increment delta_w
         .out_Y(out_w_next)  // Updated weight w_k(n+1) (registered inside at T+5)
     );
+
 endmodule

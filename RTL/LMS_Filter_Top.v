@@ -1,13 +1,15 @@
 // ============================================================================
-// Module: LMS_Filter_Top_v4
+// Module: LMS_Filter_Top_v6
 // Description: Top-Level Module for the 8-tap Folded (Shared-Resource) LMS
 //              Adaptive Filter in Verilog, incorporating an industrial-grade
 //              handshake and control interface.
 //
-// Version 4:
-//   - Adds external desired signal 'in_d' as a top-level input port.
-//   - Registers and holds 'in_d' internally during 'ctrl_load_sample' to support
-//     both System Identification and general-purpose filtering.
+// Version 6 Improvements:
+//   - Instantiates LMS_Control_FSM_v4 with dedicated sample load cycle (Cycle 0)
+//     to prevent 1-cycle race conditions between shift_reg load and Tap 0 read.
+//   - Instantiates LMS_Processing_Element_v3 (wire out_y_part) for exact 3-cycle
+//     filtering product latency.
+//   - Integrates external desired signal 'in_d' registered on 'ctrl_load_sample'.
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -15,7 +17,7 @@
 module LMS_Filter_Top #(
     parameter WIDTH    = 16,       // Word width (default: 16 bits)
     parameter FRAC     = 15,       // Fraction width (default: Q1.15)
-    parameter MU_SHIFT = 4         // Step size mu = 2^-4 = 0.0625
+    parameter MU_SHIFT = 3         // Step size mu = 2^-3 = 0.125
 )(
     input  wire                 clk,          // System clock (50 MHz)
     input  wire                 rst,          // Synchronous reset (active-high)
@@ -26,7 +28,7 @@ module LMS_Filter_Top #(
     input  wire                 valid_in,     // Active high when input sample is valid
     
     output wire                 ready,        // High when output is ready and stable
-    output wire                 busy,         // High during calculation window (17 cycles)
+    output wire                 busy,         // High during calculation window
     output wire                 valid_out,    // Pulses high for 1 cycle when output is ready
 
     input  wire signed [WIDTH-1:0] in_x,      // Input sample x(n) (Format: Q1.15)
@@ -39,8 +41,10 @@ module LMS_Filter_Top #(
     output wire signed [WIDTH-1:0] w0, w1, w2, w3, w4, w5, w6, w7
 );
 
-    // ============================================================================\n    // Interconnection Wires
-    // ============================================================================\n    
+    // ============================================================================
+    // Interconnection Wires
+    // ============================================================================
+    
     // FSM Control Signals
     wire        ctrl_load_sample;
     wire [2:0]  ctrl_rd_addr;
@@ -69,7 +73,9 @@ module LMS_Filter_Top #(
     wire signed [WIDTH-1:0] acc_out_u_e;
     wire                    acc_valid_u_e;
 
-    // ============================================================================\n    // 1. Controller Instance (FSM v3 - with Handshake)
+    // ============================================================================
+    // 1. Controller Instance (FSM v4 - with Handshake)
+    // ============================================================================
     LMS_Control_FSM u_control (
         .clk(clk),
         .rst(rst),
@@ -88,8 +94,9 @@ module LMS_Filter_Top #(
         .wr_en_gate(ctrl_wr_en_gate)
     );
 
-    // ============================================================================\n    // 2. Input Delay Line Instance
-    // ============================================================================\n    // Shifts/loads the new sample 'in_x' when FSM pulses 'ctrl_load_sample' high
+    // ============================================================================
+    // 2. Input Delay Line Instance
+    // ============================================================================
     LMS_Input_Delay_Line #(
         .WIDTH(WIDTH)
     ) u_delay_line (
@@ -99,12 +106,12 @@ module LMS_Filter_Top #(
         .in_x(in_x),
         .rd_addr(ctrl_rd_addr),
         .out_x_k(delay_out_x_k),
-        .out_d() // Left unconnected as we use the external in_d port
+        .out_d() // Unconnected as we use external in_d
     );
 
-    // ============================================================================\n    // 2.5 Registered Desired Signal d(n) Capture
-    // ============================================================================\n    // Registers the external 'in_d' on the active load_sample strobe and holds
-    // it stable during the 17-cycle calculation loop to align with filter output y(n).
+    // ============================================================================
+    // 2.5 Registered Desired Signal d(n) Capture
+    // ============================================================================
     always @(posedge clk) begin
         if (rst) begin
             delay_out_d <= {WIDTH{1'b0}};
@@ -113,10 +120,9 @@ module LMS_Filter_Top #(
         end
     end
 
-    // ============================================================================\n    // 3. Weight Storage Instance (Register Bank)
-    // ============================================================================\n    // The write enable (we) is controlled by the PE's weight update validation
-    // signal 'pe_valid_w_next'. The FSM ensures wr_addr is delayed 5 cycles
-    // to match PE's weight update latency.
+    // ============================================================================
+    // 3. Weight Storage Instance (Register Bank)
+    // ============================================================================
     LMS_Weight_Storage #(
         .WIDTH(WIDTH)
     ) u_weight_storage (
@@ -137,8 +143,9 @@ module LMS_Filter_Top #(
         .w7(w7)
     );
 
-    // 4. Processing Element (PE) Instance
-    // Utilizes LMS_Processing_Element_v2 to resolve Quartus vector indexing issues.
+    // ============================================================================
+    // 4. Processing Element (PE) Instance (v3)
+    // ============================================================================
     LMS_Processing_Element #(
         .WIDTH(WIDTH),
         .FRAC(FRAC)
@@ -156,8 +163,9 @@ module LMS_Filter_Top #(
         .valid_w_next(pe_valid_w_next)
     );
 
+    // ============================================================================
     // 5. Accumulator, Error Calculation & Convergence Scaling Instance
- 
+    // ============================================================================
     LMS_Accumulator_Error_Scale #(
         .WIDTH(WIDTH),
         .FRAC(FRAC),
