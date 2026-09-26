@@ -1,5 +1,5 @@
 // Inversor NxN (N=2,3,4) por Gauss-Jordan com pivotamento parcial.
-// Interface pronta para integracao no acelerador da DE0-CV.
+// Interface pronta para integracao no acelerador - DE0-CV.
 module gauss_jordan_inv #(
     parameter WIDTH = 16, parameter FRAC = 12, parameter N_MAX = 4,
     parameter signed [WIDTH-1:0] EPSILON = 16'sd8
