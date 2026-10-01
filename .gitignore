@@ -217,5 +217,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Others 
+# Others
 *.pdf
+
+# Simulator artifacts (Xcelium/SimVision)
+RTL/.simvision
+RTL/waves.shm
+RTL/xcelium.d
+RTL/xrun.history
+RTL/xrun.log
+RTL/xrun.key
