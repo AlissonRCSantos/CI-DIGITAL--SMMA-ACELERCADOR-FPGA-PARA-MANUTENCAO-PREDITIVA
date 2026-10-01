@@ -1,0 +1,6 @@
+# Passos 01 e 02 (dados/espectrogramas) precisam apenas de numpy.
+numpy>=1.23
+# Passos 03 a 05 (treino, avaliacao, exportacao)
+torch>=2.0
+# opcional: figura da matriz de confusao
+matplotlib
