@@ -1,7 +1,7 @@
 # Treinamento da CNN do SMMA
 
 A documentação completa (como rodar, o que já foi rodado e a lógica do
-treinamento) está no **[README principal do repositório](../README.md)**,
+treinamento) está em **[RTL/README_CNN.md](../RTL/README_CNN.md)**,
 seções 3, 6 e 7.
 
 Resumo dos comandos (a partir da raiz do repositório):
