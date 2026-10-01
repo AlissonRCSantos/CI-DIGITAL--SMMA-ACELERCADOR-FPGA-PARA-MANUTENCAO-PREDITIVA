@@ -2,19 +2,18 @@
 // Testbench: tb_CNN_Conv_Layer
 // Verifica a camada convolucional completa (8 filtros + bias + ReLU).
 //
-// Os valores esperados foram calculados de forma INDEPENDENTE, em um modelo
-// de referencia em ponto fixo (golden model), reproduzindo exatamente:
+// Os valores esperados vem de vetores/conv_esperado.hex, calculados de forma
+// INDEPENDENTE pelo modelo de referencia em ponto fixo (RTL/golden_model.py,
+// com os pesos treinados), reproduzindo exatamente:
 //        acc  = bias<<15 + soma(pixel[t] * peso[f][t])
 //        y    = ReLU( saturar( arredondar(acc >> 15) ) )
 //
 // Casos escolhidos e o que cada um prova:
-//   1) JANELA UNIFORME     -> os detectores de borda devem dar ZERO
-//                             (mais o bias). E a prova pratica da propriedade
-//                             "soma dos coeficientes = 0".
+//   1) JANELA UNIFORME     -> saida = bias + nivel * (soma dos coeficientes).
 //   2) IMPULSO NO CENTRO   -> so o coeficiente central de cada filtro atua.
 //                             Prova o alinhamento correto tap<->peso.
 //   3) RAMPA               -> caso generico, todos os 9 taps contribuem.
-//   4) JANELA NEGATIVA     -> prova que o ReLU esta zerando as saidas negativas.
+//   4) JANELA NEGATIVA     -> saidas negativas devem ser zeradas pelo ReLU.
 //
 // Tambem verifica o THROUGHPUT: janelas consecutivas devem ser aceitas a cada
 // 9 ciclos, sem bolha no pipeline.
@@ -40,6 +39,13 @@ module tb_CNN_Conv_Layer;
     integer t_accept_a, t_accept_b;
 
     reg signed [WIDTH-1:0] expv [0:NF-1];
+    reg signed [WIDTH-1:0] exp_all [0:4*NF-1];   // 4 casos x 8 filtros
+
+    task carrega_caso(input integer c);
+        begin
+            for (f = 0; f < NF; f = f + 1) expv[f] = exp_all[c*NF + f];
+        end
+    endtask
 
     always #10 clk = ~clk;
 
@@ -89,6 +95,7 @@ module tb_CNN_Conv_Layer;
     endtask
 
     initial begin
+        $readmemh("vetores/conv_esperado.hex", exp_all);
         $display("========================================================");
         $display(" TESTBENCH: CNN_Conv_Layer (3x3, 8 filtros, bias, ReLU)");
         $display("========================================================\n");
@@ -102,9 +109,7 @@ module tb_CNN_Conv_Layer;
         // Detectores de borda somam zero -> saida = apenas o bias (com ReLU)
         // ------------------------------------------------------------------
         $display("-- Caso 1: janela UNIFORME (0.25 em todos os 9 pixels)");
-        $display("   esperado: detectores de borda dao 0 (so sobra o bias positivo)");
-        expv[0]=0; expv[1]=256; expv[2]=0; expv[3]=8704;
-        expv[4]=0; expv[5]=1024; expv[6]=0; expv[7]=6144;
+        carrega_caso(0);
         send_win(mkwin(16'sd8192,16'sd8192,16'sd8192,
                        16'sd8192,16'sd8192,16'sd8192,
                        16'sd8192,16'sd8192,16'sd8192));
@@ -115,9 +120,7 @@ module tb_CNN_Conv_Layer;
         // CASO 2: impulso no centro -> so o coeficiente central atua
         // ------------------------------------------------------------------
         $display("\n-- Caso 2: IMPULSO no centro da janela");
-        $display("   esperado: F2/F6/F7 (centro 0.5) respondem forte");
-        expv[0]=0; expv[1]=256; expv[2]=16128; expv[3]=4153;
-        expv[4]=0; expv[5]=1024; expv[6]=15360; expv[7]=18432;
+        carrega_caso(1);
         send_win(mkwin(16'sd0,16'sd0,16'sd0,
                        16'sd0,16'sd32767,16'sd0,
                        16'sd0,16'sd0,16'sd0));
@@ -128,8 +131,7 @@ module tb_CNN_Conv_Layer;
         // CASO 3: rampa (todos os taps contribuem)
         // ------------------------------------------------------------------
         $display("\n-- Caso 3: RAMPA crescente (caso generico)");
-        expv[0]=8192; expv[1]=24832; expv[2]=0; expv[3]=16896;
-        expv[4]=24064; expv[5]=13312; expv[6]=0; expv[7]=10240;
+        carrega_caso(2);
         send_win(mkwin(16'sd0,16'sd4096,16'sd8192,
                        16'sd12288,16'sd16384,16'sd20480,
                        16'sd24576,16'sd28672,16'sd32767));
@@ -141,8 +143,7 @@ module tb_CNN_Conv_Layer;
         // ------------------------------------------------------------------
         $display("\n-- Caso 4: janela NEGATIVA (prova do ReLU)");
         $display("   esperado: tudo que daria negativo vira exatamente 0");
-        expv[0]=0; expv[1]=256; expv[2]=0; expv[3]=0;
-        expv[4]=0; expv[5]=1024; expv[6]=0; expv[7]=0;
+        carrega_caso(3);
         send_win(mkwin(-16'sd8192,-16'sd8192,-16'sd8192,
                        -16'sd8192,-16'sd8192,-16'sd8192,
                        -16'sd8192,-16'sd8192,-16'sd8192));

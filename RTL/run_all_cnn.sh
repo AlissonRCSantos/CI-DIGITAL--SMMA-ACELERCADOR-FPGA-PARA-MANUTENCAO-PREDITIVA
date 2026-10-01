@@ -49,6 +49,24 @@ for M in $MODULES; do
     fi
 done
 
+# ----------------------------------------------------------------------------
+# Depois do tb_CNN_Top: gera os PNGs dos espectrogramas de teste em
+# espectrogramas_teste/ (precisa de Python com numpy e matplotlib)
+# ----------------------------------------------------------------------------
+if echo " $MODULES " | grep -q " CNN_Top " && [ -f sim_out/CNN_Top.log ]; then
+    PY=""
+    for c in python3 python py; do
+        if "$c" -c "import sys" >/dev/null 2>&1; then PY="$c"; break; fi
+    done
+    echo ""
+    if [ -n "$PY" ]; then
+        "$PY" gerar_png_espectrogramas.py
+    else
+        echo "[PNG] Python nao encontrado: figuras nao geradas."
+        echo "      Rode depois:  python gerar_png_espectrogramas.py"
+    fi
+fi
+
 echo ""
 echo "############################################################"
 echo "# RESUMO DA SUITE:  $PASS modulo(s) OK, $FAIL com falha"

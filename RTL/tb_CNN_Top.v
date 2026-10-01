@@ -1,19 +1,26 @@
 // ============================================================================
 // Testbench: tb_CNN_Top
-// Teste de SISTEMA do acelerador CNN completo.
+// Teste de SISTEMA do acelerador CNN completo, com ESPECTROGRAMAS REAIS.
 //
-// Injeta quatro espectrogramas sinteticos 32x32, cada um representando a
-// assinatura tipica de uma condicao do motor, e confere a classe predita, as
-// 8 features do GAP e os 4 scores contra o modelo de referencia em ponto fixo.
+// As imagens vem do conjunto de TESTE do dataset de vibracao (Jung et al.,
+// 2023): 2 espectrogramas 32x32 de cada classe, gerados pelo mesmo caminho
+// FFT -> espectrograma especificado em python/smma/espectrograma.py.
+// Arquivos (gerados por python/scripts/05_exportar_rtl.py):
+//   vetores/top_imagens.hex  : N_IMG x 1024 pixels Q1.15 (ordem raster,
+//                              linha = bin de frequencia, coluna = tempo)
+//   vetores/top_esperado.hex : por imagem, 14 palavras =
+//                              8 features, 4 scores, classe esperada
+//                              (golden model bit-exato), classe REAL
+//   vetores/top_origem.txt   : de qual arquivo/condicao veio cada imagem
 //
-//   PADRAO 0 - campo uniforme          -> energia distribuida, sem estrutura
-//                                         => OPERACAO NORMAL         (classe 0)
-//   PADRAO 1 - faixas HORIZONTAIS      -> harmonicas fixas em frequencia
-//                                         => DESBALANCEAMENTO        (classe 1)
-//   PADRAO 2 - faixas VERTICAIS        -> banda larga pulsando no tempo
-//                                         => DESALINHAMENTO          (classe 2)
-//   PADRAO 3 - impulsos isolados       -> transientes de impacto
-//                                         => DESGASTE DE ROLAMENTO   (classe 3)
+// SAIDA: o que o HARDWARE respondeu para cada imagem e gravado em
+//   sim_out/top_saida_hw.txt  (ou top_saida_hw.txt, se sim_out/ nao existir)
+// e o script gerar_png_espectrogramas.py transforma isso em figuras PNG na
+// pasta espectrogramas_teste/ (o run_all_cnn.sh chama o script sozinho).
+//
+// O teste PASSA quando o hardware reproduz o golden model bit a bit
+// (features, scores e classe). A comparacao com a classe REAL e informativa:
+// mostra se a rede treinada acertou o diagnostico.
 //
 // Alem da funcionalidade, o teste mede:
 //   * o numero de ciclos por imagem  (requisito: 1 janela a cada 10 ms)
@@ -27,6 +34,8 @@ module tb_CNN_Top;
     localparam WIDTH  = 16;
     localparam CLK_NS = 20;         // 50 MHz
     localparam NPIX   = 1024;       // 32 x 32
+    localparam N_IMG  = 8;          // 2 imagens por classe
+    localparam NESP   = 14;         // palavras esperadas por imagem
 
     reg                clk = 0, rst = 1;
     reg                start = 0, enable = 1, in_valid = 0;
@@ -37,16 +46,28 @@ module tb_CNN_Top;
     wire [127:0]       out_features;
 
     integer errors = 0, checks = 0;
-    integer i, j, k, pat, ch;
+    integer i, j, k, n, ch, acertos = 0;
+    integer fd;                    // arquivo com a saida do hardware
     integer t_start, t_end, ciclos;
     reg signed [15:0] img [0:NPIX-1];
+    reg signed [15:0] todas [0:N_IMG*NPIX-1];
+    reg signed [15:0] esp   [0:N_IMG*NESP-1];
 
     // Valores esperados (gerados pelo modelo de referencia em ponto fixo)
     reg signed [15:0] efe [0:7];
     reg signed [15:0] esc [0:3];
-    reg [1:0]         ecl;
+    reg [1:0]         ecl, real_cl;
 
-    reg [8*26-1:0] nome;
+    reg [8*16-1:0] nome;
+
+    function [8*16-1:0] nome_classe(input [1:0] c);
+        case (c)
+            2'd0: nome_classe = "NORMAL";
+            2'd1: nome_classe = "DESBALANCEAMENTO";
+            2'd2: nome_classe = "DESALINHAMENTO";
+            default: nome_classe = "ROLAMENTO";
+        endcase
+    endfunction
 
     always #(CLK_NS/2) clk = ~clk;
 
@@ -59,19 +80,16 @@ module tb_CNN_Top;
     );
 
     // ------------------------------------------------------------------------
-    // Gera o espectrograma sintetico de cada condicao
+    // Copia a imagem n e seus valores esperados
     // ------------------------------------------------------------------------
-    task make_img(input integer p);
+    task load_img(input integer p);
         begin
-            for (i = 0; i < 32; i = i + 1)
-                for (j = 0; j < 32; j = j + 1) begin
-                    case (p)
-                      0: img[i*32+j] = 16'sd8192;                                  // uniforme
-                      1: img[i*32+j] = ((i%4) < 2)              ? 16'sd16384 : 16'sd0; // horizontal
-                      2: img[i*32+j] = ((j%4) < 2)              ? 16'sd16384 : 16'sd0; // vertical
-                      3: img[i*32+j] = ((i%4)==0 && (j%4)==0)   ? 16'sd32767 : 16'sd0; // impulsos
-                    endcase
-                end
+            for (i = 0; i < NPIX; i = i + 1) img[i] = todas[p*NPIX + i];
+            for (ch = 0; ch < 8; ch = ch + 1) efe[ch] = esp[p*NESP + ch];
+            for (ch = 0; ch < 4; ch = ch + 1) esc[ch] = esp[p*NESP + 8 + ch];
+            ecl     = esp[p*NESP + 12];
+            real_cl = esp[p*NESP + 13];
+            nome    = nome_classe(ecl);
         end
     endtask
 
@@ -130,7 +148,21 @@ module tb_CNN_Top;
                 errors = errors + 1;
                 $display("  [FALHA] CLASSE: obtido=%0d esperado=%0d", out_class, ecl);
             end else
-                $display("  [ OK  ] classe predita = %0d  (%0s)", out_class, nome);
+                $display("  [ OK  ] hardware = golden: classe %0d (%0s)", out_class, nome);
+            if (out_class == real_cl) acertos = acertos + 1;
+            // registra a resposta do HARDWARE: n classe score0..3 feature0..7 ciclos
+            if (fd != 0)
+                $fdisplay(fd, "%0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d",
+                    n, out_class,
+                    $signed(out_scores[0*16 +: 16]), $signed(out_scores[1*16 +: 16]),
+                    $signed(out_scores[2*16 +: 16]), $signed(out_scores[3*16 +: 16]),
+                    $signed(out_features[0*16 +: 16]), $signed(out_features[1*16 +: 16]),
+                    $signed(out_features[2*16 +: 16]), $signed(out_features[3*16 +: 16]),
+                    $signed(out_features[4*16 +: 16]), $signed(out_features[5*16 +: 16]),
+                    $signed(out_features[6*16 +: 16]), $signed(out_features[7*16 +: 16]),
+                    ciclos);
+            $display("         diagnostico: classe real = %0s -> %0s", nome_classe(real_cl),
+                     (out_class == real_cl) ? "ACERTOU" : "ERROU");
 
             $display("         features = [%0d %0d %0d %0d %0d %0d %0d %0d]",
                 $signed(out_features[0*16 +: 16]), $signed(out_features[1*16 +: 16]),
@@ -145,10 +177,16 @@ module tb_CNN_Top;
     endtask
 
     initial begin
+        $readmemh("vetores/top_imagens.hex", todas);
+        $readmemh("vetores/top_esperado.hex", esp);
+        fd = $fopen("sim_out/top_saida_hw.txt", "w");
+        if (fd == 0) fd = $fopen("top_saida_hw.txt", "w");
+        if (fd != 0)
+            $fdisplay(fd, "# n classe_hw score0 score1 score2 score3 feat0 feat1 feat2 feat3 feat4 feat5 feat6 feat7 ciclos");
         $display("================================================================");
-        $display(" TESTBENCH DE SISTEMA: CNN_Top");
+        $display(" TESTBENCH DE SISTEMA: CNN_Top (espectrogramas reais)");
         $display(" Espectrograma 32x32 -> conv 3x3 x8 + ReLU -> pool 2x2 ->");
-        $display(" GAP -> densa 8x4 -> argmax");
+        $display(" GAP -> densa 8x4 -> argmax   (pesos treinados)");
         $display("================================================================\n");
 
         repeat (4) @(negedge clk);
@@ -162,48 +200,16 @@ module tb_CNN_Top;
             $display("-- Apos reset: ready=1, aguardando imagem\n");
 
         // ==================================================================
-        // PADRAO 0 - OPERACAO NORMAL
+        // N_IMG espectrogramas reais, processados em sequencia sem reset
         // ==================================================================
-        $display("-- PADRAO 0: campo uniforme (energia distribuida)");
-        nome = "OPERACAO NORMAL";
-        efe[0]=512;  efe[1]=768;  efe[2]=196;  efe[3]=8704;
-        efe[4]=690;  efe[5]=1776; efe[6]=128;  efe[7]=6144;
-        esc[0]=3550; esc[1]=-546; esc[2]=-802; esc[3]=-1502;
-        ecl = 2'd0;
-        make_img(0); run_frame; check_frame;
-
-        // ==================================================================
-        // PADRAO 1 - DESBALANCEAMENTO
-        // ==================================================================
-        $display("\n-- PADRAO 1: faixas HORIZONTAIS (harmonicas fixas)");
-        nome = "DESBALANCEAMENTO";
-        efe[0]=512;   efe[1]=15616; efe[2]=1024;  efe[3]=8705;
-        efe[4]=11168; efe[5]=12672; efe[6]=192;   efe[7]=6144;
-        esc[0]=-4319; esc[1]=6432;  esc[2]=-8672; esc[3]=-8480;
-        ecl = 2'd1;
-        make_img(1); run_frame; check_frame;
-
-        // ==================================================================
-        // PADRAO 2 - DESALINHAMENTO
-        // ==================================================================
-        $display("\n-- PADRAO 2: faixas VERTICAIS (banda larga pulsante)");
-        nome = "DESALINHAMENTO";
-        efe[0]=15360; efe[1]=768;   efe[2]=1024; efe[3]=8705;
-        efe[4]=11168; efe[5]=13440; efe[6]=1536; efe[7]=6144;
-        esc[0]=-4991; esc[1]=-9088; esc[2]=5504; esc[3]=-7808;
-        ecl = 2'd2;
-        make_img(2); run_frame; check_frame;
-
-        // ==================================================================
-        // PADRAO 3 - DESGASTE DE ROLAMENTO
-        // ==================================================================
-        $display("\n-- PADRAO 3: impulsos isolados (transientes de impacto)");
-        nome = "DESGASTE ROLAMENTO";
-        efe[0]=5152;  efe[1]=5408;  efe[2]=4032;  efe[3]=3712;
-        efe[4]=6398;  efe[5]=6656;  efe[6]=3840;  efe[7]=6144;
-        esc[0]=-7360; esc[1]=-4320; esc[2]=-4576; esc[3]=-2368;
-        ecl = 2'd3;
-        make_img(3); run_frame; check_frame;
+        for (n = 0; n < N_IMG; n = n + 1) begin
+            load_img(n);
+            $display("-- Imagem %0d  (ver vetores/top_origem.txt)", n);
+            run_frame;
+            check_frame;
+            $display("");
+        end
+        $display("-- Diagnostico da rede treinada nestas %0d imagens: %0d acertos", N_IMG, acertos);
 
         // ==================================================================
         // Requisito temporal do enunciado
@@ -226,7 +232,7 @@ module tb_CNN_Top;
             errors = errors + 1;
             $display("  [FALHA] acelerador nao voltou a ficar pronto");
         end else
-            $display("  [ OK  ] 4 quadros consecutivos sem reset; ready=1 ao final");
+            $display("  [ OK  ] %0d quadros consecutivos sem reset; ready=1 ao final", N_IMG);
 
         $display("\n================================================================");
         if (errors == 0)
@@ -234,9 +240,10 @@ module tb_CNN_Top;
         else
             $display(" RESULTADO: %0d FALHAS em %0d testes", errors, checks);
         $display("================================================================");
+        if (fd != 0) $fclose(fd);
         $finish;
     end
 
-    initial begin #20000000; $display("TIMEOUT"); $finish; end
+    initial begin #50000000; $display("TIMEOUT"); $finish; end
 
 endmodule

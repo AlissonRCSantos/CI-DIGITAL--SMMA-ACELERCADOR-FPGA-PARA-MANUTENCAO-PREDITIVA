@@ -15,9 +15,12 @@
 //   ser (A+B)/2. Prova que o GAP realmente acumula ao longo do quadro, e nao
 //   apenas repete a ultima amostra.
 //
-// TESTE 3 (desempate do argmax)
-//   Verifica que, quando dois scores empatam, vence o de MENOR indice
-//   (comportamento deterministico, importante para reprodutibilidade).
+// TESTE 3 (features nulas)
+//   Com todas as features em zero, os scores devem ser exatamente os bias.
+//
+// Features, scores e classe esperados vem de vetores/dense_esperado.hex
+// (13 palavras por teste: 8 features, 4 scores, classe), calculados pelo
+// RTL/golden_model.py com os pesos treinados.
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -48,6 +51,16 @@ module tb_CNN_Dense_Classifier;
     reg signed [WIDTH-1:0] vec  [0:NCH-1];
     reg signed [WIDTH-1:0] efe  [0:NCH-1];
     reg signed [WIDTH-1:0] esc  [0:NCL-1];
+    reg signed [WIDTH-1:0] exp_all [0:3*13-1];
+    reg [1:0]              ecl;
+
+    task carrega_teste(input integer t);
+        begin
+            for (ch = 0; ch < NCH; ch = ch + 1) efe[ch] = exp_all[t*13 + ch];
+            for (ch = 0; ch < NCL; ch = ch + 1) esc[ch] = exp_all[t*13 + 8 + ch];
+            ecl = exp_all[t*13 + 12];
+        end
+    endtask
 
     always #10 clk = ~clk;
 
@@ -133,6 +146,7 @@ module tb_CNN_Dense_Classifier;
     endtask
 
     initial begin
+        $readmemh("vetores/dense_esperado.hex", exp_all);
         $display("========================================================");
         $display(" TESTBENCH: CNN_Dense_Classifier (GAP + densa + argmax)");
         $display("========================================================\n");
@@ -150,11 +164,9 @@ module tb_CNN_Dense_Classifier;
         vec[4]=500;  vec[5]=800;   vec[6]=12000; vec[7]=9000;
         set_vec;
         push_n(NPOS);
-        efe[0]=1000; efe[1]=20000; efe[2]=3000; efe[3]=15000;
-        efe[4]=500;  efe[5]=800;   efe[6]=12000; efe[7]=9000;
-        esc[0]=-10500; esc[1]=1488; esc[2]=-17512; esc[3]=-4024;
+        carrega_teste(0);
         do_run;
-        check_all("stream constante", 2'd1);
+        check_all("stream constante", ecl);
 
         // ------------------------------------------------------------------
         // TESTE 2: metade com valor A, metade com valor B -> media (A+B)/2
@@ -168,28 +180,21 @@ module tb_CNN_Dense_Classifier;
         // Segunda metade: tudo 8000  -> media esperada = 6000
         for (ch = 0; ch < NCH; ch = ch + 1) vec[ch] = 8000;
         set_vec; push_n(NPOS/2);
-        for (ch = 0; ch < NCH; ch = ch + 1) efe[ch] = 6000;
-        // Scores com todas as features iguais a 6000 (calculados no golden model).
-        // Note que score1 e score2 EMPATAM em -6512: como nenhum dos dois vence,
-        // o empate nao decide aqui, mas o teste 3 abaixo cobre esse caso.
-        esc[0]=-9000; esc[1]=-6512; esc[2]=-6512; esc[3]=-1024;
+        carrega_teste(1);
         do_run;
-        check_all("media de A e B", 2'd3);
+        check_all("media de A e B", ecl);
 
         // ------------------------------------------------------------------
         // TESTE 3: features todas ZERO -> scores = apenas os bias
-        //          bias = [0, -512, -512, -1024] -> classe 0 vence
-        //          e as classes 1 e 2 EMPATAM, provando o desempate estavel
         // ------------------------------------------------------------------
-        $display("\n-- Teste 3: features nulas -> scores = bias (desempate)");
+        $display("\n-- Teste 3: features nulas -> scores = bias");
         @(negedge clk); start = 1;
         @(negedge clk); start = 0;
         for (ch = 0; ch < NCH; ch = ch + 1) vec[ch] = 0;
         set_vec; push_n(NPOS);
-        for (ch = 0; ch < NCH; ch = ch + 1) efe[ch] = 0;
-        esc[0]=0; esc[1]=-512; esc[2]=-512; esc[3]=-1024;
+        carrega_teste(2);
         do_run;
-        check_all("somente bias", 2'd0);
+        check_all("somente bias", ecl);
 
         $display("\n========================================================");
         if (errors == 0)

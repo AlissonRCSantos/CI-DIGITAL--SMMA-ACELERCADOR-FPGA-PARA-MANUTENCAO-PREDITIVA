@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Treinamento da CNN (arquivos grandes/gerados localmente) ---
+dados/
+RTL/sim_out/
+_to_delete/
