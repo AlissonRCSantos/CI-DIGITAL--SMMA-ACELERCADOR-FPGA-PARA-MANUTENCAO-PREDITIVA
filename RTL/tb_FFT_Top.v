@@ -40,6 +40,23 @@ module tb_FFT_Top;
     parameter CLK_PERIOD = 20;       // 50 MHz
     parameter real PI    = 3.14159265358979323846;
 
+    // Mascara de escalonamento repassada ao DUT. O ganho total da FFT e
+    // 2^-(numero de bits em 1), calculado aqui para que estimulo, referencia
+    // ideal e DUT fiquem SEMPRE coerentes ao se mudar a mascara.
+    parameter [5:0] SCALE_MASK = 6'b001111;
+
+    function integer escala_de;              // 2^(popcount(mask))
+        input [5:0] mask;
+        integer i;
+        begin
+            escala_de = 1;
+            for (i = 0; i < 6; i = i + 1)
+                if (mask[i]) escala_de = escala_de * 2;
+        end
+    endfunction
+
+    parameter ESCALA_FFT = escala_de(SCALE_MASK);
+
     // Tolerancias (em LSB de Q1.15). O modelo de referencia em Python mediu
     // erro maximo de 2 LSB; 8 LSB oferece margem sem mascarar defeitos reais.
     parameter TOL_LSB     = 8;
@@ -116,7 +133,8 @@ module tb_FFT_Top;
     FFT_Top #(
         .WIDTH(WIDTH),
         .FRAC(15),
-        .LOG2N(LOG2N)
+        .LOG2N(LOG2N),
+        .SCALE_MASK(SCALE_MASK)
     ) uut (
         .clk(clk),
         .rst(rst),
@@ -208,8 +226,8 @@ module tb_FFT_Top;
                     acc_r = acc_r + xr * c - xi * s;
                     acc_i = acc_i + xr * s + xi * c;
                 end
-                ideal_re[kk] = acc_r / (1.0 * N);
-                ideal_im[kk] = acc_i / (1.0 * N);
+                ideal_re[kk] = acc_r / (1.0 * ESCALA_FFT);
+                ideal_im[kk] = acc_i / (1.0 * ESCALA_FFT);
             end
         end
     endtask
@@ -229,7 +247,7 @@ module tb_FFT_Top;
         integer nn;
         begin
             for (nn = 0; nn < N; nn = nn + 1) begin
-                stim_re[nn] = to_q15(0.5);
+                stim_re[nn] = to_q15(0.125);
                 stim_im[nn] = 16'sh0000;
             end
         end
@@ -254,9 +272,9 @@ module tb_FFT_Top;
         real v;
         begin
             for (nn = 0; nn < N; nn = nn + 1) begin
-                v = 0.50 * $cos(2.0*PI*6.0*nn/(1.0*N))
-                  + 0.25 * $cos(2.0*PI*12.0*nn/(1.0*N) + 0.7)
-                  + 0.12 * $cos(2.0*PI*18.0*nn/(1.0*N) + 1.3);
+                v = 0.250 * $cos(2.0*PI*6.0*nn/(1.0*N))
+                  + 0.125 * $cos(2.0*PI*12.0*nn/(1.0*N) + 0.7)
+                  + 0.060 * $cos(2.0*PI*18.0*nn/(1.0*N) + 1.3);
                 stim_re[nn] = to_q15(v);
                 stim_im[nn] = 16'sh0000;
             end
@@ -423,7 +441,7 @@ module tb_FFT_Top;
 
         $display("======================================================================");
         $display("      SIMULACAO DO MODULO FFT DE 64 PONTOS - ACELERADOR SMMA          ");
-        $display("      Radix-2 DIT in-place, Q1.15, escala 1/2 por estagio             ");
+        $display("      Radix-2 DIT in-place, Q1.15, saida = X[k]/%0d                      ", ESCALA_FFT);
         $display("======================================================================");
 
         repeat (3) @(negedge clk);
@@ -446,25 +464,56 @@ module tb_FFT_Top;
         run_fft;
         check_spectrum("Impulso");
 
+        // ---- Verificacao EXPLICITA do ganho da FFT ----
+        // Para x[n] = delta[n] com x[0] = 1.0, a DFT vale X[k] = 1.0 em TODOS
+        // os bins, logo a saida do hardware deve ser exatamente 1/ESCALA_FFT.
+        // Este e o teste que trava a regressao do ganho: se alguem voltar a
+        // escalar os 6 estagios (divisao por 64), a CNN - treinada com
+        // ESCALA_FFT=16 - passa a receber magnitudes 4x menores.
+        begin : check_ganho
+            integer esperado_ganho, obtido_ganho, dif_ganho;
+            esperado_ganho = 32767 / ESCALA_FFT;      // 1.0 em Q1.15 dividido pela escala
+            obtido_ganho   = got_re[7];               // bin arbitrario: o espectro e plano
+            dif_ganho      = obtido_ganho - esperado_ganho;
+            if (dif_ganho < 0) dif_ganho = -dif_ganho;
+            if (dif_ganho <= 4) begin
+                success_count = success_count + 1;
+                $display("[PASS] Ganho da FFT = 1/%0d (bin plano = %0d, esperado %0d)",
+                         ESCALA_FFT, obtido_ganho, esperado_ganho);
+            end else begin
+                fail_count = fail_count + 1;
+                $display("[FAIL] Ganho da FFT ERRADO: bin plano = %0d, esperado %0d (1/%0d)",
+                         obtido_ganho, esperado_ganho, ESCALA_FFT);
+                $display("       -> a CNN foi treinada com ESCALA_FFT=16; conferir SCALE_MASK");
+            end
+        end
+
         // ================================================================
         $display("\n--- TESTE 2: Nivel DC (energia concentrada no bin 0) ---");
         gen_dc;
         compute_ideal;
         run_fft;
         check_spectrum("Nivel DC");
-        if (got_mag[0] > 16000 && got_mag[1] < 200) begin
-            success_count = success_count + 1;
-            $display("[PASS] DC concentrado no bin 0 (mag[0]=%0d, mag[1]=%0d)",
-                     got_mag[0], got_mag[1]);
-        end else begin
-            fail_count = fail_count + 1;
-            $display("[FAIL] DC mal localizado (mag[0]=%0d, mag[1]=%0d)",
-                     got_mag[0], got_mag[1]);
+        // Energia esperada no bin 0: x[n] = 0.125 constante -> X[0] = 0.125*N,
+        // dividido pela escala da FFT. Calculado a partir de ESCALA_FFT para
+        // que a checagem continue valida se a mascara de escala mudar.
+        begin : check_dc
+            integer mag0_esperado;
+            mag0_esperado = (32768 / 8) * N / ESCALA_FFT;   // 0.125 * 64 / escala
+            if ((got_mag[0] > (mag0_esperado * 9) / 10) && (got_mag[1] < 200)) begin
+                success_count = success_count + 1;
+                $display("[PASS] DC concentrado no bin 0 (mag[0]=%0d ~ %0d, mag[1]=%0d)",
+                         got_mag[0], mag0_esperado, got_mag[1]);
+            end else begin
+                fail_count = fail_count + 1;
+                $display("[FAIL] DC mal localizado (mag[0]=%0d, esperado ~%0d, mag[1]=%0d)",
+                         got_mag[0], mag0_esperado, got_mag[1]);
+            end
         end
 
         // ================================================================
         $display("\n--- TESTE 3: Tom puro no bin 4 ---");
-        gen_tone(4, 0.5, 0.0);
+        gen_tone(4, 0.25, 0.0);
         compute_ideal;
         run_fft;
         check_spectrum("Tom bin 4");
@@ -479,7 +528,7 @@ module tb_FFT_Top;
 
         // ================================================================
         $display("\n--- TESTE 4: Tom puro no bin 13 com fase ---");
-        gen_tone(13, 0.7, 0.4);
+        gen_tone(13, 0.25, 0.4);
         compute_ideal;
         run_fft;
         check_spectrum("Tom bin 13");
@@ -516,7 +565,7 @@ module tb_FFT_Top;
 
         // ================================================================
         $display("\n--- TESTE 7: Reset assincrono no meio do calculo ---");
-        gen_tone(8, 0.6, 0.0);
+        gen_tone(8, 0.25, 0.0);
         compute_ideal;
         clear_results;
         @(negedge clk);

@@ -1,7 +1,8 @@
 // ============================================================================
 // Module: FFT_Butterfly
 // Description: Unidade Butterfly radix-2 por decimacao no tempo (DIT) com
-//              escalonamento de 1/2 por estagio, em ponto fixo Q1.15.
+//              escalonamento de 1/2 CONFIGURAVEL por estagio (scale_en),
+//              em ponto fixo Q1.15.
 //
 // Operacao implementada:
 //       t  = W * B                     (multiplicacao complexa)
@@ -21,10 +22,12 @@
 //   estagio, a saida fica limitada a |X[k]|/N e permanece sempre dentro da
 //   faixa Q1.15, sem necessidade de deteccao dinamica de overflow.
 //
-//   Consequencia: a saida da FFT e X[k]/N (DFT normalizada). Como o detector
-//   de picos e o modulo MDC trabalham com magnitudes RELATIVAS entre bins, o
-//   fator constante 1/64 nao altera a identificacao das harmonicas nem a
-//   estimativa da frequencia fundamental.
+//   Consequencia: com escala em TODOS os estagios a saida seria X[k]/64, sem
+//   qualquer risco de overflow. O sistema, porem, usa escala em apenas 4 dos
+//   6 estagios (X[k]/16), porque essa e a escala com que a CNN foi treinada -
+//   quem decide isso e o parametro SCALE_MASK em FFT_Top.v, propagado ate
+//   aqui pela entrada 'scale_en'. Nos estagios sem escala a SATURACAO deste
+//   modulo passa a ser a protecao real contra overflow.
 //
 //   Custo: perde-se ~1 bit de SNR por estagio nos sinais de baixa amplitude.
 //   Alternativa possivel (block floating-point / escalonamento condicional):
@@ -60,6 +63,7 @@ module FFT_Butterfly #(
     input  wire                     rst,        // Reset sincrono ativo em alto
 
     input  wire                     in_valid,   // Operandos validos neste ciclo
+    input  wire                     scale_en,   // 1: aplica escala de 1/2 neste butterfly
     input  wire signed [WIDTH-1:0]  a_real,     // A (operando superior) - real
     input  wire signed [WIDTH-1:0]  a_imag,     // A - imaginario
     input  wire signed [WIDTH-1:0]  b_real,     // B (operando inferior) - real
@@ -68,9 +72,9 @@ module FFT_Butterfly #(
     input  wire signed [WIDTH-1:0]  w_imag,     // Fator de rotacao - imaginario
 
     output wire                     out_valid,  // Resultados validos (6 ciclos depois)
-    output reg  signed [WIDTH-1:0]  p_real,     // P = (A + W*B)/2 - real
+    output reg  signed [WIDTH-1:0]  p_real,     // P = (A + W*B)*k - real   (k = 1/2 ou 1)
     output reg  signed [WIDTH-1:0]  p_imag,     // P - imaginario
-    output reg  signed [WIDTH-1:0]  q_real,     // Q = (A - W*B)/2 - real
+    output reg  signed [WIDTH-1:0]  q_real,     // Q = (A - W*B)*k - real
     output reg  signed [WIDTH-1:0]  q_imag      // Q - imaginario
 );
 
@@ -186,12 +190,22 @@ module FFT_Butterfly #(
     end
 
     // ========================================================================
-    // ESTAGIO 6: ESCALA 1/2 + ARREDONDAMENTO + SATURACAO -> Q1.15
+    // ESTAGIO 6: ESCALA CONDICIONAL 1/2 + ARREDONDAMENTO + SATURACAO -> Q1.15
     // ========================================================================
+    // 'scale_en' decide, POR ESTAGIO da FFT, se este butterfly divide por 2:
+    //   scale_en = 1 -> saida = sat( (A +/- t + 0.5LSB) >> 1 )
+    //   scale_en = 0 -> saida = sat(  A +/- t )            (ganho unitario)
+    //
+    // Ele precisa chegar aqui ALINHADO com o dado: os operandos entraram no
+    // pipeline 5 ciclos antes de 'sum_r/dif_r' ficarem prontos, por isso
+    // 'scale_en' percorre a mesma quantidade de registradores (scale_pipe).
+    // Sem esse alinhamento, um butterfly no fim de um estagio poderia receber
+    // o 'scale_en' do estagio SEGUINTE.
+    //
     // Arredondamento "round half up": soma 0.5 LSB antes do deslocamento.
-    // A saturacao e uma rede de seguranca: com o escalonamento de 1/2 por
-    // estagio ela so pode atuar em sinais de entrada patologicos (parte real
-    // e imaginaria simultaneamente em fundo de escala).
+    // Com escala em todos os estagios a saturacao e apenas uma rede de
+    // seguranca; quando alguns estagios rodam com ganho unitario ela passa a
+    // ser a protecao real contra overflow (ver nota de escala em FFT_Top.v).
     // ATENCAO: a constante de arredondamento precisa ser um literal COM SINAL.
     // Uma concatenacao {..., 1'b1} e sempre tratada como SEM SINAL pelo
     // Verilog, o que contamina toda a expressao "value + round" e faz o
@@ -203,11 +217,23 @@ module FFT_Butterfly #(
     // FP_Mult_Unit.v, que nao sofre deste problema).
     localparam signed [W_S-1:0] ROUND_HALF = {{(W_S-1){1'b0}}, 1'b1};
 
+    // Atraso de 'scale_en' ate o estagio em que a escala e efetivamente
+    // aplicada (5 registradores: 3 do multiplicador + estagio 4 + estagio 5).
+    reg [LATENCY-2:0] scale_pipe;
+    always @(posedge clk) begin
+        if (rst)
+            scale_pipe <= {(LATENCY-1){1'b0}};
+        else
+            scale_pipe <= {scale_pipe[LATENCY-3:0], scale_en};
+    end
+    wire scale_now = scale_pipe[LATENCY-2];
+
     function signed [WIDTH-1:0] scale_round_sat;
         input signed [W_S-1:0] value;
+        input                  do_scale;
         reg   signed [W_S-1:0] scaled;
         begin
-            scaled = (value + ROUND_HALF) >>> 1;
+            scaled = do_scale ? ((value + ROUND_HALF) >>> 1) : value;
             if (scaled > OUT_MAX)
                 scale_round_sat = OUT_MAX[WIDTH-1:0];
             else if (scaled < OUT_MIN)
@@ -222,10 +248,10 @@ module FFT_Butterfly #(
             p_real <= {WIDTH{1'b0}};  p_imag <= {WIDTH{1'b0}};
             q_real <= {WIDTH{1'b0}};  q_imag <= {WIDTH{1'b0}};
         end else begin
-            p_real <= scale_round_sat(sum_r);
-            p_imag <= scale_round_sat(sum_i);
-            q_real <= scale_round_sat(dif_r);
-            q_imag <= scale_round_sat(dif_i);
+            p_real <= scale_round_sat(sum_r, scale_now);
+            p_imag <= scale_round_sat(sum_i, scale_now);
+            q_real <= scale_round_sat(dif_r, scale_now);
+            q_imag <= scale_round_sat(dif_i, scale_now);
         end
     end
 

@@ -86,7 +86,12 @@
 
 module FFT_Control_FSM #(
     parameter LOG2N   = 6,   // N = 64 pontos
-    parameter BF_PIPE = 7    // Latencia leitura->escrita (1 RAM + 6 butterfly)
+    parameter BF_PIPE = 7,   // Latencia leitura->escrita (1 RAM + 6 butterfly)
+
+    // Mascara de escalonamento: bit i = 1 -> o estagio (i+1) divide por 2.
+    // O padrao 6'b001111 escala os estagios 1..4 e deixa 5 e 6 com ganho
+    // unitario, resultando em uma divisao TOTAL de 1/16 (ver FFT_Top.v).
+    parameter [5:0] SCALE_MASK = 6'b001111
 )(
     input  wire                  clk,           // Clock do sistema (50 MHz)
     input  wire                  rst,           // Reset sincrono ativo em alto
@@ -114,6 +119,7 @@ module FFT_Control_FSM #(
 
     // ---- Controle do butterfly ----
     output reg                   bf_in_valid,   // Operandos validos na entrada do butterfly
+    output wire                  bf_scale_en,   // 1: este estagio divide por 2
 
     // ---- Controle da descarga ----
     output wire                  unload_rd,     // Leitura de um bin sendo emitida
@@ -191,6 +197,10 @@ module FFT_Control_FSM #(
 
     assign tw_rd_en     = 1'b1;                 // ROM lida continuamente (baixo custo)
     assign mem_sel_load = (state == S_LOAD);
+
+    // Escala deste estagio (stage_r vale 1..LOG2N -> bit 0..LOG2N-1 da mascara).
+    // O alinhamento fino com o dado e feito DENTRO do butterfly (scale_pipe).
+    assign bf_scale_en  = SCALE_MASK[stage_r - 3'd1];
 
     // ========================================================================
     // LINHA DE ATRASO DOS ENDERECOS DE ESCRITA (write-back)

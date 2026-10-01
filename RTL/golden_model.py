@@ -66,9 +66,17 @@ def mult_q15(a, b):
     return sat16(prod)
 
 
-def scale_round_sat(v):
-    """(v + 0.5 LSB) / 2 com saturacao -- estagio 6 do butterfly."""
-    return sat16((v + 1) >> 1)
+# Mascara de escalonamento por estagio: bit i = 1 -> estagio (i+1) divide por 2.
+# Deve ser identica ao parametro SCALE_MASK de FFT_Top.v. O padrao 0b001111
+# escala os estagios 1..4 -> ganho total 1/16, que e a especificacao usada
+# para treinar a CNN (python/smma/espectrograma.py: ESCALA_FFT = 16).
+SCALE_MASK = 0b001111
+ESCALA_FFT = 1 << bin(SCALE_MASK).count("1")   # 16
+
+
+def scale_round_sat(v, do_scale):
+    """(v + 0.5 LSB)/2 se do_scale, senao v -- com saturacao (estagio 6)."""
+    return sat16(((v + 1) >> 1) if do_scale else v)
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +106,7 @@ def bit_reverse(idx, bits=LOG2N):
 # 1) MODELO BIT-EXATO DO HARDWARE
 # ---------------------------------------------------------------------------
 def fft_fixed(samples_re, samples_im):
-    """FFT radix-2 DIT in-place, Q1.15, escala 1/2 por estagio.
+    """FFT radix-2 DIT in-place, Q1.15, escala 1/2 nos estagios de SCALE_MASK.
 
     Reproduz ciclo a ciclo a aritmetica de FFT_Butterfly.v.
     Retorna (re[], im[]) em ordem natural de frequencia.
@@ -133,10 +141,11 @@ def fft_fixed(samples_re, samples_im):
             t_im = m_ri + m_ir
 
             # Butterfly com escala de 1/2 e saturacao
-            re[p] = scale_round_sat(ar + t_re)
-            im[p] = scale_round_sat(ai + t_im)
-            re[q] = scale_round_sat(ar - t_re)
-            im[q] = scale_round_sat(ai - t_im)
+            sc = bool((SCALE_MASK >> (s - 1)) & 1)
+            re[p] = scale_round_sat(ar + t_re, sc)
+            im[p] = scale_round_sat(ai + t_im, sc)
+            re[q] = scale_round_sat(ar - t_re, sc)
+            im[q] = scale_round_sat(ai - t_im, sc)
 
     return re, im
 
@@ -155,7 +164,7 @@ def magnitude_fixed(re, im):
 # 2) MODELO IDEAL (ponto flutuante)
 # ---------------------------------------------------------------------------
 def fft_ideal(samples_re, samples_im):
-    """DFT exata normalizada por N -- mesma escala da saida do hardware."""
+    """DFT exata dividida por ESCALA_FFT -- mesma escala da saida do hardware."""
     x = [complex(from_q15(r), from_q15(i))
          for r, i in zip(samples_re, samples_im)]
     out = []
@@ -163,7 +172,7 @@ def fft_ideal(samples_re, samples_im):
         acc = 0j
         for n in range(N):
             acc += x[n] * cmath.exp(-2j * cmath.pi * k * n / N)
-        out.append(acc / N)
+        out.append(acc / ESCALA_FFT)
     return out
 
 
@@ -179,10 +188,10 @@ def sig_impulse():
 
 def sig_dc():
     """Nivel DC: toda a energia deve se concentrar no bin 0."""
-    return [to_q15(0.5)] * N, [0] * N
+    return [to_q15(0.125)] * N, [0] * N
 
 
-def sig_tone(bin_k, amp=0.5, phase=0.0):
+def sig_tone(bin_k, amp=0.25, phase=0.0):
     """Senoide pura centrada no bin k (frequencia coerente com a janela)."""
     re = [to_q15(amp * math.cos(2 * math.pi * bin_k * n / N + phase))
           for n in range(N)]
@@ -197,9 +206,9 @@ def sig_motor():
     """
     re = []
     for n in range(N):
-        v = (0.50 * math.cos(2 * math.pi * 6 * n / N)
-             + 0.25 * math.cos(2 * math.pi * 12 * n / N + 0.7)
-             + 0.12 * math.cos(2 * math.pi * 18 * n / N + 1.3))
+        v = (0.250 * math.cos(2 * math.pi * 6 * n / N)
+             + 0.125 * math.cos(2 * math.pi * 12 * n / N + 0.7)
+             + 0.060 * math.cos(2 * math.pi * 18 * n / N + 1.3))
         re.append(to_q15(v))
     return re, [0] * N
 
@@ -208,7 +217,7 @@ TEST_CASES = [
     ("impulso",        sig_impulse()),
     ("dc",             sig_dc()),
     ("tom_bin4",       sig_tone(4)),
-    ("tom_bin13",      sig_tone(13, 0.7, 0.4)),
+    ("tom_bin13",      sig_tone(13, 0.25, 0.4)),
     ("motor_6_12_18",  sig_motor()),
 ]
 
@@ -219,7 +228,7 @@ TEST_CASES = [
 def report():
     print("=" * 74)
     print(" MODELO DE REFERENCIA DA FFT DE 64 PONTOS - SMMA")
-    print(" Formato Q1.15, radix-2 DIT, escala 1/2 por estagio (saida = X[k]/64)")
+    print(" Formato Q1.15, radix-2 DIT, escala 1/2 em 4 dos 6 estagios (saida = X[k]/16)")
     print("=" * 74)
 
     for name, (sre, sim) in TEST_CASES:
