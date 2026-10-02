@@ -12,6 +12,9 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 RAIZ          = Path(os.environ.get("SMMA_RAIZ", Path(__file__).resolve().parent.parent))
 DIR_CSV       = RAIZ / "dados" / "Dataset - vibração"
+# Formato NATIVO do dataset (Jung et al. distribuem .mat; o CSV e uma
+# exportacao ~6x maior). Use o passo 01b para ler daqui.
+DIR_MAT       = RAIZ / "dataset" / "vibration"
 DIR_BRUTOS    = RAIZ / "dados" / "processado" / "brutos"        # saida do passo 01
 DIR_ESPEC     = RAIZ / "dados" / "processado" / "espectrogramas"  # saida do passo 02
 DIR_RESULT    = RAIZ / "python" / "resultados"                  # modelos, relatorios
