@@ -59,7 +59,7 @@ module tb_FIR_Decimator;
         .WIDTH(WIDTH), .FRAC(15), .N_TAPS(N_TAPS), .DECIM(DECIM),
         .ACC_W(40), .ARQ_COEF("vetores/fir_coef.hex")
     ) uut (
-        .clk(clk), .rst(rst),
+        .clk(clk), .rst(rst), .limpa(1'b0),
         .in_valid(in_valid), .in_ready(in_ready), .in_sample(in_sample),
         .out_ready(out_ready), .out_valid(out_valid), .out_sample(out_sample),
         .overflow(overflow)

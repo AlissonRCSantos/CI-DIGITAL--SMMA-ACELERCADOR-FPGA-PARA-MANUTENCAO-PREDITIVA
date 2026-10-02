@@ -56,6 +56,7 @@ module FIR_Decimator #(
 )(
     input  wire                     clk,        // Clock do sistema (50 MHz)
     input  wire                     rst,        // Reset sincrono ativo em alto
+    input  wire                     limpa,      // Pulso: zera a linha e a fase
 
     // ---- Entrada: amostras do acelerometro a 25,6 kHz ----
     input  wire                     in_valid,
@@ -123,8 +124,21 @@ module FIR_Decimator #(
 
     integer i;
 
+    // 'limpa' faz o mesmo que o reset, e e OBRIGATORIO entre janelas.
+    //
+    // Duas razoes. A primeira e de equivalencia: o modelo Python convolve cada
+    // janela de forma independente (mode="valid"), entao comecar com a linha de
+    // atraso carregada com a cauda da janela anterior produz amostras
+    // decimadas diferentes das treinadas.
+    //
+    // A segunda e pior, porque trava. Uma janela tem 8503 amostras cruas, e
+    // 8503 mod 8 = 7: sem limpar, cada janela desloca a FASE da decimacao em 7
+    // e o numero de saidas deixa de ser 1056. Com 1055 o Feature_Temporal
+    // nunca recebe a amostra marcada como ultima, nunca termina, e o sistema
+    // inteiro para esperando as 12 features. Foi exatamente o que aconteceu na
+    // terceira janela do teste ponta a ponta.
     always @(posedge clk) begin
-        if (rst) begin
+        if (rst || limpa) begin
             tap        <= {CNT_W{1'b0}};
             fase       <= 4'd0;
             preench    <= {CNT_W{1'b0}};

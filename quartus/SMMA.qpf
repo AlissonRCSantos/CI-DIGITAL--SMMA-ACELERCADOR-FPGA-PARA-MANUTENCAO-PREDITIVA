@@ -1,0 +1,15 @@
+# ============================================================================
+# SMMA -- Smart Machine Monitoring Accelerator
+# Arquivo de projeto do Quartus Prime
+#
+# Abrir com:  quartus quartus/SMMA.qpf
+# Ou compilar pela linha de comando, da raiz do repositorio:
+#     quartus_sh --flow compile quartus/SMMA
+#
+# ATENCAO antes da primeira gravacao: confira a secao de PINOS no SMMA.qsf.
+# ============================================================================
+
+QUARTUS_VERSION = "20.1"
+
+# Revisions
+PROJECT_REVISION = "SMMA"
