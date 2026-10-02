@@ -64,9 +64,12 @@ def _mag_hardware(frames: np.ndarray) -> np.ndarray:
     classificador vera em silicio, nao as ideais.
     """
     X = np.fft.rfft(frames, axis=1)[:, :C.NBINS] / 16.0     # SCALE_MASK = 0b001111
-    re, im = np.abs(X.real), np.abs(X.imag)
+    # arredonda para Q1.15 inteiro antes da magnitude: o hardware trabalha com
+    # inteiros e os deslocamentos de alpha-max-beta-min TRUNCAM
+    re = np.abs(np.round(X.real)).astype(np.int64)
+    im = np.abs(np.round(X.imag)).astype(np.int64)
     hi, lo = np.maximum(re, im), np.minimum(re, im)
-    return hi + lo / 4.0 + lo / 8.0
+    return hi + (lo >> 2) + (lo >> 3)
 
 
 def _features_fft(spec: np.ndarray) -> list:
@@ -140,14 +143,82 @@ def extrai(sinal_decimado: np.ndarray, mags: np.ndarray,
     mags           : magnitudes |X| de todos os quadros (n_quadros_total, 32)
     i0, n_quadros  : faixa de quadros que compoe esta decisao
     """
-    spec = mags[i0:i0 + n_quadros].mean(axis=0)
+    soma = mags[i0:i0 + n_quadros].sum(axis=0)      # soma inteira dos quadros
     # amostras de tempo cobertas por esses quadros
     a = i0 * C.HOP
     b = a + (n_quadros - 1) * C.HOP + C.NFFT
     seg = sinal_decimado[a:b]
-    return _features_fft(spec) + [_feature_lms(seg)] + _features_ar(seg)
+    # espectrais: aritmetica inteira identica ao hardware, devolvida em
+    # Q1.15 inteiro -> converte para float na mesma escala das demais
+    esp = [v / Q for v in features_espectrais_int(soma)]
+    return esp + [_feature_lms(seg)] + _features_ar(seg)
 
 
 def para_q15(F: np.ndarray) -> np.ndarray:
     """float -> inteiro Q1.15 com saturacao (formato de entrada do hardware)."""
     return np.clip(np.round(F * Q), -Q, Q - 1).astype(np.int16)
+
+
+# ===========================================================================
+# VERSAO ARITMETICAMENTE IDENTICA AO HARDWARE
+# ---------------------------------------------------------------------------
+# As funcoes acima usam float; o hardware usa inteiros. As diferencas sao
+# pequenas mas NAO nulas, e como os limiares da arvore sao comparados contra
+# estes valores, treinar com uma versao e inferir com a outra deslocaria as
+# fronteiras de decisao. Estas funcoes reproduzem exatamente o que
+# Feature_Extractor.v calcula:
+#   - media dos 32 quadros por deslocamento (>>5), nao divisao real;
+#   - razoes por divisao INTEIRA truncada ((x << 15) // E), nao float;
+#   - log2 pela aproximacao de MITCHELL (a mesma de FFT_Log2_Compress.v),
+#     nao math.log2.
+# ===========================================================================
+
+Q15_MAX = (1 << 15) - 1
+
+
+def mag_amb_int(re_i: int, im_i: int) -> int:
+    """|X| por alpha-max-beta-min, com deslocamentos INTEIROS (FFT_Magnitude.v)."""
+    a, b = abs(int(re_i)), abs(int(im_i))
+    hi, lo = (a, b) if a >= b else (b, a)
+    return hi + (lo >> 2) + (lo >> 3)
+
+
+def mitchell_log2(m: int) -> int:
+    """log2 aproximado em Q1.15 (FFT_Log2_Compress.v): e*2048 + mantissa."""
+    if m <= 0:
+        return 0
+    v = m + 1
+    e = v.bit_length() - 1
+    frac = v - (1 << e)
+    mant = (frac << (11 - e)) if e <= 11 else (frac >> (e - 11))
+    return min((e << 11) + mant, Q15_MAX)
+
+
+def _razao_q15(num: int, den: int) -> int:
+    """(num << 15) // den com saturacao -- identico ao Divider_Q15."""
+    if den <= 0 or num >= den:
+        return Q15_MAX
+    return min((num << 15) // den, Q15_MAX)
+
+
+def features_espectrais_int(soma_bins) -> list:
+    """8 features espectrais a partir das SOMAS por bin dos 32 quadros.
+
+    soma_bins: lista de 32 inteiros (soma de |X[k]| ao longo dos quadros).
+    Devolve os 8 valores ja em Q1.15 inteiro, na ordem de NOMES[0:8].
+    """
+    spec = [int(s) >> 5 for s in soma_bins]          # media dos 32 quadros
+    E = sum(spec[1:32])
+    if E <= 0:
+        return [0] * 8
+    r1 = _razao_q15(spec[1], E)
+    r2 = _razao_q15(spec[2], E)
+    r3 = _razao_q15(spec[3], E)
+    b1 = _razao_q15(sum(spec[4:8]), E)
+    b2 = _razao_q15(sum(spec[8:16]), E)
+    b3 = _razao_q15(sum(spec[16:32]), E)
+    log2E = mitchell_log2(E)
+    # centroide = (sum(i*spec[i]) / E) / 32  ->  (sum << 10) // E
+    s_pond = sum(i * spec[i] for i in range(1, 32))
+    centro = Q15_MAX if E <= 0 else min((s_pond << 10) // E, Q15_MAX)
+    return [r1, r2, r3, b1, b2, b3, log2E, centro]
