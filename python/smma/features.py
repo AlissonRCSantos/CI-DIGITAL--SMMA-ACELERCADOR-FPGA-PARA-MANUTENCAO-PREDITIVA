@@ -34,10 +34,12 @@ As 12 caracteristicas
                   baixo; impulsivo/banda larga (rolamento) -> residuo alto.
 
   Estimacao matricial / Yule-Walker (3)
-      9  a1
-      10 a2       coeficientes AR(3), obtidos resolvendo R a = r
-      11 a3       (a mesma conta que autocorrelacao_yw + gauss_jordan_inv
-                   fazem no hardware)
+      9  rho1
+      10 rho2     autocorrelacoes normalizadas r[k]/r[0] -- a saida direta do
+      11 rho3     autocorrelacao_yw.v, que monta a matriz da etapa matricial.
+                  Medido: usa-las no lugar dos coeficientes AR(3) melhora a
+                  acuracia (0,9331 contra 0,9269), reduz a arvore e dispensa
+                  resolver o sistema 3x3 no hardware.
 
 Formato numerico: todas as features sao levadas para Q1.15 com sinal
 (-1.0 .. +0.99997), que e o formato ja usado por FFT, LMS e CNN.
@@ -48,7 +50,7 @@ import config as C
 
 N_FEATURES = 12
 NOMES = ["r_1x", "r_2x", "r_3x", "r_banda1", "r_banda2", "r_banda3",
-         "log2E", "centroide", "r_lms", "a1", "a2", "a3"]
+         "log2E", "centroide", "r_lms", "rho1", "rho2", "rho3"]
 
 Q = 1 << C.FRAC                 # 32768
 ORDEM_AR = 3                    # AR(3) -> matriz 3x3 (cabe no limite 4x4 do PBL)
@@ -150,8 +152,12 @@ def extrai(sinal_decimado: np.ndarray, mags: np.ndarray,
     seg = sinal_decimado[a:b]
     # espectrais: aritmetica inteira identica ao hardware, devolvida em
     # Q1.15 inteiro -> converte para float na mesma escala das demais
-    esp = [v / Q for v in features_espectrais_int(soma)]
-    return esp + [_feature_lms(seg)] + _features_ar(seg)
+    # Tudo em aritmetica inteira identica ao hardware; converte para float
+    # na mesma escala Q1.15 para alimentar o sklearn.
+    segi = [int(v) for v in seg]
+    esp  = features_espectrais_int(soma)
+    temp = [feature_lms_int(segi)] + features_autocorr_int(segi)
+    return [v / Q for v in (esp + temp)]
 
 
 def para_q15(F: np.ndarray) -> np.ndarray:
@@ -222,3 +228,148 @@ def features_espectrais_int(soma_bins) -> list:
     s_pond = sum(i * spec[i] for i in range(1, 32))
     centro = Q15_MAX if E <= 0 else min((s_pond << 10) // E, Q15_MAX)
     return [r1, r2, r3, b1, b2, b3, log2E, centro]
+
+
+# ===========================================================================
+# FEATURES TEMPORAIS -- aritmetica identica ao Feature_Temporal.v
+# ---------------------------------------------------------------------------
+# Substituem _feature_lms() e _features_ar(), que usavam float e algebra
+# exata (lstsq / linalg.solve) e por isso NAO correspondiam ao que o hardware
+# calcula.
+#
+# AR -> AUTOCORRELACAO: medido no dataset, trocar os coeficientes AR(3) pelas
+# autocorrelacoes normalizadas rho1..rho3 melhora a acuracia (0,9331 contra
+# 0,9269), reduz a arvore (141 contra 149 nos) e dispensa a resolucao do
+# sistema 3x3. As autocorrelacoes sao exatamente a saida do autocorrelacao_yw,
+# ou seja, continuam vindo da etapa de estimacao matricial exigida pelo 3.5 --
+# o que saiu foi o solver, nao a origem do dado.
+# ===========================================================================
+
+MU_SHIFT = 3          # mu = 2^-3, igual ao LMS_Filter_Top
+N_LAGS   = 3          # rho1, rho2, rho3
+
+
+def _sat16(v: int) -> int:
+    return max(-32768, min(32767, int(v)))
+
+
+def _mult_q15(a: int, b: int) -> int:
+    """Q1.15 x Q1.15 -> Q1.15, meio-para-cima e saturacao (FP_Mult_Unit.v)."""
+    return _sat16((int(a) * int(b) + (1 << 14)) >> 15)
+
+
+def feature_lms_int(x) -> int:
+    """Residuo do preditor LMS de 8 taps, em Q1.15 inteiro.
+
+    Mesmo algoritmo do LMS_Filter_Top (8 taps, mu = 2^-3), com o filtro
+    predizendo x[n] a partir de x[n-1..n-8]. Devolve E[e^2]/E[x^2].
+
+    Medido no dataset, o sentido e o CONTRARIO do que a intuicao sugere:
+    falha de ROLAMENTO da residuo BAIXO (~19500) e estado NORMAL da residuo
+    ALTO (~32100). Depois do FIR de 1,4 kHz e da decimacao x8, o toque de
+    ressonancia do rolamento sobra como um sinal oscilatorio, bem previsivel
+    por um preditor linear; o estado normal e ruido de banda larga de baixa
+    amplitude, que o preditor nao acompanha.
+
+    O historico comeca ZERADO e so recebe x[n] depois de ser usado, de modo
+    que a iteracao n=1 prediz com historico nulo -- x[0] nao entra no
+    preditor. O Feature_Temporal.v reproduz isso com uma historia separada
+    para a autocorrelacao, que ao contrario do preditor usa x[0].
+    """
+    taps = N_TAPS_LMS
+    w = [0] * taps
+    hist = [0] * taps                 # hist[i] = x[n-1-i]
+    se2 = 0
+    sd2 = 0
+    for n in range(1, len(x)):
+        d = _sat16(x[n])
+        y = 0
+        for i in range(taps):
+            y = _sat16(y + _mult_q15(w[i], hist[i]))
+        e = _sat16(d - y)
+        es = e >> MU_SHIFT                       # deslocamento aritmetico
+        for i in range(taps):
+            w[i] = _sat16(w[i] + _mult_q15(es, hist[i]))
+        se2 += e * e
+        sd2 += d * d
+        hist = [d] + hist[:-1]
+    if sd2 <= 0 or se2 >= sd2:
+        return Q15_MAX
+    return min((se2 << 15) // sd2, Q15_MAX)
+
+
+def features_autocorr_int(x) -> list:
+    """rho1..rho3 em Q1.15 inteiro: autocorrelacao normalizada por r[0].
+
+    r[k] = sum x[n]*x[n-k]; rho[k] = r[k]/r[0]. O sinal e tratado fora do
+    divisor (que e sem sinal), exatamente como no hardware.
+    """
+    xi = [int(v) for v in x]
+    r0 = sum(v * v for v in xi)
+    if r0 <= 0:
+        return [0] * N_LAGS
+    out = []
+    for k in range(1, N_LAGS + 1):
+        rk = sum(xi[n] * xi[n - k] for n in range(k, len(xi)))
+        neg = rk < 0
+        mag = min((abs(rk) << 15) // r0, Q15_MAX)
+        out.append(-mag if neg else mag)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Versoes VETORIZADAS (mesma aritmetica, todas as janelas de uma vez).
+#
+# As funcoes escalares acima definem o contrato e sao a referencia; estas
+# existem so por desempenho -- em Python puro, 27 mil janelas x 1056 amostras
+# x 8 taps nao termina em tempo util. Um teste compara as duas.
+# ---------------------------------------------------------------------------
+
+def _sat16_np(v):
+    return np.clip(v, -32768, 32767)
+
+
+def _mult_q15_np(a, b):
+    return _sat16_np((a * b + (1 << 14)) >> 15)
+
+
+def feature_lms_batch(segs: np.ndarray) -> np.ndarray:
+    """r_lms para um lote de janelas (W, L) -> (W,) em Q1.15 inteiro."""
+    segs = segs.astype(np.int64)
+    W, L = segs.shape
+    taps = N_TAPS_LMS
+    w = np.zeros((W, taps), np.int64)
+    hist = np.zeros((W, taps), np.int64)
+    se2 = np.zeros(W, np.int64)
+    sd2 = np.zeros(W, np.int64)
+    for n in range(1, L):
+        d = _sat16_np(segs[:, n])
+        y = np.zeros(W, np.int64)
+        for i in range(taps):
+            y = _sat16_np(y + _mult_q15_np(w[:, i], hist[:, i]))
+        e = _sat16_np(d - y)
+        es = e >> MU_SHIFT
+        for i in range(taps):
+            w[:, i] = _sat16_np(w[:, i] + _mult_q15_np(es, hist[:, i]))
+        se2 += e * e
+        sd2 += d * d
+        hist = np.concatenate([d[:, None], hist[:, :-1]], axis=1)
+    out = np.full(W, Q15_MAX, np.int64)
+    ok = (sd2 > 0) & (se2 < sd2)
+    out[ok] = np.minimum((se2[ok] << 15) // sd2[ok], Q15_MAX)
+    return out
+
+
+def features_autocorr_batch(segs: np.ndarray) -> np.ndarray:
+    """rho1..rho3 para um lote (W, L) -> (W, 3) em Q1.15 inteiro."""
+    segs = segs.astype(np.int64)
+    W, L = segs.shape
+    r0 = (segs * segs).sum(axis=1)
+    out = np.zeros((W, N_LAGS), np.int64)
+    for k in range(1, N_LAGS + 1):
+        rk = (segs[:, k:] * segs[:, :L - k]).sum(axis=1)
+        mag = np.zeros(W, np.int64)
+        ok = r0 > 0
+        mag[ok] = np.minimum((np.abs(rk[ok]) << 15) // r0[ok], Q15_MAX)
+        out[:, k - 1] = np.where(rk < 0, -mag, mag)
+    return out

@@ -72,15 +72,25 @@ def main():
 
         cont = {}
         for parte, (ini, fim) in faixas.items():
-            Xs = []
             # uma decisao a cada PASSO_IMAGEM quadros, cobrindo NQUADROS
-            for i0 in range(ini, fim - C.NQUADROS + 1, C.PASSO_IMAGEM):
-                Xs.append(F.extrai(sinal, mags, i0, C.NQUADROS))
-            cont[parte] = len(Xs)
-            if Xs:
-                out[parte][0].append(np.asarray(Xs, dtype=np.float64))
-                out[parte][1].append(np.full(len(Xs), cls, np.int8))
-                out[parte][2].append(np.full(len(Xs), gi, np.int16))
+            i0s = list(range(ini, fim - C.NQUADROS + 1, C.PASSO_IMAGEM))
+            cont[parte] = len(i0s)
+            if not i0s:
+                continue
+            # espectrais: por janela (barato)
+            esp = np.array([F.features_espectrais_int(
+                                mags[i0:i0 + C.NQUADROS].astype(np.int64).sum(axis=0))
+                            for i0 in i0s], dtype=np.int64)
+            # temporais: em LOTE -- o LMS tem 8 taps por amostra e em Python
+            # escalar nao terminaria em tempo util
+            L = (C.NQUADROS - 1) * C.HOP + C.NFFT
+            segs = np.stack([sinal[i0*C.HOP:i0*C.HOP + L] for i0 in i0s]).astype(np.int64)
+            lms = F.feature_lms_batch(segs)[:, None]
+            rho = F.features_autocorr_batch(segs)
+            Xs = np.hstack([esp, lms, rho]) / (1 << C.FRAC)
+            out[parte][0].append(np.asarray(Xs, dtype=np.float64))
+            out[parte][1].append(np.full(len(Xs), cls, np.int8))
+            out[parte][2].append(np.full(len(Xs), gi, np.int16))
 
         print(f"{nome:<26} classe={C.CLASSES[cls]:<16} "
               f"treino={cont['treino']:4d} valid={cont['valid']:3d} "

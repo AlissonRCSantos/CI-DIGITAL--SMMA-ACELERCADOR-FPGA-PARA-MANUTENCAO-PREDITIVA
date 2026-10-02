@@ -11,52 +11,52 @@ Conjunto de teste: 4021 janelas -- as MESMAS da CNN.
 |---|---|---|---|
 | 3 | 9 | 0.8093 | 0.8444 |
 | 4 | 13 | 0.8093 | 0.8444 |
-| 5 | 21 | 0.8335 | 0.8571 |
-| 6 | 37 | 0.9076 | 0.8615 |
-| 7 | 65 | 0.8914 | 0.8847 |
-| 8 | 103 | 0.9171 | 0.8990 |
-| 9 | 149 | 0.9390 | 0.9307 |
-| 10 | 207 | 0.9346 | 0.9207 |
-| 11 | 281 | 0.9506 | 0.9333 |
-| 12 | 359 | 0.9511 | 0.9337 |
+| 5 | 21 | 0.8356 | 0.8602 |
+| 6 | 37 | 0.8762 | 0.9126 |
+| 7 | 65 | 0.9403 | 0.9064 |
+| 8 | 101 | 0.9310 | 0.9244 |
+| 9 | 141 | 0.9480 | 0.9252 |
+| 10 | 189 | 0.9467 | 0.9344 |
+| 11 | 237 | 0.9514 | 0.9341 |
+| 12 | 291 | 0.9529 | 0.9324 |
 
 ## Arvore x SVM-RBF (conjunto de teste)
 
 | Modelo | Acuracia | Balanceada | Mult/decisao | Latencia (ciclos) | Memoria |
 |---|---|---|---|---|---|
-| Arvore de decisao | 0.9378 | 0.9124 | **0** | 12 | 1436 B |
-| SVM-RBF | 0.9637 | 0.9602 | 22008 | ~22008 | 44016 B |
+| Arvore de decisao | 0.9376 | 0.9131 | **0** | 10 | 756 B |
+| SVM-RBF | 0.9624 | 0.9541 | 22452 | ~22452 | 44904 B |
 
-- Arvore: 359 nos, profundidade 12
-- SVM: 1834 vetores de suporte x 12 features
+- Arvore: 189 nos, profundidade 10
+- SVM: 1871 vetores de suporte x 12 features
 
 ## Modelo escolhido: arvore de decisao
 
-Profundidade 9, 149 nos (74 internos,
-75 folhas), 596 bytes de ROM.
+Profundidade 9, 141 nos (70 internos,
+71 folhas), 564 bytes de ROM.
 
 | | Acuracia | Balanceada |
 |---|---|---|
-| float (sklearn) | 0.9269 | 0.9069 |
-| Q1.15 (= FPGA) | 0.9276 | 0.9073 |
+| float (sklearn) | 0.9321 | 0.9006 |
+| Q1.15 (= FPGA) | 0.9321 | 0.9009 |
 
-Float e ponto fixo discordam em 0.075% das janelas.
+Float e ponto fixo discordam em 0.149% das janelas.
 
 ### Acerto por carga (comparado a CNN nas MESMAS janelas)
 
 | Carga | Arvore acc | Arvore bal | CNN acc | CNN bal |
 |---|---|---|---|---|
-| 0 Nm | 0.9718 | 0.9723 | 0.8930 | 0.8940 |
-| 2 Nm | 0.9408 | 0.9407 | 0.8560 | 0.8450 |
-| 4 Nm | 0.8645 | 0.7247 | 0.7380 | 0.6490 |
+| 0 Nm | 0.9725 | 0.9727 | 0.8930 | 0.8940 |
+| 2 Nm | 0.9354 | 0.9134 | 0.8560 | 0.8450 |
+| 4 Nm | 0.8832 | 0.7191 | 0.7380 | 0.6490 |
 
 ### Matriz de confusao (Q1.15)
 
 | real \ predito | normal | desbalanceamento | desalinhamento | rolamento | acerto |
 |---|---|---|---|---|---|
-| **normal** | 369 | 113 | 11 | 0 | 74.8% |
-| **desbalanceamento** | 75 | 1492 | 53 | 0 | 92.1% |
-| **desalinhamento** | 23 | 16 | 933 | 0 | 96.0% |
+| **normal** | 347 | 133 | 13 | 0 | 70.4% |
+| **desbalanceamento** | 73 | 1546 | 1 | 0 | 95.4% |
+| **desalinhamento** | 10 | 43 | 919 | 0 | 94.5% |
 | **rolamento** | 0 | 0 | 0 | 936 | 100.0% |
 
 ### Recursos
@@ -64,7 +64,7 @@ Float e ponto fixo discordam em 0.075% das janelas.
 | | Arvore |
 |---|---|
 | Multiplicadores (DSP) | **0** -- so comparacoes |
-| Memoria | 596 B (ROM de nos) |
+| Memoria | 564 B (ROM de nos) |
 | Latencia | 12 ciclos de carga + 2 por nivel; medido 21 ciclos (420 ns @ 50 MHz) |
 | Entradas | 12 features Q1.15 |
 | Saidas | 2 bits (classe) + valid |
