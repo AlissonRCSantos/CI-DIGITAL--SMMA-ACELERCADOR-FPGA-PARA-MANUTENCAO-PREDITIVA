@@ -9,10 +9,21 @@
 #   ./run_regressao.sh              roda tudo
 #   ./run_regressao.sh tb_FFT_Top   roda so os testbenches cujo nome casa
 #
-# Um testbench e considerado APROVADO quando a saida contem "PASSARAM COM
-# SUCESSO" e NAO contem "[FAIL]". Exigir as duas coisas e deliberado: ha
-# testbenches que imprimem o resumo de sucesso mesmo tendo acusado falhas
-# individuais antes, e so o resumo enganaria.
+# As branches de origem trouxeram MEIA DUZIA de convencoes de resumo
+# diferentes ("PASSARAM COM SUCESSO", "[CONGRATS]", "TESTES PASSARAM",
+# "SUCCESS: All operations verified", "VALIDADA", ...). Perseguir cada
+# redacao e perder tempo e, pior, marcar como falha um teste que passou.
+#
+# Um testbench e APROVADO quando as TRES condicoes valem:
+#   (a) nenhuma linha COMECA com um marcador de falha;
+#   (b) todo contador explicito de falhas que ele imprima e zero;
+#   (c) aparece alguma frase de sucesso.
+#
+# Nenhuma basta sozinha. (a) e (b) sem (c) aprovariam um teste que travou
+# antes de concluir; (c) sem (a) aprovaria um que imprime o resumo de sucesso
+# mesmo tendo acusado falhas antes. E o marcador de (a) tem de ser casado no
+# INICIO da linha: o tb_FP_Mult_Unit imprime o rotulo "Failures ([FAIL]) : 0",
+# que uma busca solta por "[FAIL]" conta como falha.
 # ============================================================================
 set -u
 
@@ -60,28 +71,74 @@ for tb in "${TBS[@]}"; do
 
     if ! iverilog -g2005 -o "$OUT/$nome.vvp" -s "$nome" \
             "$tb" "${FONTES[@]}" > "$log" 2>&1; then
-        printf "%-32s %-10s %s\n" "$nome" "ERRO" "nao compila (ver log)"
-        n_erro=$((n_erro+1)); FALHARAM+=("$nome: compilacao")
-        sed -n '1,4p' "$log" | sed 's/^/      /'
-        continue
+
+        # Alguns testbenches antigos dependem de modulos que so existem em
+        # arquivos com espaco e parentese no nome ("gauss_jordan_inv (2).v",
+        # "fixed_point_divider (1).v"), fora da lista de fontes porque
+        # duplicariam modulos. Se o erro foi modulo faltando, tenta de novo
+        # incluindo-os -- assim esses testbenches rodam sem precisar que o
+        # repositorio seja renomeado.
+        if grep -q 'Unknown module type' "$log"; then
+            EXTRA=()
+            while IFS= read -r f; do EXTRA+=("$f"); done < <(ls *.v | grep ' ')
+            if [ ${#EXTRA[@]} -gt 0 ] && iverilog -g2005 -o "$OUT/$nome.vvp" \
+                    -s "$nome" "$tb" "${FONTES[@]}" "${EXTRA[@]}" > "$log" 2>&1
+            then
+                : # compilou na segunda tentativa
+            else
+                printf "%-32s %-10s %s\n" "$nome" "ERRO" "nao compila (ver log)"
+                n_erro=$((n_erro+1)); FALHARAM+=("$nome: compilacao")
+                sed -n '1,4p' "$log" | sed 's/^/      /'
+                continue
+            fi
+        else
+            printf "%-32s %-10s %s\n" "$nome" "ERRO" "nao compila (ver log)"
+            n_erro=$((n_erro+1)); FALHARAM+=("$nome: compilacao")
+            sed -n '1,4p' "$log" | sed 's/^/      /'
+            continue
+        fi
     fi
 
-    # Teto de tempo: o teste ponta a ponta leva minutos; os de bloco, segundos.
-    if ! timeout 3600 vvp "$OUT/$nome.vvp" >> "$log" 2>&1; then
+    # Teto de tempo: 300 s. O teste ponta a ponta, o mais demorado, leva ~120 s;
+    # os de bloco, segundos.
+    #
+    # O '-k 5' e o '< /dev/null' nao sao zelo excessivo, sao necessarios. Um
+    # testbench que chama $stop (o tb_autocorrelacao_yw chama) deixa o vvp num
+    # PROMPT INTERATIVO, e ali ele IGNORA o SIGTERM que o timeout manda: sem o
+    # -k, que manda SIGKILL depois da carencia, a regressao inteira fica presa
+    # nele indefinidamente -- foram 54 minutos num teto nominal de 5. O stdin
+    # em /dev/null faz esse prompt receber EOF em vez de esperar digitacao.
+    if ! timeout -k 5 ${TETO:-300} vvp "$OUT/$nome.vvp" >> "$log" 2>&1 < /dev/null; then
         printf "%-32s %-10s %s\n" "$nome" "ERRO" "estourou o tempo ou abortou"
         n_erro=$((n_erro+1)); FALHARAM+=("$nome: execucao")
         continue
     fi
 
-    n_fail=$(grep -c '\[FAIL\]' "$log" || true)
-    if grep -q 'PASSARAM COM SUCESSO' "$log" && [ "$n_fail" -eq 0 ]; then
-        n_ok_tb=$(grep -c '\[PASS\]' "$log" || true)
+    RE_FALHA='^[[:space:]]*(>>>[[:space:]]*)?\[(FAIL|ERRO|ERR|FALHA)'
+    RE_SUCESSO='PASSARAM|PASSOU|TESTS? PASSED|\[CONGRATS\]|SUCCESS|SUCESSO|VALIDAD|CONVERGIU'
+
+    n_fail=$(grep -cE "$RE_FALHA" "$log" || true)
+
+    # Contadores explicitos de falha, em qualquer das redacoes usadas
+    # ("Falhas: N", "Falhas Detectadas: N", "Failures ([FAIL]) : N").
+    # Toma-se o MAIOR: se o testbench imprime mais de um, basta um nao-zero.
+    n_cont=$(sed -nE 's/.*(Falhas|Failures)[^0-9]*([0-9]+).*/\2/p' "$log" \
+             | sort -rn | head -1)
+    [ -z "$n_cont" ] && n_cont=0
+
+    if grep -qE "$RE_SUCESSO" "$log" && [ "$n_fail" -eq 0 ] && [ "$n_cont" -eq 0 ]; then
+        n_ok_tb=$(grep -cE '^[[:space:]]*\[(PASS|OK| OK )' "$log" || true)
         printf "%-32s %-10s %s\n" "$nome" "OK" "$n_ok_tb verificacao(oes)"
         n_ok=$((n_ok+1))
     else
-        printf "%-32s %-10s %s\n" "$nome" "FALHOU" "$n_fail ocorrencia(s) de [FAIL]"
-        n_falha=$((n_falha+1)); FALHARAM+=("$nome: $n_fail falha(s)")
-        grep -m 3 '\[FAIL\]' "$log" | sed 's/^/      /'
+        if ! grep -qE "$RE_SUCESSO" "$log"; then
+            det="sem resumo de sucesso"
+        else
+            det="$((n_fail + n_cont)) falha(s)"
+        fi
+        printf "%-32s %-10s %s\n" "$nome" "FALHOU" "$det"
+        n_falha=$((n_falha+1)); FALHARAM+=("$nome: $det")
+        grep -m 3 -E "$RE_FALHA" "$log" | sed 's/^/      /' || true
     fi
 done
 

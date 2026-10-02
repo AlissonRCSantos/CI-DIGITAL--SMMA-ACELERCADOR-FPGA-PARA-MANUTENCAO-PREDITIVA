@@ -144,6 +144,15 @@ chegar a qualquer FSM; é isso que trata a metaestabilidade, não o `false_path`
   nenhum número de ALMs, DSPs ou M10K foi verificado por síntese. O orçamento
   de DSPs foi planejado (4 na FFT, 8 na CNN, 1 em cada extrator de features),
   mas confirme no relatório do Fitter.
+- **`tb_LMS_Control_FSM` falha** (8 divergências de contador, a partir da 6).
+  É falha **pré-existente** da branch `feat/LMS`, não introduzida aqui. O
+  `LMS_Control_FSM` está **fora do caminho de dados entregue**: não aparece no
+  `SMMA_Top.v` nem neste `.qsf`, porque o `Feature_Temporal.v` reimplementa o
+  preditor LMS internamente (8 taps, μ=2⁻³) com sua própria FSM. O
+  `tb_LMS_Filter_Top`, que instancia essa mesma FSM, passa — então vale
+  investigar se a divergência é do módulo ou do testbench antes de confiar no
+  `LMS_Filter_Top.v` para outro uso.
+
 - `RTL/tb_pipeline_completo.v` testa a cadeia AR (`autocorrelacao_yw` +
   `gauss_jordan_inv`), que **saiu do caminho de dados** quando ρ1..ρ3
   substituíram os coeficientes AR. Os dois módulos continuam no repositório e
