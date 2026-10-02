@@ -2,13 +2,10 @@
 
 // =====================================================================
 // tb_autocorrelacao_yw.v
-//
 // Testbench focado exclusivamente na validação do módulo autocorrelacao_yw.
 // Lê 64 amostras do arquivo amostras_lms.txt (formato Hex Q4.12),
 // envia sequencialmente para o DUT e exibe os resultados dos lags r[0..4]
 // tanto em hexadecimal quanto em valores reais (ponto flutuante).
-//
-// USO: Apenas para simulação (ModelSim / EDA Playground / Icarus Verilog).
 // =====================================================================
 
 module tb_autocorrelacao_yw();
