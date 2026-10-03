@@ -127,7 +127,17 @@ for tb in "${TBS[@]}"; do
     [ -z "$n_cont" ] && n_cont=0
 
     if grep -qE "$RE_SUCESSO" "$log" && [ "$n_fail" -eq 0 ] && [ "$n_cont" -eq 0 ]; then
-        n_ok_tb=$(grep -cE '^[[:space:]]*\[(PASS|OK| OK )' "$log" || true)
+        # Quantas verificacoes o testbench fez. Conta os marcadores de
+        # sucesso e tambem o contador explicito, quando existe: o
+        # tb_FP_Mult_Unit confere 2005 operacoes e imprime so o total, sem uma
+        # linha por operacao -- contar apenas marcadores mostraria "0
+        # verificacoes" num teste que fez milhares.
+        n_marc=$(grep -cE '^[[:space:]]*(>>>[[:space:]]*)?\[[[:space:]]*(PASS|OK)' "$log" || true)
+        n_decl=$(sed -nE 's/.*(Sucessos|Successes)[^0-9]*([0-9]+).*/\2/p' "$log" \
+                 | sort -rn | head -1)
+        [ -z "$n_decl" ] && n_decl=0
+        n_ok_tb=$n_marc
+        [ "$n_decl" -gt "$n_ok_tb" ] && n_ok_tb=$n_decl
         printf "%-32s %-10s %s\n" "$nome" "OK" "$n_ok_tb verificacao(oes)"
         n_ok=$((n_ok+1))
     else

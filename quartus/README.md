@@ -153,10 +153,15 @@ chegar a qualquer FSM; é isso que trata a metaestabilidade, não o `false_path`
   investigar se a divergência é do módulo ou do testbench antes de confiar no
   `LMS_Filter_Top.v` para outro uso.
 
-- `RTL/tb_pipeline_completo.v` testa a cadeia AR (`autocorrelacao_yw` +
-  `gauss_jordan_inv`), que **saiu do caminho de dados** quando ρ1..ρ3
-  substituíram os coeficientes AR. Os dois módulos continuam no repositório e
-  o testbench está quebrado; nenhum dos dois entra no `SMMA.qsf`.
+- **Os dois testbenches da cadeia AR travam** (`tb_autocorrelacao_yw` e
+  `tb_pipeline_completo`): chamam `$stop`, que deixa o simulador num prompto
+  interativo e nunca retorna. O `run_regressao.sh` os corta no teto de tempo e
+  os reporta como pendência. Essa cadeia (`autocorrelacao_yw` +
+  `gauss_jordan_inv`) **saiu do caminho de dados** quando ρ1..ρ3 substituíram
+  os coeficientes AR; nenhum dos dois entra no `SMMA.qsf`.
+
+Resultado atual da regressão: **27 dos 30 testbenches passam**. As três
+pendências são as listadas acima, todas fora do caminho de dados sintetizado.
 - Arquivos com espaço e parêntese no nome (`gauss_jordan_inv (2).v`,
   `fixed_point_divider (1).v`) são cópias de trabalho; o `run_regressao.sh` os
   ignora e o `.qsf` não os inclui.

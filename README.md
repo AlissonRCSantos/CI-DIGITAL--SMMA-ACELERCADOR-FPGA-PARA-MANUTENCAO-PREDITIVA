@@ -157,11 +157,16 @@ alcançar sinal interno, e exige que a árvore em hardware reproduza o modelo na
 O `run_sim.sh` é para Cadence Xcelium (laboratório); o `run_regressao.sh`
 depende só do `iverilog`.
 
-**Pendência conhecida:** o `tb_LMS_Control_FSM` falha (8 divergências de
-contador), falha pré-existente da branch `feat/LMS`. O módulo está **fora do
-caminho de dados**: o `Feature_Temporal.v` reimplementa o preditor LMS com sua
-própria FSM, e nem o `SMMA_Top.v` nem o projeto Quartus instanciam
-`LMS_Control_FSM`.
+**Estado atual: 27 dos 30 testbenches passam.** As três pendências estão todas
+**fora do caminho de dados** sintetizado:
+
+- `tb_LMS_Control_FSM` falha (8 divergências de contador), falha pré-existente
+  da branch `feat/LMS`. O `Feature_Temporal.v` reimplementa o preditor LMS com
+  sua própria FSM, e nem o `SMMA_Top.v` nem o projeto Quartus instanciam
+  `LMS_Control_FSM`.
+- `tb_autocorrelacao_yw` e `tb_pipeline_completo` travam: chamam `$stop`, que
+  deixa o simulador num prompt interativo. Testam a cadeia AR, que saiu do
+  projeto com a troca para ρ1..ρ3.
 
 ---
 
