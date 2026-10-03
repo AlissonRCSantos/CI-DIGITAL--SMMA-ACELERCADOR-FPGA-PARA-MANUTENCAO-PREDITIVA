@@ -105,6 +105,7 @@ Três cargas: 0, 2 e 4 N·m, a 3010 RPM.
 ## Mapa do repositório
 
 ```
+docs/             mapa das interfaces e ordem de teste
 RTL/              Verilog + testbenches + vetores de teste
 RTL/vetores/      .hex: dataset da demo, árvore, coeficientes, vetores
 quartus/          projeto Quartus (.qpf/.qsf/.sdc) e guia de migração
@@ -113,6 +114,9 @@ python/smma/      modelo de referência bit-exato com o hardware
 dados/            dados processados (gerados pelos scripts)
 dataset/          .mat originais
 ```
+
+Para as **entradas e saídas de cada módulo** e a **ordem recomendada de teste
+no Quartus**, ver [docs/interfaces-e-ordem-de-teste.md](docs/interfaces-e-ordem-de-teste.md).
 
 ### Blocos em `RTL/`
 

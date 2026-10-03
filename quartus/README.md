@@ -24,6 +24,10 @@ justamente para que essa importação case sem renomear nada.
 
 ---
 
+O documento [../docs/interfaces-e-ordem-de-teste.md](../docs/interfaces-e-ordem-de-teste.md)
+traz as interfaces de todos os módulos e a **ordem de etapas** para levá-los ao
+Quartus de baixo para cima, com a porta de passagem de cada uma.
+
 ## Compilar
 
 ```bash
