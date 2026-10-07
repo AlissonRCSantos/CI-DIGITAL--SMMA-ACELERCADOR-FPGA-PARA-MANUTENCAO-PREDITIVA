@@ -58,13 +58,6 @@ export_vibration_mat('vibração/4Nm_Normal.mat', ...
 
 O último `64` limita a exportação a uma janela de FFT. O argumento `1` seleciona Point1 tanto como `sample_x` quanto como `sample_d`. Para transmitir todos os dados do arquivo, troque `64` por `0`; para selecionar canais diferentes, altere os argumentos terceiro e quarto. O script informa a taxa, canais e quantidade de amostras saturadas.
 
-O testbench `RTL/tb_smma_dataset.v` lê `integration/data/vibration_input.hex` com `$readmemh`. Cada palavra tem `sample_x` nos 16 bits baixos e `sample_d` nos 16 bits altos. Para cada palavra, aguarda `sample_ready` e mantém `sample_start=sample_valid=1` por um ciclo. O parâmetro `SAMPLE_COUNT` define quantas amostras lê (64 por padrão). Compile e rode a partir de `integration/RTL`:
-
-```sh
-iverilog -g2012 -s tb_smma_dataset -o tb_smma.out -f filelist.f tb_smma_dataset.v
-vvp tb_smma.out
-```
-
-O top recolhe 64 saídas LMS, executa a FFT e sinaliza `analysis_done`; configure `sample_rate_hz=25600`. No FPGA físico, uma interface de aquisição deve fornecer as amostras pela mesma interface `sample_*`; o arquivo MATLAB não é lido pelo hardware.
+Para simular, o testbench deve ler `integration/data/vibration_input.hex` com `$readmemh`. Cada palavra tem `sample_x` nos 16 bits baixos e `sample_d` nos 16 bits altos. Para cada palavra, aguarde `sample_ready`, mantenha `sample_start=sample_valid=1` por um ciclo e avance o índice. O top recolhe 64 saídas LMS, executa a FFT e sinaliza `analysis_done`; configure `sample_rate_hz=25600`. No FPGA físico, uma interface de aquisição deve fornecer as amostras pela mesma interface `sample_*`; o arquivo MATLAB não é lido pelo hardware.
 
 O `FFT_Top` integrado processa diretamente os 64 valores recebidos a 25,6 kHz (bin de 400 Hz). A entrada da CNN continua sendo independente: a branch `feat/CNN` define outra preparação para espectrograma — FIR de 63 taps, decimação ×8, FFT de 64 pontos com hop de 32, magnitude e compressão log2 — resultando em pixels 32×32 Q1.15. Esses 1024 pixels precisam ser gerados e enviados pela interface `cnn_*`; o top atual não contém esse pré-processamento. A documentação Python da branch associa seus CSVs a `x_A/y_A/x_B/y_B`, mas os MAT inspecionados identificam os canais apenas como Point1–Point4, então a correspondência física deve ser confirmada antes de fixar o canal para classificação.
