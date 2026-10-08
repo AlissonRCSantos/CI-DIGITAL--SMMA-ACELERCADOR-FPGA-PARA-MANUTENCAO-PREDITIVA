@@ -9,7 +9,8 @@ module SMMA_Top #(
     parameter FFT_LOG2N = 6,
     parameter FS_WIDTH = 20,
     parameter INV_FRAC = 12,
-    parameter signed [WIDTH-1:0] INV_EPSILON = 16'sd8
+    parameter signed [WIDTH-1:0] INV_EPSILON = 16'sd8,
+    parameter TREE_N_NODES = 141
 )(
     input wire clk,
     input wire reset,
@@ -36,6 +37,20 @@ module SMMA_Top #(
     output wire gcd_error,
     output wire analysis_busy,
     output reg analysis_done,
+
+    // Classificador por arvore: recebe 12 features Q1.15 em ordem definida
+    // pelo modelo treinado; este top nao calcula essas features internamente.
+    input wire tree_start,
+    input wire tree_feature_valid,
+    input wire signed [WIDTH-1:0] tree_feature,
+    output wire tree_feature_ready,
+    output wire tree_ready,
+    output wire tree_busy,
+    output wire tree_done,
+    input wire tree_class_ready,
+    output wire tree_class_valid,
+    output wire [1:0] tree_class,
+    output wire tree_error,
 
     // CNN: recebe diretamente os 1024 pixels do espectrograma (raster).
     input wire cnn_start,
@@ -138,6 +153,18 @@ module SMMA_Top #(
         .cfg_fs(sample_rate_hz), .out_valid(fundamental_valid),
         .out_ready(enable), .f0_int(fundamental_hz_int),
         .f0_frac(fundamental_hz_frac)
+    );
+
+    ML_Tree_Classifier #(
+        .WIDTH(WIDTH), .N_FEATURES(12), .N_NOS(TREE_N_NODES),
+        .PROF_MAX(9), .ARQ_ROM("vetores/arvore.hex")
+    ) u_tree_classifier (
+        .clk(clk), .rst(reset), .start(tree_start), .enable(enable),
+        .ready(tree_ready), .busy(tree_busy), .done(tree_done),
+        .in_valid(tree_feature_valid), .in_ready(tree_feature_ready),
+        .in_feature(tree_feature), .out_ready(tree_class_ready),
+        .out_valid(tree_class_valid), .out_class(tree_class),
+        .out_error(tree_error)
     );
 
     CNN_Top #(.WIDTH(WIDTH), .FRAC(FRAC)) u_cnn (

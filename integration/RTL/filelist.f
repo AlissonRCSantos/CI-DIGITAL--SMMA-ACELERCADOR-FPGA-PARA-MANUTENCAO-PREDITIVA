@@ -29,3 +29,4 @@ blocks/cnn/CNN_Top.v
 blocks/cnn/CNN_Weight_ROM.v
 blocks/inverse_matrix/fixed_point_divider.v
 blocks/inverse_matrix/gauss_jordan_inv.v
+blocks/tree/ML_Tree_Classifier.v

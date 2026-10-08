@@ -13,6 +13,10 @@
 
 O fluxo conectado é **LMS → buffer de 64 amostras → FFT → detector de picos → MDC → f0**. O top aceita uma amostra LMS por vez (`sample_start` e `sample_valid` juntos, quando `sample_ready` está alto). `analysis_done` sinaliza a conclusão da cadeia espectral e libera uma nova janela. Os bins de pico são transmitidos internamente com `valid/ready`; o bin fundamental e a frequência ficam nas saídas `fundamental_bin`, `fundamental_hz_int` e `fundamental_hz_frac`.
 
+O classificador de árvore da branch remota `top_level` foi incorporado como `ML_Tree_Classifier`, junto com sua ROM de 141 nós (`RTL/vetores/arvore.hex`). A interface `tree_*` do `SMMA_Top` recebe 12 features Q1.15 em sequência: `start` inicia, e cada palavra é aceita quando `tree_feature_valid && tree_feature_ready`. A saída é `tree_class` com `tree_class_valid`; mantenha `tree_class_ready` alto para consumir o resultado. `tree_error` indica percurso inválido.
+
+A ordem exigida pelo modelo é: 8 features espectrais (`r_1x`, `r_2x`, `r_3x`, três energias de banda, `log2E`, centroide) e 4 temporais (`r_lms`, `rho1`, `rho2`, `rho3`). O front-end atual ainda não calcula esse vetor de 12 features: FFT/MDC/f0 não substituem `Feature_Spectral` e `Feature_Temporal`. Por isso a árvore está integrada com sua interface de entrada correta, mas a fonte das 12 features ainda precisa ser conectada para obter classificação automática da janela.
+
 A CNN e o inversor também são instanciados no top, mas usam interfaces independentes. O PBL não especifica uma conversão direta das amostras/saídas LMS em espectrograma 32×32, nem define a matriz de estimação e sua origem. Portanto, o espectrograma é fornecido pela interface `cnn_*` e a matriz pela interface `inv_*`. A CNN espera 1024 pixels assinados Q1.15 em ordem raster; carregue todos os elementos de A antes de `inv_start`.
 
 ## Requisitos considerados
@@ -28,7 +32,7 @@ A CNN e o inversor também são instanciados no top, mas usam interfaces indepen
 
 ## Fontes e compilação
 
-As fontes originais foram preservadas em `RTL/blocks/` e copiadas diretamente das branches; `top_level` não foi usado. As unidades `FP_Arith_Unit` e `FP_Mult_Unit`, duplicadas nas branches de LMS e FFT, aparecem uma vez em `blocks/fixed_point/`.
+As fontes originais foram preservadas em `RTL/blocks/`. Da branch `top_level`, foram trazidos somente o classificador de árvore e sua ROM; o top-level completo daquela branch não foi reutilizado. As unidades `FP_Arith_Unit` e `FP_Mult_Unit`, duplicadas nas branches de LMS e FFT, aparecem uma vez em `blocks/fixed_point/`.
 
 Com Icarus Verilog, a partir de `integration/RTL`:
 
