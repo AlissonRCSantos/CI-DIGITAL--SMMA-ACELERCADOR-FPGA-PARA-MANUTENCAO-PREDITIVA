@@ -124,8 +124,8 @@ module Yule_Walker_Solver #(
     // ------------------------------------------------------------------------
     // Elemento R[i][j] da Toeplitz, no formato do inversor
     // ------------------------------------------------------------------------
-    wire [1:0] dist = (i > j) ? (i - j) : (j - i);
-    wire signed [WIDTH-1:0] rho_dist = rho[dist == 2'd0 ? 1 : dist];
+    wire [1:0] dist_ij = (i > j) ? (i - j) : (j - i);
+    wire signed [WIDTH-1:0] rho_dist = rho[dist_ij == 2'd0 ? 1 : dist_ij];
     // Q1.15 -> Q(W_INV-F_INV-1).F_INV : extensao de sinal + deslocamento
     wire signed [W_INV-1:0] rho_inv = $signed({{(W_INV-WIDTH){rho_dist[WIDTH-1]}}, rho_dist})
                                       <<< (F_INV - (WIDTH-1));
@@ -133,7 +133,7 @@ module Yule_Walker_Solver #(
     assign inv_valid_in  = (state == S_LOAD);
     assign inv_load_row  = i;
     assign inv_load_col  = j;
-    assign inv_load_data = (dist == 2'd0) ? UM : rho_inv;
+    assign inv_load_data = (dist_ij == 2'd0) ? UM : rho_inv;
     assign inv_start     = (state == S_START);
     assign inv_n         = ORDEM;
     assign inv_read_row  = i;

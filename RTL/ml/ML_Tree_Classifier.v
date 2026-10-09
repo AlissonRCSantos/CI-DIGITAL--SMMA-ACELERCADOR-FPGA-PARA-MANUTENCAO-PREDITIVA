@@ -24,7 +24,7 @@
 //   de 55 mil vezes menos que o orcamento de 10 ms por janela.
 //
 // ----------------------------------------------------------------------------
-// ENTRADAS: vetor de N_FEATURES caracteristicas em Q1.15 (Feature_Collector)
+// ENTRADAS: vetor de N_FEATURES caracteristicas em Q1.15 (Parameter_RegFile)
 // ----------------------------------------------------------------------------
 //   0-7   Da FFT          : r_1x, r_2x, r_3x, 3 energias de banda, log2 da
 //                           energia total e centroide espectral

@@ -4,9 +4,12 @@
 elétricos a partir do sinal de vibração, inteiramente em hardware, numa
 Cyclone V (DE0-CV, 50 MHz). PBL de Circuitos Digitais IV — CI Digital / CEPEDI.
 
-Todos os módulos pedidos no enunciado — **MDC, FFT, inversão de matriz, LMS,
-acelerador de ML e CNN**, além da interface de entrada, buffers, controle
-global, comunicação e interface de saída — são **instâncias reais** no
+A arquitetura segue o diagrama do grupo — **LMS na entrada → Data Bus Driver
+→ ramo FFT (MEM_A, FFT, MEM_B, detector de picos, Euclides) e ramo de
+estimação de parâmetros (acumulador de coeficientes, Gauss-Jordan) →
+Parameter RegFile → árvore de decisão** — completada com os blocos
+obrigatórios que faltavam: FIR anti-alias/decimação, estimador de f0, ramo
+CNN, controle global e interface de saída. Todos são instâncias reais no
 `SMMA_Top`, cada um em sua pasta.
 
 ![Arquitetura](docs/diagramas/SMMA_arquitetura.png)
@@ -22,11 +25,11 @@ global, comunicação e interface de saída — são **instâncias reais** no
 | 3.1 Módulo MDC | `peak_detector` → `mdc_gcd` → `f0_estimator` | `RTL/mdc` |
 | 3.2 Módulo FFT (64 pontos) | `FFT_Top` + 7 submódulos, `FFT_Log2_Compress` | `RTL/fft` |
 | 3.3 Inversão de matriz (≤ 4×4) | `autocorrelacao_yw` → `Yule_Walker_Solver` ↔ `gauss_jordan_inv` (+ `fixed_point_divider`) | `RTL/matriz` |
-| 3.4 Filtro LMS (8 coeficientes) | `LMS_Filter_Top` + 5 submódulos, `LMS_Residual_Feature` | `RTL/lms` |
-| 3.5 Acelerador de ML | `Feature_Spectral`, `Feature_Collector`, `ML_Tree_Classifier` | `RTL/ml` |
+| 3.4 Filtro LMS (8 coeficientes) | `LMS_Filter_Top` + 5 submódulos, `LMS_Stage` (em série) | `RTL/lms` |
+| 3.5 Acelerador de ML | `Feature_Spectral`, `Parameter_RegFile`, `ML_Tree_Classifier` | `RTL/ml` |
 | 3.6 Acelerador CNN | `CNN_Top` + 8 submódulos | `RTL/cnn` |
 | Controle global | `SMMA_Global_Control` | `RTL/top` |
-| Comunicação entre módulos | handshake `valid/ready` + `Stream_Fork` | `RTL/top` |
+| Comunicação entre módulos | `Data_Bus_Driver`, handshake `valid/ready` + `Stream_Fork` | `RTL/top` |
 | Interface de saída | `SMMA_Panel` | `RTL/top` |
 | Aritmética de ponto fixo | `FP_Mult_Unit`, `FP_Arith_Unit`, `Divider_Q15` | `RTL/comum` |
 
@@ -38,23 +41,25 @@ projeto): **[docs/ARQUITETURA.md](docs/ARQUITETURA.md)**.
 ## Pipeline
 
 ```
-Sample_Source (25,6 kHz) -> FIR_Decimator (/8 -> 3,2 kHz) -> Stream_Fork
-   ├── Frame_Builder -> FFT_Top -> Stream_Fork
-   │      ├── Spectrum_Accumulator -> Stream_Fork
-   │      │      ├── Feature_Spectral ................ 8 features ─┐
-   │      │      └── peak_detector -> mdc_gcd -> f0_estimator  f0 ─┤
-   │      └── FFT_Log2_Compress -> Spectrogram_Buffer -> CNN_Top ──┼──> classe CNN
-   ├── LMS_Residual_Feature <-> LMS_Filter_Top ........ r_lms ─────┤
-   └── autocorrelacao_yw ........................... rho1..3 ─────┤
-          └── Yule_Walker_Solver <-> gauss_jordan_inv .. a1..a3 ───┤
-                                                                   v
-                                Feature_Collector (16) -> ML_Tree_Classifier -> classe
-                 SMMA_Global_Control (start/ready/done)   SMMA_Panel (HEX, LEDR)
+Sample_Source (Xa, 25,6 kHz) -> FIR_Decimator (/8) -> LMS_Stage <-> LMS_Filter_Top -> Data_Bus_Driver
+                                                         | r_lms                        |
+   +--------------------------------------------------------------------------------------+
+   |  ramo FFT                                                       ramo de parâmetros  |
+   v                                                                                     v
+ MEM_A (Frame_Builder) -> FFT_Top -> MEM_B (Spectrum_Accumulator)        autocorrelacao_yw
+                            |          |-> Feature_Spectral (bandas BPFO/BPFI...)       |
+                            |          '-> peak_detector -> mdc_gcd -> f0_estimator      Yule_Walker_Solver
+                            |                                                           <-> gauss_jordan_inv
+                            '-> FFT_Log2_Compress -> Spectrogram_Buffer -> CNN_Top         |
+                                                                                           v
+                         Parameter_RegFile (16) <- bandas, f0, r_lms, rho, a1..a3 -> ML_Tree_Classifier
+                         SMMA_Global_Control (start/ready/done)  ->  SMMA_Panel (HEX, LEDR)
 ```
 
-Os dois classificadores — **árvore de decisão** sobre as características e
-**CNN** sobre o espectrograma — decidem sobre a **mesma janela** e aparecem
-lado a lado no painel.
+O LMS é um estágio **em série**: toda amostra o atravessa antes do barramento.
+O barramento repassa a amostra filtrada pelo FIR (`SAIDA_LMS = 0`), com que os
+modelos foram treinados; o LMS contribui com a característica `r_lms`. Ver
+[docs/ARQUITETURA.md §3](docs/ARQUITETURA.md).
 
 ## Resultados (partição de teste)
 

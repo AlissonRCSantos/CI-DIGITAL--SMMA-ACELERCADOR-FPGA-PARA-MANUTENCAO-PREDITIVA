@@ -1,5 +1,5 @@
 // ============================================================================
-// Module: tb_Feature_Collector
+// Module: tb_Parameter_RegFile
 // Description: Testbench do montador do vetor de 16 caracteristicas.
 //
 //   Cada origem entrega em momento e ordem diferentes (como no sistema: MDC
@@ -13,7 +13,7 @@
 
 `timescale 1ns / 1ps
 
-module tb_Feature_Collector;
+module tb_Parameter_RegFile;
 
     reg clk = 0, rst = 1;
     always #10 clk = ~clk;
@@ -27,7 +27,7 @@ module tb_Feature_Collector;
     wire [15:0] out_feature;
     reg         out_ready = 1;
 
-    Feature_Collector uut (
+    Parameter_RegFile uut (
         .clk(clk), .rst(rst), .start(start), .ready(ready), .busy(busy), .done(done),
         .esp_valid(esp_valid), .esp_ready(esp_ready), .esp_data(esp_data),
         .lms_valid(lms_valid), .lms_ready(lms_ready), .lms_data(lms_data),
@@ -85,7 +85,7 @@ module tb_Feature_Collector;
 
     initial begin
         $display("======================================================================");
-        $display("   FEATURE_COLLECTOR -- vetor de 16 caracteristicas                   ");
+        $display("   PARAMETER_REGFILE -- vetor de 16 caracteristicas                   ");
         $display("======================================================================");
         repeat (3) @(negedge clk); rst = 0; @(negedge clk);
 
@@ -127,7 +127,7 @@ module tb_Feature_Collector;
         else begin fail_count = fail_count + 1; $display("[FAIL] nao voltou ao repouso"); end
 
         $display("\n RESUMO: %0d OK, %0d com falha", success_count, fail_count);
-        if (fail_count == 0) $display(" TODOS OS TESTES DO FEATURE_COLLECTOR PASSARAM");
+        if (fail_count == 0) $display(" TODOS OS TESTES DO PARAMETER_REGFILE PASSARAM");
         $finish;
     end
 

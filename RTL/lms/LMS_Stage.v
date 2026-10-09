@@ -1,56 +1,65 @@
 // ============================================================================
-// Module: LMS_Residual_Feature
-// Description: Controlador de janela do filtro adaptativo LMS (enunciado 3.4)
-//              e extrator da caracteristica r_lms entregue ao classificador.
+// Module: LMS_Stage
+// Description: ESTAGIO LMS EM SERIE do SMMA (enunciado 3.4) -- o bloco "LMS"
+//              do diagrama de arquitetura, entre o filtro anti-alias e o
+//              barramento de dados (Data_Bus_Driver).
 //
-//              Este bloco NAO implementa o LMS: ele CONDUZ a instancia de
-//              LMS_Filter_Top (8 coeficientes, mu = 2^-3) que fica no top
-//              level, amostra a amostra, pela interface de handshake original
-//              do filtro (start / valid_in / valid_out).
+//              Toda amostra decimada ATRAVESSA este estagio: ele a recebe,
+//              conduz uma iteracao do LMS_Filter_Top (8 coeficientes,
+//              mu = 2^-3) e so entao a entrega ao barramento. Nenhum bloco
+//              a jusante ve uma amostra que nao tenha passado pelo LMS.
 //
 // ----------------------------------------------------------------------------
-// O LMS COMO PREDITOR LINEAR
+// O LMS COMO FILTRO ADAPTATIVO DE LINHA (ALE) / PREDITOR LINEAR
 // ----------------------------------------------------------------------------
-//   Para cada amostra decimada x[n] da janela (n = 1..1055):
+//   Com um unico sensor, o sinal desejado d(n) e a propria amostra e a
+//   entrada do filtro e o passado:
 //
-//       in_x = x[n-1]           o filtro ve o passado ...
-//       in_d = x[n]             ... e tenta prever o presente
-//
-//       y(n)   = sum_{i=0..7} w_i(n) x(n-1-i)        (dentro do LMS_Filter_Top)
-//       e(n)   = d(n) - y(n)
+//       in_x = x[n-1],   in_d = x[n]
+//       y(n) = sum_{i=0..7} w_i(n) x(n-1-i)        (componentes previsiveis)
+//       e(n) = d(n) - y(n)                         (ruido de banda larga)
 //       w_i(n+1) = w_i(n) + mu e(n) x(n-1-i)
 //
-//   e acumula aqui as energias do erro e do sinal:
+//   Saidas do estagio:
+//     - stream para o barramento (out_*), selecionado por SAIDA_LMS:
+//         0 -> a amostra filtrada pelo FIR, x(n)       (padrao)
+//         1 -> a saida do LMS, y(n) (sinal "realcado", ruido reduzido)
+//     - r_lms = sum e^2 / sum d^2 em Q1.15 (feat_*), caracteristica do
+//       classificador: quanto do sinal o filtro adaptativo NAO consegue
+//       prever.
 //
-//       r_lms = sum e(n)^2 / sum d(n)^2          (Q1.15, Divider_Q15)
-//
-//   Sinal previsivel (tons, ressonancia de rolamento) -> residuo baixo;
-//   ruido de banda larga (estado normal) -> residuo alto.
+//   POR QUE O PADRAO E SAIDA_LMS = 0: a arvore de decisao e a CNN gravadas
+//   na ROM foram treinadas com o espectro e o espectrograma do sinal
+//   filtrado pelo FIR. Trocar o stream por y(n) muda o que chega a FFT, a
+//   autocorrelacao e a CNN, e os modelos teriam de ser retreinados (o
+//   resultado na placa mudaria). Com SAIDA_LMS = 0 o comportamento e
+//   identico ao validado; o parametro existe para essa evolucao.
 //
 // ----------------------------------------------------------------------------
 // ALINHAMENTO COM O MODELO TREINADO (smma/features.py, feature_lms_int)
 // ----------------------------------------------------------------------------
-//   - Cada janela comeca com pesos e linha de atraso ZERADOS: 'lms_clear'
-//     pulsa o reset do LMS_Filter_Top no inicio da janela.
-//   - x[0] NUNCA entra no preditor: a amostra 0 apenas inicializa o
-//     historico com zero, e a amostra 1 e predita com historico nulo.
+//   - Cada janela comeca com pesos e linha de atraso ZERADOS ('lms_clear'
+//     pulsa o reset do LMS_Filter_Top no inicio da janela).
+//   - x[0] nunca entra no preditor: a amostra 0 e repassada sem iteracao do
+//     LMS (y(0) = 0) e o historico comeca vazio.
 //   - e(n) usado nas energias e o erro SATURADO (out_error do filtro).
 //
 // ----------------------------------------------------------------------------
 // RECURSOS E TEMPO
 // ----------------------------------------------------------------------------
-//   1 multiplicador 16x16 (energias e^2 e d^2, em sequencia) + 1 Divider_Q15.
-//   Por amostra: 26 ciclos do LMS_Filter_Top + 3 de energia ~= 30 ciclos,
+//   1 multiplicador 16x16 (e^2 e d^2, em sequencia) + 1 Divider_Q15.
+//   Por amostra: 26 ciclos do LMS_Filter_Top + ~5 de energia/repasse,
 //   contra 15.625 ciclos entre amostras decimadas (3,2 kHz @ 50 MHz).
 // ============================================================================
 
 `timescale 1ns / 1ps
 
-module LMS_Residual_Feature #(
+module LMS_Stage #(
     parameter WIDTH      = 16,     // Q1.15
     parameter FRAC       = 15,
     parameter N_AMOSTRAS = 1056,   // amostras decimadas por janela
-    parameter ACC_W      = 48      // 1056 x 32768^2 cabe em 41 bits
+    parameter ACC_W      = 48,     // 1056 x 32768^2 cabe em 41 bits
+    parameter SAIDA_LMS  = 0       // 0: repassa x(n)  1: repassa y(n)
 )(
     input  wire                     clk,
     input  wire                     rst,
@@ -61,10 +70,15 @@ module LMS_Residual_Feature #(
     output reg                      busy,
     output reg                      done,
 
-    // ---- Entrada: amostras decimadas da janela ----
+    // ---- Entrada: amostras decimadas (vindas do FIR_Decimator) ----
     input  wire                     in_valid,
     output wire                     in_ready,
     input  wire signed [WIDTH-1:0]  in_sample,
+
+    // ---- Saida: stream que segue para o Data_Bus_Driver ----
+    input  wire                     out_ready,
+    output wire                     out_valid,
+    output wire signed [WIDTH-1:0]  out_sample,
 
     // ---- Interface com o LMS_Filter_Top ----
     output reg                      lms_clear,    // reset dos pesos/historico
@@ -73,12 +87,13 @@ module LMS_Residual_Feature #(
     output reg  signed [WIDTH-1:0]  lms_d,        // d(n) = x(n)
     input  wire                     lms_busy,
     input  wire                     lms_valid_out,
+    input  wire signed [WIDTH-1:0]  lms_y,        // y(n) saturado
     input  wire signed [WIDTH-1:0]  lms_error,    // e(n) saturado
 
-    // ---- Saida: r_lms em Q1.15 ----
-    input  wire                     out_ready,
-    output wire                     out_valid,
-    output reg  signed [WIDTH-1:0]  out_feature
+    // ---- Caracteristica r_lms (Q1.15) para o banco de parametros ----
+    input  wire                     feat_ready,
+    output wire                     feat_valid,
+    output reg  signed [WIDTH-1:0]  feat_lms
 );
 
     localparam signed [WIDTH-1:0] SAT_MAX = (1 << (WIDTH-1)) - 1;
@@ -88,7 +103,7 @@ module LMS_Residual_Feature #(
     // ------------------------------------------------------------------------
     reg [ACC_W-1:0]        se2, sd2;          // energias do erro e do sinal
     reg [11:0]             n_amostra;
-    reg signed [WIDTH-1:0] e_reg;
+    reg signed [WIDTH-1:0] e_reg, y_reg;
 
     // multiplicador unico para os quadrados
     reg  signed [WIDTH-1:0]   ma;
@@ -109,35 +124,39 @@ module LMS_Residual_Feature #(
     localparam [3:0] S_IDLE   = 4'd0,
                      S_ESP    = 4'd1,   // espera amostra
                      S_GO     = 4'd2,   // pulso start/valid_in no LMS
-                     S_RUN    = 4'd3,   // espera valid_out (e(n) pronto)
+                     S_RUN    = 4'd3,   // espera valid_out (y(n), e(n) prontos)
                      S_DRAIN  = 4'd4,   // espera a escrita dos pesos (busy=0)
                      S_SE2    = 4'd5,   // se2 += e^2
                      S_SD2    = 4'd6,   // sd2 += d^2
-                     S_PROX   = 4'd7,
-                     S_DIV    = 4'd8,
-                     S_OUT    = 4'd9;
+                     S_EMITE  = 4'd7,   // entrega a amostra ao barramento
+                     S_PROX   = 4'd8,
+                     S_DIV    = 4'd9,
+                     S_FEAT   = 4'd10;
     reg [3:0] state;
 
-    assign ready     = (state == S_IDLE);
-    assign in_ready  = (state == S_ESP);
-    assign out_valid = (state == S_OUT);
+    assign ready      = (state == S_IDLE);
+    assign in_ready   = (state == S_ESP);
+    assign out_valid  = (state == S_EMITE);
+    assign out_sample = (SAIDA_LMS != 0) ? y_reg : lms_d;
+    assign feat_valid = (state == S_FEAT);
 
     always @(posedge clk) begin
         if (rst) begin
-            state       <= S_IDLE;
-            busy        <= 1'b0;
-            done        <= 1'b0;
-            lms_clear   <= 1'b0;
-            lms_start   <= 1'b0;
-            lms_x       <= {WIDTH{1'b0}};
-            lms_d       <= {WIDTH{1'b0}};
-            se2         <= {ACC_W{1'b0}};
-            sd2         <= {ACC_W{1'b0}};
-            n_amostra   <= 12'd0;
-            e_reg       <= {WIDTH{1'b0}};
-            ma          <= {WIDTH{1'b0}};
-            div_start   <= 1'b0;
-            out_feature <= {WIDTH{1'b0}};
+            state     <= S_IDLE;
+            busy      <= 1'b0;
+            done      <= 1'b0;
+            lms_clear <= 1'b0;
+            lms_start <= 1'b0;
+            lms_x     <= {WIDTH{1'b0}};
+            lms_d     <= {WIDTH{1'b0}};
+            se2       <= {ACC_W{1'b0}};
+            sd2       <= {ACC_W{1'b0}};
+            n_amostra <= 12'd0;
+            e_reg     <= {WIDTH{1'b0}};
+            y_reg     <= {WIDTH{1'b0}};
+            ma        <= {WIDTH{1'b0}};
+            div_start <= 1'b0;
+            feat_lms  <= {WIDTH{1'b0}};
         end else begin
             done      <= 1'b0;
             lms_clear <= 1'b0;
@@ -164,9 +183,9 @@ module LMS_Residual_Feature #(
                     if (in_valid && in_ready) begin
                         lms_d <= in_sample;
                         if (n_amostra == 12'd0) begin
-                            // x[0] so define que o historico comeca vazio:
-                            // lms_x continua 0 e nada e predito.
-                            n_amostra <= 12'd1;
+                            // x[0] nao entra no preditor: e repassada direto
+                            y_reg <= {WIDTH{1'b0}};
+                            state <= S_EMITE;
                         end else begin
                             state <= S_GO;
                         end
@@ -183,6 +202,7 @@ module LMS_Residual_Feature #(
                 S_RUN: begin
                     if (lms_valid_out) begin
                         e_reg <= lms_error;
+                        y_reg <= lms_y;
                         state <= S_DRAIN;
                     end
                 end
@@ -205,11 +225,21 @@ module LMS_Residual_Feature #(
 
                 S_SD2: begin
                     sd2   <= sd2 + quad_ext;
-                    state <= S_PROX;
+                    state <= S_EMITE;
+                end
+
+                // ------------------------------------------------------
+                // A amostra so segue para o barramento depois de passar
+                // pelo LMS; o produtor (FIR) fica retido enquanto isso.
+                // ------------------------------------------------------
+                S_EMITE: begin
+                    if (out_ready)
+                        state <= S_PROX;
                 end
 
                 S_PROX: begin
-                    lms_x     <= lms_d;                 // x(n) vira x(n-1)
+                    if (n_amostra != 12'd0)
+                        lms_x <= lms_d;                 // x(n) vira x(n-1)
                     n_amostra <= n_amostra + 1'b1;
                     state     <= (n_amostra == N_AMOSTRAS - 1) ? S_DIV : S_ESP;
                 end
@@ -220,15 +250,15 @@ module LMS_Residual_Feature #(
                 // ------------------------------------------------------
                 S_DIV: begin
                     if (div_done) begin
-                        out_feature <= div_zero ? SAT_MAX : $signed(div_q);
-                        state       <= S_OUT;
+                        feat_lms <= div_zero ? SAT_MAX : $signed(div_q);
+                        state    <= S_FEAT;
                     end else if (div_ready && !div_start) begin
                         div_start <= 1'b1;
                     end
                 end
 
-                S_OUT: begin
-                    if (out_ready) begin
+                S_FEAT: begin
+                    if (feat_ready) begin
                         busy  <= 1'b0;
                         done  <= 1'b1;
                         state <= S_IDLE;

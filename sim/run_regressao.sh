@@ -65,7 +65,9 @@ for tb in "${TBS[@]}"; do
     nome=$(basename "$tb" .v)
     log="$OUT/$nome.log"
 
-    if ! iverilog -g2005 -o "$OUT/$nome.vvp" -s "$nome" \
+    # -g2005-sv: mesmo dialeto do Quartus (VERILOG_INPUT_VERSION SYSTEMVERILOG_2005),
+    # para que palavras reservadas do SystemVerilog (ex.: "dist") falhem aqui.
+    if ! iverilog -g2005-sv -o "$OUT/$nome.vvp" -s "$nome" \
             "$RAIZ/$tb" "${FONTES[@]}" > "$log" 2>&1; then
         printf "%-32s %-10s %s\n" "$nome" "ERRO" "nao compila (ver log)"
         n_erro=$((n_erro+1)); FALHARAM+=("$nome: compilacao")

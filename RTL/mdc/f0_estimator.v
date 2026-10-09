@@ -22,12 +22,16 @@ module f0_estimator #(
     output reg  [IDX_WIDTH-1:0]          f0_frac  
 );
 
+    // Checagem de parametro so para simulacao: o Quartus nao executa
+    // $display/$finish, entao o bloco fica fora da sintese.
+    // synthesis translate_off
     initial begin
         if ((FFT_N & (FFT_N - 1)) != 0) begin
             $display("ERRO f0_estimator: FFT_N=%0d nao e potencia de 2 - a divisao deixa de ser gratuita.", FFT_N);
             $finish;
         end
     end
+    // synthesis translate_on
 
     localparam [1:0]
         S_IDLE     = 2'd0,

@@ -60,6 +60,9 @@ module tb_CNN_Weight_ROM;
 
         // 1a) 72 pesos convolucionais
         $display("-- Conferencia dos 72 coeficientes dos kernels");
+        // Movimenta os enderecos antes de ler: um always @(*) so e avaliado na
+        // primeira mudanca de entrada, e eles comecam (e ficariam) em 0.
+        tap_addr = 4'd15; dense_addr = 5'd31; dense_bias_addr = 2'd3; #1;
         e0 = errors;
         for (t = 0; t < 9; t = t + 1) begin
             tap_addr = t[3:0]; #1;

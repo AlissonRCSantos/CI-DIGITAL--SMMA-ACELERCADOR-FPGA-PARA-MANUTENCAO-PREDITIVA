@@ -1,222 +1,153 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1010" viewBox="0 0 1720 1010" font-family="DejaVu Sans, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1000" viewBox="0 0 1900 1000" font-family="DejaVu Sans, Arial, sans-serif" xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTo1N2ZiYWFhZi01Mjc4LTQ3OGMtOWYyZi1mOGEyN2U1ZDJmNGQAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaIelyvL3zFcTb7t0WdrpzOAAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo3MjE2MGM5My1iYWYyLTQ3M2MtOGU2Ny01M2Y0YzliYjA0ZGVscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoXYtVPnndznHDG9H5fI/ouAAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggr75RHcDkodL5pvnF13iZVjuu4i1G2QvUWpBai8dKGqOkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaKmi/RdShAUc30o6A+hC5RMAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRNAAAAAAAAAAAAAAAAAGRoYXNoWCAgyteASR9A2LD9ID1aR/r1rEC5c6JWFTQ07GHdJiQBcGRuYW1lbmp1bWJmIG1hbmlmZXN0amV4Y2x1c2lvbnOBomVzdGFydBjHZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjU3ZmJhYWFmLTUyNzgtNDc4Yy05ZjJmLWY4YTI3ZTVkMmY0ZC9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmNiM2VkNDZkLTgzM2EtNGI4ZS05YWFiLWYyODc3NGIwZmExM3JjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCCvvlEdwOSh0vmm+cXXeJlWO67iLUbZC9RakFqLx0oao6JjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggnOqV7B8WyIr3DkN9c8xy8M4EUaZuuHIqF2Ajdse7tPiiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggXpPZfdutoruCik6v+WZz8TlhYeZrWyGZs4RTRziiEH10Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQHlU5ouaxaumfj6TDQEOHllkjHCWrRJcfieYMBx7wuafO6YWNW9jOtBpuUhHeM+gv32N+YE3AXAILvVGG+ujeuo=</c2pa:manifest></metadata>
 <defs>
-<marker id="ad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#263238"/></marker>
-<marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7E57C2"/></marker>
+<marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker>
+<marker id="mc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b39ddb"/></marker>
 <style>
-.nm { font-family: DejaVu Sans Mono, Consolas, monospace; font-size: 13.5px; font-weight: bold; text-anchor: middle; }
-.sb { font-size: 11px; fill: #37474F; text-anchor: middle; }
-.lb { font-size: 11px; fill: #263238; }
-.fk { font-size: 10.5px; fill: #212121; font-style: italic; }
-.ct { font-size: 11.5px; fill: #5E35B1; }
-.lg { font-size: 12px; fill: #263238; }
-.d { fill: none; stroke: #263238; stroke-width: 1.5; }
-.c { fill: none; stroke: #7E57C2; stroke-width: 1.3; stroke-dasharray: 6 4; }
+.nm { font-size: 13px; font-weight: bold; text-anchor: middle; }
+.md { font-size: 10.5px; fill: #ffcc80; text-anchor: middle; font-family: DejaVu Sans Mono, monospace; }
+.gr { font-size: 11px; fill: #d7ccc8; font-weight: bold; }
+.lb { font-size: 11px; fill: #ffffff; }
+.lb2 { font-size: 11px; fill: #a5d6a7; font-style: italic; }
+.bus { font-size: 14px; fill: #ffffff; font-weight: bold; text-anchor: middle; }
+.busm { font-size: 10px; fill: #ffcc80; text-anchor: middle; font-family: DejaVu Sans Mono, monospace; }
+.tag { font-size: 9px; fill: #1e1e1e; font-weight: bold; text-anchor: middle; }
+.out { font-size: 12px; fill: #ffffff; }
+.lg { font-size: 11.5px; fill: #ffffff; }
 </style>
 </defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<text x="28" y="40" font-size="22" font-weight="bold" fill="#263238">SMMA -- Smart Machine Monitoring Accelerator (DE0-CV, Cyclone V, 50 MHz)</text>
-<text x="28" y="64" font-size="13" fill="#546E7A">Arquitetura integrada: cada caixa e uma instancia real do SMMA_Top. Uma janela = 8503 amostras brutas = 1056 decimadas = 32 quadros de FFT.</text>
-<g id="src"><rect x="28" y="96" width="184" height="66" rx="8" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.6"/>
-<text x="120.0" y="120" class="nm" fill="#1565C0">Sample_Source</text>
-<text x="120.0" y="138" class="sb">ROM: 12 janelas reais</text>
-<text x="120.0" y="152" class="sb">25,6 kHz, Q1.15</text>
-</g>
-<g id="fir"><rect x="28" y="296" width="184" height="66" rx="8" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.6"/>
-<text x="120.0" y="320" class="nm" fill="#1565C0">FIR_Decimator</text>
-<text x="120.0" y="338" class="sb">63 taps @1,4 kHz</text>
-<text x="120.0" y="352" class="sb">decimacao /8 -> 3,2 kHz</text>
-</g>
-<g id="fb"><rect x="262" y="96" width="184" height="66" rx="8" fill="#ECEFF1" stroke="#455A64" stroke-width="1.6"/>
-<text x="354.0" y="120" class="nm" fill="#455A64">Frame_Builder</text>
-<text x="354.0" y="138" class="sb">quadros de 64 amostras</text>
-<text x="354.0" y="152" class="sb">salto 32 (32 quadros)</text>
-</g>
-<g id="fft"><rect x="486" y="96" width="184" height="66" rx="8" fill="#E8F5E9" stroke="#2E7D32" stroke-width="1.6"/>
-<text x="578.0" y="120" class="nm" fill="#2E7D32">FFT_Top</text>
-<text x="578.0" y="138" class="sb">radix-2 DIT, 64 pontos</text>
-<text x="578.0" y="152" class="sb">Q1.15, 4 DSP, magnitude</text>
-</g>
-<g id="sa"><rect x="710" y="96" width="184" height="66" rx="8" fill="#ECEFF1" stroke="#455A64" stroke-width="1.6"/>
-<text x="802.0" y="120" class="nm" fill="#455A64">Spectrum_Accumulator</text>
-<text x="802.0" y="138" class="sb">espectro medio</text>
-<text x="802.0" y="152" class="sb">32 quadros x 32 bins</text>
-</g>
-<g id="fs"><rect x="934" y="96" width="184" height="66" rx="8" fill="#E0F7FA" stroke="#00838F" stroke-width="1.6"/>
-<text x="1026.0" y="120" class="nm" fill="#00838F">Feature_Spectral</text>
-<text x="1026.0" y="138" class="sb">8 features: r_1x..r_3x,</text>
-<text x="1026.0" y="152" class="sb">bandas, log2E, centroide</text>
-</g>
-<g id="pk"><rect x="934" y="196" width="184" height="66" rx="8" fill="#FFF8E1" stroke="#F57F17" stroke-width="1.6"/>
-<text x="1026.0" y="220" class="nm" fill="#F57F17">peak_detector</text>
-<text x="1026.0" y="238" class="sb">3 maiores picos</text>
-<text x="1026.0" y="252" class="sb">acima do limiar</text>
-</g>
-<g id="mdc"><rect x="1158" y="196" width="184" height="66" rx="8" fill="#FFF8E1" stroke="#F57F17" stroke-width="1.6"/>
-<text x="1250.0" y="220" class="nm" fill="#F57F17">mdc_gcd</text>
-<text x="1250.0" y="238" class="sb">k0 = MDC(picos)</text>
-<text x="1250.0" y="252" class="sb">Euclides (subtracoes)</text>
-</g>
-<g id="f0"><rect x="1158" y="296" width="184" height="66" rx="8" fill="#FFF8E1" stroke="#F57F17" stroke-width="1.6"/>
-<text x="1250.0" y="320" class="nm" fill="#F57F17">f0_estimator</text>
-<text x="1250.0" y="338" class="sb">f0 = k0 . fs / N</text>
-<text x="1250.0" y="352" class="sb">(50 Hz/bin)</text>
-</g>
-<g id="lg"><rect x="710" y="428" width="184" height="66" rx="8" fill="#E8F5E9" stroke="#2E7D32" stroke-width="1.6"/>
-<text x="802.0" y="452" class="nm" fill="#2E7D32">FFT_Log2_Compress</text>
-<text x="802.0" y="470" class="sb">log2 de Mitchell</text>
-<text x="802.0" y="484" class="sb">zero DSP</text>
-</g>
-<g id="sb"><rect x="934" y="428" width="184" height="66" rx="8" fill="#ECEFF1" stroke="#455A64" stroke-width="1.6"/>
-<text x="1026.0" y="452" class="nm" fill="#455A64">Spectrogram_Buffer</text>
-<text x="1026.0" y="470" class="sb">imagem 32x32</text>
-<text x="1026.0" y="484" class="sb">transposta</text>
-</g>
-<g id="cnn"><rect x="1158" y="428" width="184" height="66" rx="8" fill="#FBE9E7" stroke="#BF360C" stroke-width="1.6"/>
-<text x="1250.0" y="452" class="nm" fill="#BF360C">CNN_Top</text>
-<text x="1250.0" y="470" class="sb">conv 3x3 x8 + ReLU</text>
-<text x="1250.0" y="484" class="sb">pool + GAP + densa</text>
-</g>
-<g id="lr"><rect x="486" y="560" width="184" height="66" rx="8" fill="#F3E5F5" stroke="#6A1B9A" stroke-width="1.6"/>
-<text x="578.0" y="584" class="nm" fill="#6A1B9A">LMS_Residual_Feature</text>
-<text x="578.0" y="602" class="sb">janela + energias</text>
-<text x="578.0" y="616" class="sb">r_lms = Se^2 / Sd^2</text>
-</g>
-<g id="lms"><rect x="710" y="560" width="184" height="66" rx="8" fill="#F3E5F5" stroke="#6A1B9A" stroke-width="1.6"/>
-<text x="802.0" y="584" class="nm" fill="#6A1B9A">LMS_Filter_Top</text>
-<text x="802.0" y="602" class="sb">8 coef., mu = 2^-3</text>
-<text x="802.0" y="616" class="sb">preditor x[n-1] -> x[n]</text>
-</g>
-<g id="ac"><rect x="486" y="692" width="184" height="66" rx="8" fill="#FCE4EC" stroke="#AD1457" stroke-width="1.6"/>
-<text x="578.0" y="716" class="nm" fill="#AD1457">autocorrelacao_yw</text>
-<text x="578.0" y="734" class="sb">rho[0..3] = r[k]/r[0]</text>
-<text x="578.0" y="748" class="sb">2 multiplicadores</text>
-</g>
-<g id="yw"><rect x="710" y="692" width="184" height="66" rx="8" fill="#FCE4EC" stroke="#AD1457" stroke-width="1.6"/>
-<text x="802.0" y="716" class="nm" fill="#AD1457">Yule_Walker_Solver</text>
-<text x="802.0" y="734" class="sb">monta R (Toeplitz 3x3)</text>
-<text x="802.0" y="748" class="sb">a = R^-1 r</text>
-</g>
-<g id="gj"><rect x="934" y="692" width="184" height="66" rx="8" fill="#FCE4EC" stroke="#AD1457" stroke-width="1.6"/>
-<text x="1026.0" y="716" class="nm" fill="#AD1457">gauss_jordan_inv</text>
-<text x="1026.0" y="734" class="sb">Gauss-Jordan, pivo</text>
-<text x="1026.0" y="748" class="sb">parcial, ate 4x4, Q8.16</text>
-</g>
-<g id="col"><rect x="1382" y="96" width="150" height="662" rx="8" fill="#E0F7FA" stroke="#00838F" stroke-width="1.6"/>
-<text x="1457.0" y="120" class="nm" fill="#00838F">Feature_Collector</text>
-<text x="1457.0" y="138" class="sb"></text>
-</g>
-<g id="tree"><rect x="1560" y="330" width="140" height="80" rx="8" fill="#E0F7FA" stroke="#00838F" stroke-width="1.6"/>
-<text x="1630.0" y="354" class="nm" fill="#00838F">ML_Tree</text>
-<text x="1630.0" y="372" class="sb">arvore de decisao</text>
-<text x="1630.0" y="386" class="sb">141 nos, 0 DSP</text>
-</g>
-<g id="ctl"><rect x="262" y="830" width="1080" height="74" rx="8" fill="#EDE7F6" stroke="#311B92" stroke-width="1.6"/>
-<text x="802.0" y="854" class="nm" fill="#311B92">SMMA_Global_Control</text>
-<text x="802.0" y="872" class="sb">FSM: PARADO > ARRANCA > ADQUIRE > DECIDE > PRONTO</text>
-<text x="802.0" y="886" class="sb">start unico (arranca) para todos os blocos; espera ready/done de todos; registra o veredito</text>
-</g>
-<g id="pan"><rect x="1382" y="830" width="150" height="60" rx="8" fill="#F1F8E9" stroke="#33691E" stroke-width="1.6"/>
-<text x="1457.0" y="854" class="nm" fill="#33691E">SMMA_Panel</text>
-<text x="1457.0" y="872" class="sb">HEX0..5, LEDR[9:0]</text>
-</g>
-<text x="1457" y="166" class="sb">vetor de 16</text>
-<text x="1457" y="184" class="sb">caracteristicas</text>
-<text x="1457" y="202" class="sb"></text>
-<text x="1457" y="220" class="sb">0-7  FFT</text>
-<text x="1457" y="238" class="sb">8    LMS</text>
-<text x="1457" y="256" class="sb">9-11 rho</text>
-<text x="1457" y="274" class="sb">12   f0 (MDC)</text>
-<text x="1457" y="292" class="sb">13-15 a1..a3</text>
-<text x="1457" y="310" class="sb"></text>
-<text x="1457" y="328" class="sb">arvore usa</text>
-<text x="1457" y="346" class="sb">0..11 (treino)</text>
-<path d="M120.0,162 L120.0,296" class="d" marker-end="url(#ad)"/>
-<text x="128.0" y="233.0" class="lb" text-anchor="start">25,6 kHz</text>
-<circle cx="232" cy="329.0" r="5" fill="#212121"/>
-<text x="239" y="321.0" class="fk">Stream_Fork (a)</text>
-<path d="M212,329.0 L232,329.0" class="d"/>
-<text x="216" y="345.0" class="lb" text-anchor="start">3,2 kHz</text>
-<path d="M232,329.0 L232,129.0 L262,129.0" class="d" marker-end="url(#ad)"/>
-<path d="M232,329.0 L232,593.0 L486,593.0" class="d" marker-end="url(#ad)"/>
-<text x="240" y="585.0" class="lb" text-anchor="start">1056 amostras</text>
-<path d="M232,329.0 L232,725.0 L486,725.0" class="d" marker-end="url(#ad)"/>
-<path d="M446,129.0 L486,129.0" class="d" marker-end="url(#ad)"/>
-<circle cx="688" cy="129.0" r="5" fill="#212121"/>
-<text x="695" y="121.0" class="fk">(b)</text>
-<path d="M670,129.0 L688,129.0" class="d"/>
-<path d="M688,129.0 L710,129.0" class="d" marker-end="url(#ad)"/>
-<path d="M688,129.0 L688,461.0 L710,461.0" class="d" marker-end="url(#ad)"/>
-<text x="682" y="418" class="lb" text-anchor="end">|X[k]|, k=0..31</text>
-<circle cx="912" cy="129.0" r="5" fill="#212121"/>
-<text x="919" y="121.0" class="fk">(c)</text>
-<path d="M894,129.0 L912,129.0" class="d"/>
-<path d="M912,129.0 L934,129.0" class="d" marker-end="url(#ad)"/>
-<path d="M912,129.0 L912,229.0 L934,229.0" class="d" marker-end="url(#ad)"/>
-<path d="M1118,229.0 L1158,229.0" class="d" marker-end="url(#ad)"/>
-<text x="1138.0" y="223.0" class="lb" text-anchor="middle">bins</text>
-<path d="M1250.0,262 L1250.0,296" class="d" marker-end="url(#ad)"/>
-<text x="1258.0" y="283.0" class="lb" text-anchor="start">k0</text>
-<path d="M1118,129.0 L1382,129.0" class="d" marker-end="url(#ad)"/>
-<text x="1270" y="123.0" class="lb" text-anchor="middle">8 features</text>
-<path d="M1342,329.0 L1382,329.0" class="d" marker-end="url(#ad)"/>
-<text x="1366" y="323.0" class="lb" text-anchor="end">f0 (Hz)</text>
-<path d="M894,461.0 L934,461.0" class="d" marker-end="url(#ad)"/>
-<path d="M1118,461.0 L1158,461.0" class="d" marker-end="url(#ad)"/>
-<text x="1138.0" y="455.0" class="lb" text-anchor="middle">pixels</text>
-<path d="M670,581.0 L710,581.0" class="d" marker-end="url(#ad)"/>
-<text x="690.0" y="575.0" class="lb" text-anchor="middle">x, d</text>
-<path d="M710,605.0 L670,605.0" class="d" marker-end="url(#ad)"/>
-<text x="690.0" y="621.0" class="lb" text-anchor="middle">e(n)</text>
-<path d="M618.0,626 L618.0,648 L1362,648 L1362,593.0 L1382,593.0" class="d" marker-end="url(#ad)"/>
-<text x="1300" y="642" class="lb" text-anchor="middle">r_lms</text>
-<path d="M670,725.0 L710,725.0" class="d" marker-end="url(#ad)"/>
-<text x="690.0" y="719.0" class="lb" text-anchor="middle">rho</text>
-<path d="M894,713.0 L934,713.0" class="d" marker-end="url(#ad)"/>
-<text x="914.0" y="707.0" class="lb" text-anchor="middle">R</text>
-<path d="M934,737.0 L894,737.0" class="d" marker-end="url(#ad)"/>
-<text x="914.0" y="753.0" class="lb" text-anchor="middle">R^-1</text>
-<path d="M578.0,758 L578.0,786 L1340,786 L1340,744 L1382,744" class="d" marker-end="url(#ad)"/>
-<text x="1000" y="780" class="lb" text-anchor="middle">rho1..rho3</text>
-<path d="M852.0,692 L852.0,672 L1300,672 L1300,710 L1382,710" class="d" marker-end="url(#ad)"/>
-<text x="1180" y="666" class="lb" text-anchor="middle">a1/2..a3/2</text>
-<path d="M1532,370 L1560,370.0" class="d" marker-end="url(#ad)"/>
-<text x="1546" y="362" class="lb" text-anchor="middle">16</text>
-<path d="M1630.0,410 L1630,806 L1300,806 L1300,830" class="d" marker-end="url(#ad)"/>
-<text x="1560" y="800" class="lb" text-anchor="middle">classe arvore</text>
-<path d="M1250.0,494 L1250.0,830" class="d" marker-end="url(#ad)"/>
-<text x="1256.0" y="514" class="lb" text-anchor="start">classe CNN</text>
-<path d="M1342,860 L1382,860.0" class="d" marker-end="url(#ad)"/>
-<text x="1378" y="852" class="lb" text-anchor="end">veredito</text>
-<path d="M1532,860 L1700,860" class="d" marker-end="url(#ad)"/>
-<text x="1600" y="882" class="lb" text-anchor="middle">HEX / LEDR</text>
-<path d="M120.0,960 L120.0,860 L262,860" class="d" marker-end="url(#ad)"/>
-<text x="128.0" y="950" class="lb" text-anchor="start">KEY, SW</text>
-<path d="M302,830 L302,802" class="c" marker-end="url(#ac)"/>
-<path d="M526,830 L526,802" class="c" marker-end="url(#ac)"/>
-<path d="M750,830 L750,802" class="c" marker-end="url(#ac)"/>
-<path d="M974,830 L974,802" class="c" marker-end="url(#ac)"/>
-<text x="28" y="470" class="lg" font-weight="bold">Legenda</text>
-<rect x="28" y="484" width="18" height="14" rx="3" fill="#E3F2FD" stroke="#1565C0"/>
-<text x="54" y="495" class="lg">Interface de entrada</text>
-<rect x="28" y="506" width="18" height="14" rx="3" fill="#ECEFF1" stroke="#455A64"/>
-<text x="54" y="517" class="lg">Buffers / memorias</text>
-<rect x="28" y="528" width="18" height="14" rx="3" fill="#E8F5E9" stroke="#2E7D32"/>
-<text x="54" y="539" class="lg">Modulo FFT</text>
-<rect x="28" y="550" width="18" height="14" rx="3" fill="#FFF8E1" stroke="#F57F17"/>
-<text x="54" y="561" class="lg">Modulo MDC</text>
-<rect x="28" y="572" width="18" height="14" rx="3" fill="#F3E5F5" stroke="#6A1B9A"/>
-<text x="54" y="583" class="lg">Modulo LMS</text>
-<rect x="28" y="594" width="18" height="14" rx="3" fill="#FCE4EC" stroke="#AD1457"/>
-<text x="54" y="605" class="lg">Inversao de matriz</text>
-<rect x="28" y="616" width="18" height="14" rx="3" fill="#E0F7FA" stroke="#00838F"/>
-<text x="54" y="627" class="lg">Acelerador de ML</text>
-<rect x="28" y="638" width="18" height="14" rx="3" fill="#FBE9E7" stroke="#BF360C"/>
-<text x="54" y="649" class="lg">Acelerador CNN</text>
-<rect x="28" y="660" width="18" height="14" rx="3" fill="#EDE7F6" stroke="#311B92"/>
-<text x="54" y="671" class="lg">Controle global</text>
-<rect x="28" y="682" width="18" height="14" rx="3" fill="#F1F8E9" stroke="#33691E"/>
-<text x="54" y="693" class="lg">Interface de saida</text>
-<path d="M28,712 L68,712" class="d" marker-end="url(#ad)"/><text x="76" y="716" class="lg">dados (valid/ready)</text>
-<path d="M28,732 L68,732" class="c" marker-end="url(#ac)"/><text x="76" y="736" class="lg">controle</text>
-<circle cx="48" cy="752" r="5" fill="#212121"/><text x="76" y="756" class="lg">Stream_Fork (join)</text>
+<rect width="100%" height="100%" fill="#1e1e1e"/>
+<path d="M0,0 V1000" stroke="#2a2a2a"/><path d="M25,0 V1000" stroke="#2a2a2a"/><path d="M50,0 V1000" stroke="#2a2a2a"/><path d="M75,0 V1000" stroke="#2a2a2a"/><path d="M100,0 V1000" stroke="#2a2a2a"/><path d="M125,0 V1000" stroke="#2a2a2a"/><path d="M150,0 V1000" stroke="#2a2a2a"/><path d="M175,0 V1000" stroke="#2a2a2a"/><path d="M200,0 V1000" stroke="#2a2a2a"/><path d="M225,0 V1000" stroke="#2a2a2a"/><path d="M250,0 V1000" stroke="#2a2a2a"/><path d="M275,0 V1000" stroke="#2a2a2a"/><path d="M300,0 V1000" stroke="#2a2a2a"/><path d="M325,0 V1000" stroke="#2a2a2a"/><path d="M350,0 V1000" stroke="#2a2a2a"/><path d="M375,0 V1000" stroke="#2a2a2a"/><path d="M400,0 V1000" stroke="#2a2a2a"/><path d="M425,0 V1000" stroke="#2a2a2a"/><path d="M450,0 V1000" stroke="#2a2a2a"/><path d="M475,0 V1000" stroke="#2a2a2a"/><path d="M500,0 V1000" stroke="#2a2a2a"/><path d="M525,0 V1000" stroke="#2a2a2a"/><path d="M550,0 V1000" stroke="#2a2a2a"/><path d="M575,0 V1000" stroke="#2a2a2a"/><path d="M600,0 V1000" stroke="#2a2a2a"/><path d="M625,0 V1000" stroke="#2a2a2a"/><path d="M650,0 V1000" stroke="#2a2a2a"/><path d="M675,0 V1000" stroke="#2a2a2a"/><path d="M700,0 V1000" stroke="#2a2a2a"/><path d="M725,0 V1000" stroke="#2a2a2a"/><path d="M750,0 V1000" stroke="#2a2a2a"/><path d="M775,0 V1000" stroke="#2a2a2a"/><path d="M800,0 V1000" stroke="#2a2a2a"/><path d="M825,0 V1000" stroke="#2a2a2a"/><path d="M850,0 V1000" stroke="#2a2a2a"/><path d="M875,0 V1000" stroke="#2a2a2a"/><path d="M900,0 V1000" stroke="#2a2a2a"/><path d="M925,0 V1000" stroke="#2a2a2a"/><path d="M950,0 V1000" stroke="#2a2a2a"/><path d="M975,0 V1000" stroke="#2a2a2a"/><path d="M1000,0 V1000" stroke="#2a2a2a"/><path d="M1025,0 V1000" stroke="#2a2a2a"/><path d="M1050,0 V1000" stroke="#2a2a2a"/><path d="M1075,0 V1000" stroke="#2a2a2a"/><path d="M1100,0 V1000" stroke="#2a2a2a"/><path d="M1125,0 V1000" stroke="#2a2a2a"/><path d="M1150,0 V1000" stroke="#2a2a2a"/><path d="M1175,0 V1000" stroke="#2a2a2a"/><path d="M1200,0 V1000" stroke="#2a2a2a"/><path d="M1225,0 V1000" stroke="#2a2a2a"/><path d="M1250,0 V1000" stroke="#2a2a2a"/><path d="M1275,0 V1000" stroke="#2a2a2a"/><path d="M1300,0 V1000" stroke="#2a2a2a"/><path d="M1325,0 V1000" stroke="#2a2a2a"/><path d="M1350,0 V1000" stroke="#2a2a2a"/><path d="M1375,0 V1000" stroke="#2a2a2a"/><path d="M1400,0 V1000" stroke="#2a2a2a"/><path d="M1425,0 V1000" stroke="#2a2a2a"/><path d="M1450,0 V1000" stroke="#2a2a2a"/><path d="M1475,0 V1000" stroke="#2a2a2a"/><path d="M1500,0 V1000" stroke="#2a2a2a"/><path d="M1525,0 V1000" stroke="#2a2a2a"/><path d="M1550,0 V1000" stroke="#2a2a2a"/><path d="M1575,0 V1000" stroke="#2a2a2a"/><path d="M1600,0 V1000" stroke="#2a2a2a"/><path d="M1625,0 V1000" stroke="#2a2a2a"/><path d="M1650,0 V1000" stroke="#2a2a2a"/><path d="M1675,0 V1000" stroke="#2a2a2a"/><path d="M1700,0 V1000" stroke="#2a2a2a"/><path d="M1725,0 V1000" stroke="#2a2a2a"/><path d="M1750,0 V1000" stroke="#2a2a2a"/><path d="M1775,0 V1000" stroke="#2a2a2a"/><path d="M1800,0 V1000" stroke="#2a2a2a"/><path d="M1825,0 V1000" stroke="#2a2a2a"/><path d="M1850,0 V1000" stroke="#2a2a2a"/><path d="M1875,0 V1000" stroke="#2a2a2a"/><path d="M0,0 H1900" stroke="#2a2a2a"/><path d="M0,25 H1900" stroke="#2a2a2a"/><path d="M0,50 H1900" stroke="#2a2a2a"/><path d="M0,75 H1900" stroke="#2a2a2a"/><path d="M0,100 H1900" stroke="#2a2a2a"/><path d="M0,125 H1900" stroke="#2a2a2a"/><path d="M0,150 H1900" stroke="#2a2a2a"/><path d="M0,175 H1900" stroke="#2a2a2a"/><path d="M0,200 H1900" stroke="#2a2a2a"/><path d="M0,225 H1900" stroke="#2a2a2a"/><path d="M0,250 H1900" stroke="#2a2a2a"/><path d="M0,275 H1900" stroke="#2a2a2a"/><path d="M0,300 H1900" stroke="#2a2a2a"/><path d="M0,325 H1900" stroke="#2a2a2a"/><path d="M0,350 H1900" stroke="#2a2a2a"/><path d="M0,375 H1900" stroke="#2a2a2a"/><path d="M0,400 H1900" stroke="#2a2a2a"/><path d="M0,425 H1900" stroke="#2a2a2a"/><path d="M0,450 H1900" stroke="#2a2a2a"/><path d="M0,475 H1900" stroke="#2a2a2a"/><path d="M0,500 H1900" stroke="#2a2a2a"/><path d="M0,525 H1900" stroke="#2a2a2a"/><path d="M0,550 H1900" stroke="#2a2a2a"/><path d="M0,575 H1900" stroke="#2a2a2a"/><path d="M0,600 H1900" stroke="#2a2a2a"/><path d="M0,625 H1900" stroke="#2a2a2a"/><path d="M0,650 H1900" stroke="#2a2a2a"/><path d="M0,675 H1900" stroke="#2a2a2a"/><path d="M0,700 H1900" stroke="#2a2a2a"/><path d="M0,725 H1900" stroke="#2a2a2a"/><path d="M0,750 H1900" stroke="#2a2a2a"/><path d="M0,775 H1900" stroke="#2a2a2a"/><path d="M0,800 H1900" stroke="#2a2a2a"/><path d="M0,825 H1900" stroke="#2a2a2a"/><path d="M0,850 H1900" stroke="#2a2a2a"/><path d="M0,875 H1900" stroke="#2a2a2a"/><path d="M0,900 H1900" stroke="#2a2a2a"/><path d="M0,925 H1900" stroke="#2a2a2a"/><path d="M0,950 H1900" stroke="#2a2a2a"/><path d="M0,975 H1900" stroke="#2a2a2a"/>
+<text x="40" y="50" font-size="22" font-weight="bold" fill="#ffffff">SMMA -- arquitetura final (diagrama do grupo + blocos obrigatorios)</text>
+<text x="40" y="76" font-size="13" fill="#bdbdbd">Cada caixa e uma instancia do SMMA_Top (nome do bloco / modulo Verilog). DE0-CV, Cyclone V, 50 MHz.</text>
+<rect x="150" y="150" width="345" height="330" fill="#0b2a14" stroke="#8d6e63" stroke-width="1.2" opacity="0.9"/>
+<text x="158" y="168" class="gr">ENTRADA + FILTRAGEM</text>
+<rect x="640" y="110" width="600" height="150" fill="#3a2222" stroke="#8d6e63" stroke-width="1.2" opacity="0.9"/>
+<text x="648" y="128" class="gr">RAMO FFT</text>
+<rect x="1270" y="110" width="340" height="260" fill="#2e2a3a" stroke="#8d6e63" stroke-width="1.2" opacity="0.9"/>
+<text x="1278" y="128" class="gr">MDC (frequencia fundamental)</text>
+<rect x="640" y="560" width="600" height="150" fill="#3a2222" stroke="#8d6e63" stroke-width="1.2" opacity="0.9"/>
+<text x="648" y="578" class="gr">ESTIMACAO DE PARAMETROS (inversao de matriz)</text>
+<rect x="640" y="330" width="600" height="150" fill="#2a1d1a" stroke="#8d6e63" stroke-width="1.2" opacity="0.9"/>
+<text x="648" y="348" class="gr">RAMO CNN</text>
+<rect x="165" y="180" width="120" height="60" fill="#1f2a3a" stroke="#5c7da3" stroke-width="1.3" />
+<text x="225.0" y="207.0" class="nm" fill="#ffffff">SENSOR Xa</text>
+<text x="225.0" y="224.0" class="md">Sample_Source</text>
+<rect x="165" y="300" width="120" height="70" fill="#1f3a2a" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="225.0" y="332.0" class="nm" fill="#ffffff">FIR + /8</text>
+<text x="225.0" y="349.0" class="md">FIR_Decimator</text>
+<rect x="263" y="291" width="30" height="16" rx="3" fill="#ff9800"/><text x="278" y="303" class="tag">NOVO</text>
+<rect x="330" y="300" width="120" height="70" fill="#1f2a3a" stroke="#5c7da3" stroke-width="1.3" />
+<text x="390.0" y="332.0" class="nm" fill="#ffffff">LMS</text>
+<text x="390.0" y="347.0" class="md">LMS_Stage +</text><text x="390.0" y="361.0" class="md">LMS_Filter_Top</text>
+<rect x="510" y="150" width="44" height="610" fill="#3b3346" stroke="#7e6b8f"/>
+<text transform="translate(538,455) rotate(90)" class="bus">DATA BUS DRIVER</text>
+<text transform="translate(522,455) rotate(90)" class="busm">Data_Bus_Driver</text>
+<rect x="660" y="150" width="140" height="70" fill="#2b2410" stroke="#8a6d1f" stroke-width="1.3" />
+<text x="730.0" y="182.0" class="nm" fill="#ffffff">MEM_A</text>
+<text x="730.0" y="199.0" class="md">Frame_Builder (64 am.)</text>
+<rect x="840" y="150" width="140" height="70" fill="#2b2410" stroke="#8a6d1f" stroke-width="1.3" />
+<text x="910.0" y="182.0" class="nm" fill="#ffffff">FFT (DIT)</text>
+<text x="910.0" y="199.0" class="md">FFT_Top, 64 pts</text>
+<rect x="1020" y="150" width="160" height="70" fill="#2b2410" stroke="#8a6d1f" stroke-width="1.3" />
+<text x="1100.0" y="182.0" class="nm" fill="#ffffff">MEM_B</text>
+<text x="1100.0" y="199.0" class="md">Spectrum_Accumulator</text>
+<rect x="1290" y="150" width="140" height="60" fill="#103a3a" stroke="#26a69a" stroke-width="1.3" />
+<text x="1360.0" y="177.0" class="nm" fill="#ffffff">PEAK DETECTOR</text>
+<text x="1360.0" y="194.0" class="md">peak_detector</text>
+<rect x="1450" y="150" width="140" height="60" fill="#103a3a" stroke="#26a69a" stroke-width="1.3" />
+<text x="1520.0" y="177.0" class="nm" fill="#ffffff">EUCLIDES</text>
+<text x="1520.0" y="194.0" class="md">mdc_gcd</text>
+<rect x="1450" y="260" width="140" height="60" fill="#103a3a" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="1520.0" y="287.0" class="nm" fill="#ffffff">f0 = k0.fs/N</text>
+<text x="1520.0" y="304.0" class="md">f0_estimator</text>
+<rect x="1568" y="251" width="30" height="16" rx="3" fill="#ff9800"/><text x="1583" y="263" class="tag">NOVO</text>
+<rect x="1270" y="400" width="185" height="60" fill="#2b2410" stroke="#8a6d1f" stroke-width="1.3" />
+<text x="1362.5" y="427.0" class="nm" fill="#ffffff">BANDAS BPFO/BPFI</text>
+<text x="1362.5" y="444.0" class="md">Feature_Spectral (8)</text>
+<rect x="820" y="370" width="130" height="70" fill="#2b2410" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="885.0" y="402.0" class="nm" fill="#ffffff">LOG2</text>
+<text x="885.0" y="419.0" class="md">FFT_Log2_Compress</text>
+<rect x="928" y="361" width="30" height="16" rx="3" fill="#ff9800"/><text x="943" y="373" class="tag">NOVO</text>
+<rect x="970" y="370" width="130" height="70" fill="#2b2410" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="1035.0" y="402.0" class="nm" fill="#ffffff">ESPECTROGR.</text>
+<text x="1035.0" y="419.0" class="md">Spectrogram_Buffer</text>
+<rect x="1078" y="361" width="30" height="16" rx="3" fill="#ff9800"/><text x="1093" y="373" class="tag">NOVO</text>
+<rect x="1120" y="370" width="100" height="70" fill="#3a1a10" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="1170.0" y="402.0" class="nm" fill="#ffffff">CNN</text>
+<text x="1170.0" y="419.0" class="md">CNN_Top</text>
+<rect x="1198" y="361" width="30" height="16" rx="3" fill="#ff9800"/><text x="1213" y="373" class="tag">NOVO</text>
+<rect x="660" y="600" width="160" height="70" fill="#2b2410" stroke="#8a6d1f" stroke-width="1.3" />
+<text x="740.0" y="632.0" class="nm" fill="#ffffff">COEFFICIENT ACC.</text>
+<text x="740.0" y="649.0" class="md">autocorrelacao_yw</text>
+<rect x="860" y="600" width="180" height="70" fill="#2b2410" stroke="#8a6d1f" stroke-width="1.3" />
+<text x="950.0" y="632.0" class="nm" fill="#ffffff">GAUSS_JORDAN</text>
+<text x="950.0" y="647.0" class="md">Yule_Walker_Solver +</text><text x="950.0" y="661.0" class="md">gauss_jordan_inv</text>
+<rect x="1290" y="580" width="160" height="90" fill="#2d2838" stroke="#9575cd" stroke-width="1.3" />
+<text x="1370.0" y="622.0" class="nm" fill="#ffffff">PARAMETER REGFILE</text>
+<text x="1370.0" y="639.0" class="md">Parameter_RegFile (16)</text>
+<rect x="1500" y="470" width="150" height="200" fill="#6b7a8a" stroke="#90a4ae" stroke-width="1.3" />
+<text x="1575.0" y="567.0" class="nm" fill="#111111">DECISION TREE</text>
+<text x="1575.0" y="584.0" class="md">ML_Tree_Classifier</text>
+<rect x="150" y="820" width="1060" height="64" fill="#26203a" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="680.0" y="849.0" class="nm" fill="#ffffff">CONTROLE GLOBAL</text>
+<text x="680.0" y="866.0" class="md">SMMA_Global_Control: start unico, ready/busy/done de todos os blocos, veredito</text>
+<rect x="1188" y="811" width="30" height="16" rx="3" fill="#ff9800"/><text x="1203" y="823" class="tag">NOVO</text>
+<rect x="1290" y="820" width="230" height="64" fill="#1f3a1f" stroke="#ff9800" stroke-width="2.2" stroke-dasharray="7 4"/>
+<text x="1405.0" y="849.0" class="nm" fill="#ffffff">SAIDA (HEX / LEDR)</text>
+<text x="1405.0" y="866.0" class="md">SMMA_Panel</text>
+<rect x="1498" y="811" width="30" height="16" rx="3" fill="#ff9800"/><text x="1513" y="823" class="tag">NOVO</text>
+<path d="M225,240 L225,300" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="232" y="275" class="lb" text-anchor="start">Xa, 25,6 kHz</text>
+<path d="M285,335 L330,335" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="307" y="326" class="lb" text-anchor="middle">3,2 kHz</text>
+<path d="M450,335 L510,335" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="482" y="326" class="lb" text-anchor="middle">dados</text>
+<text x="380" y="292" class="lb2">dados filtrados</text>
+<path d="M554,185 L660,185" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M800,185 L840,185" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M980,185 L1020,185" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1000" y="176" class="lb" text-anchor="middle">|X[k]|</text>
+<path d="M1180,185 L1240,185 L1240,180 L1290,180" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M1520,210 L1520,260" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1528" y="245" class="lb" text-anchor="start">k0</text>
+<path d="M1430,180 L1450,180" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M1240,185 L1240,430 L1270,430" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M1455,430 L1470,430 L1470,600 L1450,600" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1362" y="476" class="lb" text-anchor="middle">8 features</text>
+<path d="M1590,290 L1620,290 L1620,380 L1475,380 L1475,595 L1452,595" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1625" y="330" class="lb">f0</text>
+<path d="M885,220 L885,300 L885,370" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="891" y="300" class="lb" text-anchor="start">|X[k]|</text>
+<path d="M950,405 L970,405" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M1100,405 L1120,405" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M554,635 L660,635" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M820,635 L860,635" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="840" y="627" class="lb" text-anchor="middle">rho</text>
+<path d="M1040,635 L1290,625" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1165" y="627" class="lb" text-anchor="middle">a1..a3</text>
+<path d="M740,670 L740,700 L1270,700 L1270,650 L1290,650" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1000" y="694" class="lb" text-anchor="middle">rho1..rho3</text>
+<path d="M390,370 L390,520 L1258,520 L1258,610 L1290,610" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1000" y="514" class="lb" text-anchor="middle">r_lms</text>
+<path d="M1450,625 L1500,570" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M1575,670 L1575,800 L1460,800 L1460,820" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1580" y="760" class="lb" text-anchor="start">classe arvore</text>
+<path d="M1170,440 L1170,806 L1340,806 L1340,820" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1176" y="800" class="lb" text-anchor="start">classe CNN</text>
+<path d="M1520,852 L1700,852" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<path d="M1210,852 L1290,852" fill="none" stroke="#ffffff" stroke-width="2.2"  marker-end="url(#m)"/>
+<text x="1250" y="846" class="lb" text-anchor="middle">veredito</text>
+<text x="1705" y="830" class="out">{ OPERACAO NORMAL;</text>
+<text x="1705" y="848" class="out">DESBALANCEAMENTO;</text>
+<text x="1705" y="866" class="out">DESALINHAMENTO;</text>
+<text x="1705" y="884" class="out">DESGASTE DE ROLAMENTO }</text>
+<path d="M300,820 L300,796" fill="none" stroke="#b39ddb" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#mc)"/>
+<path d="M520,820 L520,796" fill="none" stroke="#b39ddb" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#mc)"/>
+<path d="M760,820 L760,796" fill="none" stroke="#b39ddb" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#mc)"/>
+<path d="M960,820 L960,796" fill="none" stroke="#b39ddb" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#mc)"/>
+<path d="M1120,820 L1120,796" fill="none" stroke="#b39ddb" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#mc)"/>
+<rect x="1640" y="120" width="230" height="110" fill="#262626" stroke="#555"/>
+<rect x="1655" y="135" width="26" height="16" fill="none" stroke="#ff9800" stroke-width="2" stroke-dasharray="7 4"/><text x="1690" y="148" class="lg">bloco acrescentado</text>
+<path d="M1655,175 L1685,175" stroke="#fff" stroke-width="2" marker-end="url(#m)"/><text x="1690" y="179" class="lg">dados (valid/ready)</text>
+<path d="M1655,205 L1685,205" stroke="#b39ddb" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#mc)"/><text x="1690" y="209" class="lg">controle (start/done)</text>
 </svg>

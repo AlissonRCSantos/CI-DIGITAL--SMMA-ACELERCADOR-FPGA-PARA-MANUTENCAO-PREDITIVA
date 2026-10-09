@@ -49,6 +49,7 @@ Os demais `.hex` da pasta são vetores dos testbenches.
 | Analysis & Synthesis → Messages | nenhum aviso de `.hex` não encontrado; nenhum latch (`10240`) |
 | Fitter → Resource Utilization | cabe na 5CEBA4; `Sample_Source` em M10K |
 | TimeQuest → Slow 1100mV 85C → Setup `CLOCK_50` | **slack ≥ 0** a 50 MHz |
+| Analysis & Synthesis → Resource Utilization by Entity | `LMS_Stage`, `LMS_Filter_Top`, `gauss_jordan_inv`, `Yule_Walker_Solver`, `mdc_gcd`, `CNN_Top` com recursos ≠ 0 |
 | RTL Viewer (Tools → Netlist Viewers) | os blocos do diagrama em `docs/diagramas/` |
 
 `MODO_RAPIDO` tem de ficar em **0** na síntese (é o padrão do `SMMA_Top`); o

@@ -1,15 +1,16 @@
 // ============================================================================
-// Module: Feature_Collector
-// Description: Monta o VETOR DE CARACTERISTICAS do classificador de Machine
-//              Learning (enunciado 3.5) a partir das quatro etapas de
-//              extracao, e o entrega a arvore em ordem fixa.
+// Module: Parameter_RegFile
+// Description: BANCO DE REGISTRADORES DE PARAMETROS do classificador -- o
+//              bloco "PARAMETER REGFILE" do diagrama de arquitetura. Guarda o
+//              VETOR DE CARACTERISTICAS (enunciado 3.5) vindo das quatro
+//              etapas de extracao e o entrega a arvore em ordem fixa.
 //
 // ----------------------------------------------------------------------------
 // O VETOR (16 posicoes, Q1.15 salvo indicacao)
 // ----------------------------------------------------------------------------
 //   idx  origem                      conteudo
 //   0-7  FFT (Feature_Spectral)      r_1x r_2x r_3x r_banda1..3 log2E centroide
-//   8    LMS (LMS_Residual_Feature)  r_lms
+//   8    LMS (LMS_Stage)             r_lms
 //   9-11 estimacao matricial         rho1 rho2 rho3   (autocorrelacao_yw)
 //   12   MDC (f0_estimator)          f0 em Hz (inteiro); 0 se o MDC falhou
 //   13-15 estimacao matricial        a1/2 a2/2 a3/2   (Yule_Walker_Solver +
@@ -40,7 +41,7 @@
 
 `timescale 1ns / 1ps
 
-module Feature_Collector #(
+module Parameter_RegFile #(
     parameter WIDTH = 16
 )(
     input  wire                     clk,

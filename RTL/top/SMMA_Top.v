@@ -7,57 +7,47 @@
 //              Alvo: DE0-CV, Cyclone V 5CEBA4F23C7N, 50 MHz.
 //
 // ============================================================================
-// ARQUITETURA GERAL (enunciado, secao 4) -- um bloco por item exigido
+// ARQUITETURA (diagrama do grupo, com os blocos obrigatorios que faltavam)
 // ============================================================================
 //
-//   interface de entrada .... Sample_Source (sensor emulado) + FIR_Decimator
-//   buffers de amostras ..... Frame_Builder, Spectrum_Accumulator,
-//                             Spectrogram_Buffer
-//   modulo FFT .............. FFT_Top (+ FFT_Log2_Compress p/ espectrograma)
-//   modulo MDC .............. peak_detector -> mdc_gcd -> f0_estimator
-//   modulo LMS .............. LMS_Filter_Top (+ LMS_Residual_Feature)
-//   inversao de matriz ...... autocorrelacao_yw -> Yule_Walker_Solver ->
-//                             gauss_jordan_inv
-//   acelerador de ML ........ Feature_Spectral + Feature_Collector ->
-//                             ML_Tree_Classifier
-//   acelerador CNN .......... CNN_Top
-//   controle global ......... SMMA_Global_Control
-//   comunicacao ............. handshake valid/ready + Stream_Fork (join)
-//   interface de saida ...... SMMA_Panel
+//  Xa --> Sample_Source --> FIR_Decimator --> [ LMS ] --> DATA BUS DRIVER
+//         (sensor emulado)  (anti-alias, /8)  LMS_Stage    Data_Bus_Driver
+//                                             <-> LMS_Filter_Top   |
+//                                                  |               |
+//              r_lms ------------------------------+               |
+//                                                                  |
+//   +--------------------------------------------------------------+
+//   |                                                              |
+//   v  ramo FFT                                                    v  ramo matriz
+//  MEM_A ----------> FFT --------------> MEM_B                  coefficient
+//  Frame_Builder     FFT_Top             Spectrum_Accumulator   accumulator
+//  (64 amostras)     (64 pts)       |    (espectro medio)       autocorrelacao_yw
+//                                   |        |      |               |
+//                                   |  PEAK  |      | bandas        v
+//                                   | DETECT.|      | BPFO/BPFI  GAUSS_JORDAN
+//                                   |  peak_ |      | Feature_   Yule_Walker_Solver
+//                                   | detector      | Spectral   <-> gauss_jordan_inv
+//                                   |    |          |               |
+//                                   | EUCLIDES      |               |
+//                                   | mdc_gcd ->    |               |
+//                                   | f0_estimator  |               |
+//                                   |    |          |               |
+//                                   |    +----------+---> PARAMETER REGFILE <--+
+//                                   |                     Parameter_RegFile
+//                                   |                          |
+//                                   |                    DECISION TREE
+//                                   |                    ML_Tree_Classifier
+//                                   v                          |
+//                       FFT_Log2_Compress -> Spectrogram_Buffer -> CNN_Top
+//                                                              |       |
+//                              SMMA_Global_Control  ---->  SMMA_Panel (HEX/LEDR)
 //
-// ============================================================================
-// CADEIA DE DADOS
-// ============================================================================
-//
-//  Sample_Source (25,6 kHz) -> FIR_Decimator (/8 -> 3,2 kHz)
-//                                   |
-//                     Stream_Fork --+-----------------+--------------------+
-//                         |                           |                    |
-//                   Frame_Builder          LMS_Residual_Feature   autocorrelacao_yw
-//                   64 pts, salto 32         <-> LMS_Filter_Top    rho[0..3]
-//                         |                           | r_lms        |      |
-//                     FFT_Top 64 pts                  |              |  Yule_Walker_Solver
-//                         | |X[k]|, k=0..31           |              |   <-> gauss_jordan_inv
-//                Stream_Fork -----------+             |              |      | a1..a3
-//                    |                  |             |              |      |
-//          Spectrum_Accumulator   FFT_Log2_Compress   |              |      |
-//          (espectro medio)       Spectrogram_Buffer  |              |      |
-//                    |                  |             |              |      |
-//            Stream_Fork -----+      CNN_Top          |              |      |
-//               |             |         |             |              |      |
-//      Feature_Spectral  peak_detector  |             |              |      |
-//          8 feats        -> mdc_gcd    |             |              |      |
-//               |         -> f0_estimator             |              |      |
-//               |             | f0      |             |              |      |
-//               +-------------+---- Feature_Collector (16) ----------+------+
-//                                          |
-//                                  ML_Tree_Classifier
-//                                          |
-//                    SMMA_Global_Control -> SMMA_Panel (HEX/LEDR)
-//
-//   A arvore (12 caracteristicas treinadas, de 16 recebidas) e a CNN rodam
-//   sobre a MESMA janela e o painel mostra as duas lado a lado contra o
-//   rotulo verdadeiro.
+//   Acrescentados ao diagrama (obrigatorios pelo enunciado ou pela fisica):
+//     FIR_Decimator     sem decimacao a FFT de 64 pts teria bins de 400 Hz e
+//                       todas as frequencias de falha cairiam no bin 0
+//     f0_estimator      converte o k0 do Euclides em frequencia (3.1)
+//     ramo CNN          acelerador CNN obrigatorio (3.6 e secao 4)
+//     controle/painel   unidade de controle global e interface de saida (4)
 //
 // ============================================================================
 // PAINEL (DE0-CV) -- ver SMMA_Panel.v
@@ -82,6 +72,7 @@ module SMMA_Top #(
     parameter FS_DEC      = 3200,    // taxa apos a decimacao (Hz)
     parameter PICO_LIMIAR = 16'd64,  // limiar do detector de picos (|X| medio)
     parameter MDC_MIN     = 6'd1,    // menor k0 aceito pelo MDC
+    parameter SAIDA_LMS   = 0,       // 0: barramento recebe x(n) do FIR; 1: y(n) do LMS
     parameter MODO_RAPIDO = 0        // 1 = ignora a taxa de 25,6 kHz (simulacao)
 )(
     input  wire        CLOCK_50,
@@ -97,6 +88,7 @@ module SMMA_Top #(
 );
 
     localparam L_JANELA = (N_QUADROS-1)*HOP + NFFT;      // 1056 amostras
+    localparam [19:0] FS_DEC_20 = FS_DEC;                // largura da porta cfg_fs
 
     wire clk = CLOCK_50;
 
@@ -120,7 +112,7 @@ module SMMA_Top #(
     wire arranca;
 
     // ========================================================================
-    // INTERFACE DE ENTRADA DOS SENSORES
+    // INTERFACE DE ENTRADA DOS SENSORES (Xa: acelerometro x do mancal A)
     // ========================================================================
     wire                     src_busy, src_done, src_valid, src_ready;
     wire signed [WIDTH-1:0]  src_sample;
@@ -150,21 +142,70 @@ module SMMA_Top #(
         .overflow(fir_overflow)
     );
 
-    // ------------------------------------------------------------------------
-    // Fork (a): sinal decimado -> quadros da FFT + LMS + autocorrelacao
-    // ------------------------------------------------------------------------
-    wire fb_in_valid, lr_in_valid, ac_in_valid;
-    wire fb_in_ready, lr_in_ready, ac_in_ready;
+    // ========================================================================
+    // MODULO LMS (EM SERIE): toda amostra filtrada pelo FIR atravessa o LMS
+    // antes de chegar ao barramento de dados.
+    //
+    //   FIR_Decimator -> LMS_Stage <-> LMS_Filter_Top -> Data_Bus_Driver
+    //
+    // SAIDA_LMS = 0: o barramento recebe a amostra filtrada pelo FIR, que e o
+    // sinal com que a arvore e a CNN foram treinadas (resultado identico ao
+    // validado). Com SAIDA_LMS = 1 o barramento passa a receber y(n), a saida
+    // do filtro adaptativo -- exige retreinar os dois classificadores.
+    // ========================================================================
+    wire                     ls_ready, ls_busy, ls_done;
+    wire                     ls_out_valid, ls_out_ready;
+    wire signed [WIDTH-1:0]  ls_out_sample;
+    wire                     ls_feat_valid, ls_feat_ready;
+    wire signed [WIDTH-1:0]  ls_feat_lms;
 
-    Stream_Fork #(.N(3)) u_fork_dec (
-        .in_valid (dec_valid),
-        .in_ready (dec_ready),
-        .out_valid({ac_in_valid, lr_in_valid, fb_in_valid}),
-        .out_ready({ac_in_ready, lr_in_ready, fb_in_ready})
+    wire                     lms_clear, lms_start;
+    wire signed [WIDTH-1:0]  lms_x, lms_d, lms_y, lms_error;
+    wire                     lms_busy, lms_valid_out;
+
+    LMS_Filter_Top #(
+        .WIDTH(WIDTH), .FRAC(FRAC), .MU_SHIFT(3)
+    ) u_lms (
+        .clk(clk), .rst(rst || lms_clear),
+        .start(lms_start), .enable(1'b1), .valid_in(lms_start),
+        .ready(), .busy(lms_busy), .valid_out(lms_valid_out),
+        .in_x(lms_x), .in_d(lms_d),
+        .out_y(lms_y), .out_error(lms_error),
+        .w0(), .w1(), .w2(), .w3(), .w4(), .w5(), .w6(), .w7()
+    );
+
+    LMS_Stage #(
+        .WIDTH(WIDTH), .FRAC(FRAC), .N_AMOSTRAS(L_JANELA), .SAIDA_LMS(SAIDA_LMS)
+    ) u_lms_stage (
+        .clk(clk), .rst(rst), .start(arranca),
+        .ready(ls_ready), .busy(ls_busy), .done(ls_done),
+        .in_valid(dec_valid), .in_ready(dec_ready), .in_sample(dec_sample),
+        .out_ready(ls_out_ready), .out_valid(ls_out_valid), .out_sample(ls_out_sample),
+        .lms_clear(lms_clear), .lms_start(lms_start),
+        .lms_x(lms_x), .lms_d(lms_d),
+        .lms_busy(lms_busy), .lms_valid_out(lms_valid_out),
+        .lms_y(lms_y), .lms_error(lms_error),
+        .feat_ready(ls_feat_ready), .feat_valid(ls_feat_valid), .feat_lms(ls_feat_lms)
     );
 
     // ========================================================================
-    // BUFFER DE AMOSTRAS: quadros de 64 pontos, salto 32
+    // DATA BUS DRIVER: dados filtrados -> MEM_A/FFT e acumulador/Gauss-Jordan
+    // ========================================================================
+    wire signed [WIDTH-1:0]  bus_sample;
+    wire                     fb_in_valid, ac_in_valid;
+    wire                     fb_in_ready, ac_in_ready;
+
+    Data_Bus_Driver #(.WIDTH(WIDTH), .N_DEST(2)) u_bus (
+        .in_valid (ls_out_valid),
+        .in_ready (ls_out_ready),
+        .in_sample(ls_out_sample),
+        .out_valid({ac_in_valid, fb_in_valid}),
+        .out_ready({ac_in_ready, fb_in_ready}),
+        .out_sample(bus_sample)
+    );
+
+    // ========================================================================
+    // MEM_A -- buffer de amostras da FFT: quadros de 64 pontos, salto 32
     // ========================================================================
     wire                     fb_ready, fb_busy, fb_done;
     wire                     fb_out_valid, fb_out_ready;
@@ -176,7 +217,7 @@ module SMMA_Top #(
     ) u_fb (
         .clk(clk), .rst(rst), .start(arranca),
         .ready(fb_ready), .busy(fb_busy), .done(fb_done),
-        .in_valid(fb_in_valid), .in_ready(fb_in_ready), .in_sample(dec_sample),
+        .in_valid(fb_in_valid), .in_ready(fb_in_ready), .in_sample(bus_sample),
         .out_ready(fb_out_ready), .out_valid(fb_out_valid),
         .out_sample(fb_out_sample),
         .out_frame_ini(fb_frame_ini), .out_frame_fim(fb_frame_fim)
@@ -238,7 +279,7 @@ module SMMA_Top #(
     assign fft_out_ready = bin_util ? bin_fork_ready : 1'b1;
 
     // ========================================================================
-    // MEMORIA DE ESPECTROS: espectro medio dos 32 quadros
+    // MEM_B -- memoria de espectros: espectro medio dos 32 quadros
     // ========================================================================
     wire              sa_ready, sa_busy, sa_done;
     wire              sa_out_valid, sa_out_ready;
@@ -269,7 +310,7 @@ module SMMA_Top #(
     );
 
     // ========================================================================
-    // ACELERADOR DE ML (1/3): features espectrais (8)
+    // Caracteristicas espectrais (8), inclusive as bandas de BPFO/BPFI
     // ========================================================================
     wire                     fs_ready, fs_busy, fs_done;
     wire                     fs_out_valid, fs_out_ready;
@@ -286,7 +327,7 @@ module SMMA_Top #(
     );
 
     // ========================================================================
-    // MODULO MDC: picos -> MDC (Euclides) -> frequencia fundamental
+    // PEAK DETECTOR -> EUCLIDES (MDC) -> frequencia fundamental
     //
     //   peak_detector : 3 maiores maximos locais acima de PICO_LIMIAR no
     //                   espectro medio (bins 1..30)
@@ -334,7 +375,7 @@ module SMMA_Top #(
         .clk(clk), .rst_n(!rst),
         .start(1'b0), .busy(f0_busy), .done(f0_done),
         .in_valid(mdc_out_valid), .in_ready(mdc_out_ready), .in_data(mdc_k0),
-        .cfg_fs(FS_DEC[19:0]),
+        .cfg_fs(FS_DEC_20),
         .out_valid(f0_out_valid), .out_ready(f0_out_ready),
         .f0_int(f0_int), .f0_frac(f0_frac)
     );
@@ -365,42 +406,7 @@ module SMMA_Top #(
     end
 
     // ========================================================================
-    // MODULO LMS: filtro adaptativo de 8 coeficientes como preditor linear
-    // ========================================================================
-    wire                     lr_ready, lr_busy, lr_done;
-    wire                     lr_out_valid, lr_out_ready;
-    wire signed [WIDTH-1:0]  lr_out_feature;
-
-    wire                     lms_clear, lms_start;
-    wire signed [WIDTH-1:0]  lms_x, lms_d, lms_error;
-    wire                     lms_busy, lms_valid_out;
-
-    LMS_Filter_Top #(
-        .WIDTH(WIDTH), .FRAC(FRAC), .MU_SHIFT(3)
-    ) u_lms (
-        .clk(clk), .rst(rst || lms_clear),
-        .start(lms_start), .enable(1'b1), .valid_in(lms_start),
-        .ready(), .busy(lms_busy), .valid_out(lms_valid_out),
-        .in_x(lms_x), .in_d(lms_d),
-        .out_y(), .out_error(lms_error),
-        .w0(), .w1(), .w2(), .w3(), .w4(), .w5(), .w6(), .w7()
-    );
-
-    LMS_Residual_Feature #(
-        .WIDTH(WIDTH), .FRAC(FRAC), .N_AMOSTRAS(L_JANELA)
-    ) u_lr (
-        .clk(clk), .rst(rst), .start(arranca),
-        .ready(lr_ready), .busy(lr_busy), .done(lr_done),
-        .in_valid(lr_in_valid), .in_ready(lr_in_ready), .in_sample(dec_sample),
-        .lms_clear(lms_clear), .lms_start(lms_start),
-        .lms_x(lms_x), .lms_d(lms_d),
-        .lms_busy(lms_busy), .lms_valid_out(lms_valid_out), .lms_error(lms_error),
-        .out_ready(lr_out_ready), .out_valid(lr_out_valid),
-        .out_feature(lr_out_feature)
-    );
-
-    // ========================================================================
-    // MODULO DE INVERSAO DE MATRIZ (estimacao de parametros, Yule-Walker)
+    // COEFFICIENT ACCUMULATOR -> GAUSS_JORDAN (estimacao de parametros)
     //
     //   autocorrelacao_yw  : rho[0..3] da janela      -> matriz de Toeplitz
     //   Yule_Walker_Solver : carrega R, a = R^-1 r     (controle + MAC)
@@ -416,7 +422,7 @@ module SMMA_Top #(
     ) u_ac (
         .clk(clk), .reset(rst),
         .start(arranca), .ready(ac_ready), .busy(ac_busy),
-        .lms_valid(ac_in_valid), .lms_ready(ac_in_ready), .lms_data(dec_sample),
+        .lms_valid(ac_in_valid), .lms_ready(ac_in_ready), .lms_data(bus_sample),
         .r_valid(ac_r_valid), .r_index(ac_r_index), .r_data(ac_r_data)
     );
 
@@ -463,17 +469,17 @@ module SMMA_Top #(
     );
 
     // ========================================================================
-    // ACELERADOR DE ML (2/3): vetor de caracteristicas
+    // PARAMETER REGFILE: vetor de caracteristicas do classificador
     // ========================================================================
     wire                     col_ready, col_busy, col_done;
     wire                     col_out_valid, col_out_ready;
     wire signed [WIDTH-1:0]  col_out_feature;
 
-    Feature_Collector #(.WIDTH(WIDTH)) u_col (
+    Parameter_RegFile #(.WIDTH(WIDTH)) u_regfile (
         .clk(clk), .rst(rst), .start(arranca),
         .ready(col_ready), .busy(col_busy), .done(col_done),
         .esp_valid(fs_out_valid), .esp_ready(fs_out_ready), .esp_data(fs_out_feature),
-        .lms_valid(lr_out_valid), .lms_ready(lr_out_ready), .lms_data(lr_out_feature),
+        .lms_valid(ls_feat_valid), .lms_ready(ls_feat_ready), .lms_data(ls_feat_lms),
         .r_valid(ac_r_valid), .r_index(ac_r_index), .r_data(ac_r_data),
         .f0_valid(f0_out_valid), .f0_ready(f0_out_ready), .f0_data(f0_feature),
         .ar_valid(yw_out_valid), .ar_ready(yw_out_ready), .ar_data(yw_out_feature),
@@ -482,7 +488,7 @@ module SMMA_Top #(
     );
 
     // ========================================================================
-    // ACELERADOR DE ML (3/3): arvore de decisao
+    // DECISION TREE (acelerador de Machine Learning)
     // ========================================================================
     wire        tree_start, tree_ready, tree_busy, tree_done;
     wire        tree_out_valid, tree_out_error;
@@ -548,7 +554,7 @@ module SMMA_Top #(
     // UNIDADE DE CONTROLE GLOBAL
     // ========================================================================
     wire todos_prontos = fb_ready && sa_ready && fs_ready && sb_ready
-                      && lr_ready && ac_ready && yw_ready && col_ready
+                      && ls_ready && ac_ready && yw_ready && col_ready
                       && !pk_busy && !mdc_busy && !f0_busy
                       && tree_ready && cnn_ready;
 

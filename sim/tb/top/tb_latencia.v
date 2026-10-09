@@ -91,17 +91,17 @@ module tb_latencia;
         if (uut.mdc_out_valid && t_mdc < 0)    t_mdc    <= cyc;
         if (uut.f0_out_valid && t_f0 < 0)      t_f0     <= cyc;
 
-        // LMS: ciclos ocupados por amostra decimada
-        if (uut.lr_in_valid && uut.lr_in_ready) begin
+        // LMS em serie: da amostra aceita pelo estagio ate ela sair no barramento
+        if (uut.dec_valid && uut.dec_ready) begin
             lms_contando <= 1'b1; lms_busy <= 0;
         end else if (lms_contando) begin
-            if (uut.lr_in_ready || !uut.lr_busy) begin
+            if (uut.ls_out_valid) begin
                 lms_contando <= 1'b0;
                 lms_n <= lms_n + 1; lms_busy_sum <= lms_busy_sum + lms_busy;
                 if (lms_busy > lms_busy_max) lms_busy_max <= lms_busy;
             end else lms_busy <= lms_busy + 1;
         end
-        if (uut.lr_out_valid && t_lr_out < 0) t_lr_out <= cyc;
+        if (uut.ls_feat_valid && t_lr_out < 0) t_lr_out <= cyc;
 
         // estimacao matricial
         if (uut.ac_r_valid && t_ac_out < 0)  t_ac_out <= cyc;
@@ -157,7 +157,7 @@ module tb_latencia;
         $display("Spectrum_Accumulator: ultimo bin -> espectro medio : %0d ciclos (+%0d de saida)", t_sa_first - t_b31[31], t_sa_last - t_sa_first);
         $display("Feature_Spectral: fim do espectro -> 1a feature    : %0d ciclos", t_fs_out - t_sa_last);
         $display("MDC: fim do espectro -> picos / k0 / f0            : %0d / %0d / %0d ciclos", t_pk_out - t_sa_last, t_mdc - t_sa_last, t_f0 - t_sa_last);
-        $display("LMS por amostra (LMS_Filter_Top + energias)       : media %0d, max %0d ciclos (%0d amostras)",
+        $display("LMS em serie: entrada -> barramento, por amostra  : media %0d, max %0d ciclos (%0d amostras)",
                  lms_busy_sum / (lms_n > 0 ? lms_n : 1), lms_busy_max, lms_n);
         $display("LMS: ultima amostra -> r_lms                       : %0d ciclos", t_lr_out - ult_dec);
         $display("autocorrelacao: ultima amostra -> rho              : %0d ciclos", t_ac_out - ult_dec);

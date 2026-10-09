@@ -60,7 +60,9 @@ add wave -radix unsigned sim:/tb_latencia/uut/f0_int
 add wave -divider "LMS e matriz"
 add wave sim:/tb_latencia/uut/lms_start
 add wave -radix decimal sim:/tb_latencia/uut/lms_error
-add wave sim:/tb_latencia/uut/lr_out_valid
+add wave sim:/tb_latencia/uut/ls_out_valid
+add wave sim:/tb_latencia/uut/ls_feat_valid
+add wave -radix decimal sim:/tb_latencia/uut/bus_sample
 add wave sim:/tb_latencia/uut/ac_r_valid
 add wave -radix decimal sim:/tb_latencia/uut/ac_r_data
 add wave sim:/tb_latencia/uut/inv_start

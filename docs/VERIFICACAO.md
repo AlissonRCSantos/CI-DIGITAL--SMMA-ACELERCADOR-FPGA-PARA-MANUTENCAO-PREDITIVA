@@ -22,19 +22,19 @@ Um testbench só é aprovado se (a) nenhuma linha começa com `[FAIL]`/`[ERRO]`,
 | sistema | `tb_Equivalencia` | **mesmo comportamento da integração anterior**: 12 features, 4 scores da CNN e todos os pinos do painel, bit a bit, nas 12 janelas |
 | sistema | `tb_SMMA_Top` | ponta a ponta pelos pinos da placa: árvore = modelo Python nas 12 janelas, 11/12 corretas, f0 = 50 Hz com `SW[8]`, reuso sem reset |
 | sistema | `tb_latencia` | carimba a latência de cada bloco numa janela em tempo real |
-| sistema | `tb_Stream_Fork` | join com 3 consumidores aleatórios: sem perda, sem duplicação, em ordem |
+| sistema | `tb_Stream_Fork` | join com 3 consumidores aleatórios (base do `Data_Bus_Driver`): sem perda, sem duplicação, em ordem |
 | entrada | `tb_Sample_Source`, `tb_FIR_Decimator` | ROM do dataset, taxa, FIR bit a bit com Python |
 | buffers | `tb_Frame_Builder`, `tb_Spectrogram_Buffer` | quadros com salto 32; transposição 32×32 |
 | FFT | `tb_FFT_Top`, `tb_FFT_Log2_Compress` | FFT bit a bit com o modelo, sob contrapressão; log2 nas 65 536 entradas |
 | MDC | `tb_peak_detector`, `tb_mdc_gcd`, `tb_f0_estimator` | testbenches originais das branches |
 | MDC | `tb_MDC_Chain` | cadeia completa como no top; **exemplo do enunciado: MDC(12,18,30) = 6 → 300 Hz**; harmônicos; sem picos → erro; reuso |
 | LMS | `tb_LMS_*` (6) | testbenches originais da branch `feat/LMS` (o do `LMS_Control_FSM` teve as expectativas corrigidas, ver abaixo) |
-| LMS | `tb_LMS_Residual_Feature` | `LMS_Filter_Top` + controlador como no top: r_lms **bit a bit** com Python em 6 janelas reais |
+| LMS | `tb_LMS_Stage` | estágio LMS em série como no top: 1056 amostras repassadas intactas sob contrapressão, r_lms **bit a bit** e y(n) = modelo Python, em 6 janelas reais |
 | matriz | `tb_autocorrelacao_yw` | rho[0..3] **bit a bit** com Python em 6 janelas reais, ordem do protocolo `r_index` |
 | matriz | `tb_gauss_jordan_inv` | inversas 2×2, 3×3 com troca de linhas, 4×4, matriz singular — em Q4.12 e Q8.16 |
 | matriz | `tb_Yule_Walker_Solver` | autocorrelação → Yule-Walker → Gauss-Jordan; a1..a3 contra `numpy.linalg.solve`: desvio máx. 1 LSB |
 | ML | `tb_Feature_Spectral` | `Spectrum_Accumulator` + `Feature_Spectral`: 8 janelas × 8 features bit a bit |
-| ML | `tb_Feature_Collector` | 16 posições em ordem com chegada embaralhada, contrapressão, reuso |
+| ML | `tb_Parameter_RegFile` | 16 posições em ordem com chegada embaralhada, contrapressão, reuso |
 | ML | `tb_ML_Tree_Classifier` | 64 vetores, classe = sklearn |
 | CNN | `tb_CNN_*` (9) | cada bloco e a rede inteira com 8 espectrogramas reais, bit a bit com o golden model |
 | comum | `tb_FP_Mult_Unit`, `tb_FP_Arith_Unit`, `tb_Divider_Q15` | aritmética Q1.15 (2005 multiplicações) |
@@ -48,7 +48,7 @@ do testbench**, não na FSM: ele esperava `wr_addr` com 4 ciclos de atraso e
 visível no ciclo 13, alinhado ao `out_error` registrado do acumulador) e atrasa
 `wr_addr` 5 ciclos — exatamente a latência de escrita da PE. É essa
 temporização que faz o `LMS_Filter_Top` completo reproduzir o modelo Python
-bit a bit em janelas de 1056 amostras (`tb_LMS_Residual_Feature`). As
+bit a bit em janelas de 1056 amostras (`tb_LMS_Stage`). As
 expectativas foram ajustadas e o teste passa (32 verificações).
 
 ## Ordem recomendada de teste (de baixo para cima)
@@ -59,9 +59,9 @@ expectativas foram ajustadas e o teste passa (32 verificações).
 2. buffers    Frame_Builder, Spectrogram_Buffer
 3. FFT        FFT_Log2_Compress, FFT_Top
 4. MDC        peak_detector, mdc_gcd, f0_estimator -> MDC_Chain
-5. LMS        LMS_* (folhas) -> LMS_Filter_Top -> LMS_Residual_Feature
+5. LMS        LMS_* (folhas) -> LMS_Filter_Top -> LMS_Stage
 6. matriz     gauss_jordan_inv, autocorrelacao_yw -> Yule_Walker_Solver
-7. ML         Feature_Spectral, Feature_Collector, ML_Tree_Classifier
+7. ML         Feature_Spectral, Parameter_RegFile, ML_Tree_Classifier
 8. CNN        CNN_* (folhas) -> CNN_Top
 9. sistema    Stream_Fork -> SMMA_Top -> Equivalencia -> latencia
 ```

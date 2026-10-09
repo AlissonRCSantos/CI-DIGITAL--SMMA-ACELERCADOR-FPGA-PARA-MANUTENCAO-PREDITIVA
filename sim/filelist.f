@@ -1,5 +1,6 @@
 // Fontes RTL do SMMA (caminhos relativos a raiz do repositorio).
 // Usado por sim/run_xcelium.sh; o run_regressao.sh e o SMMA.qsf listam as mesmas.
+RTL/top/Data_Bus_Driver.v
 RTL/top/SMMA_Global_Control.v
 RTL/top/SMMA_Panel.v
 RTL/top/SMMA_Top.v
@@ -26,15 +27,15 @@ RTL/lms/LMS_Control_FSM.v
 RTL/lms/LMS_Filter_Top.v
 RTL/lms/LMS_Input_Delay_Line.v
 RTL/lms/LMS_Processing_Element.v
-RTL/lms/LMS_Residual_Feature.v
+RTL/lms/LMS_Stage.v
 RTL/lms/LMS_Weight_Storage.v
 RTL/matriz/Yule_Walker_Solver.v
 RTL/matriz/autocorrelacao_yw.v
 RTL/matriz/fixed_point_divider.v
 RTL/matriz/gauss_jordan_inv.v
-RTL/ml/Feature_Collector.v
 RTL/ml/Feature_Spectral.v
 RTL/ml/ML_Tree_Classifier.v
+RTL/ml/Parameter_RegFile.v
 RTL/cnn/CNN_Control_FSM.v
 RTL/cnn/CNN_Conv_Layer.v
 RTL/cnn/CNN_Dense_Classifier.v
