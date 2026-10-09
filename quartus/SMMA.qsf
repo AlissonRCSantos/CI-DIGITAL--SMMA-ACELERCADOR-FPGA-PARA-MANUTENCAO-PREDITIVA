@@ -16,57 +16,83 @@ set_global_assignment -name SDC_FILE SMMA.sdc
 # ----------------------------------------------------------------------------
 # Onde o Quartus acha os .hex do $readmemh
 #
-# Os modulos referenciam "vetores/arvore.hex" e companhia por caminho RELATIVO.
-# Na simulacao o caminho vale a partir de RTL/; aqui vale a partir do diretorio
-# do projeto, por isso a busca inclui ../RTL. Sem isto a sintese infere ROMs
-# ZERADAS e passa sem erro -- o classificador sairia respondendo sempre a mesma
-# classe, que e um sintoma facil de confundir com um bug de logica.
+# Os modulos abrem "vetores/<arquivo>.hex" por caminho RELATIVO ao diretorio
+# do projeto -- isto e, quartus/vetores/. Sem esses arquivos a sintese infere
+# ROMs ZERADAS e passa sem erro (o classificador responderia sempre a mesma
+# classe). Por isso a pasta vetores/ fica AQUI, ao lado do .qpf.
 # ----------------------------------------------------------------------------
-set_global_assignment -name SEARCH_PATH ../RTL
-set_global_assignment -name SEARCH_PATH ../RTL/vetores
+set_global_assignment -name SEARCH_PATH vetores
 
 # ----------------------------------------------------------------------------
-# Fontes RTL
+# Fontes RTL (uma pasta por modulo do enunciado, secao 4)
 # ----------------------------------------------------------------------------
 
-# -- top level e controle --
-set_global_assignment -name VERILOG_FILE ../RTL/SMMA_Top.v
+# -- top level: controle global, comunicacao e interface de saida --
+set_global_assignment -name VERILOG_FILE ../RTL/top/SMMA_Top.v
+set_global_assignment -name VERILOG_FILE ../RTL/top/SMMA_Global_Control.v
+set_global_assignment -name VERILOG_FILE ../RTL/top/SMMA_Panel.v
+set_global_assignment -name VERILOG_FILE ../RTL/top/Stream_Fork.v
 
-# -- aquisicao: dataset em ROM, FIR anti-alias e decimacao /8 --
-set_global_assignment -name VERILOG_FILE ../RTL/Sample_Source.v
-set_global_assignment -name VERILOG_FILE ../RTL/FIR_Decimator.v
-set_global_assignment -name VERILOG_FILE ../RTL/Frame_Builder.v
+# -- interface de entrada dos sensores: dataset em ROM, FIR anti-alias, /8 --
+set_global_assignment -name VERILOG_FILE ../RTL/entrada/Sample_Source.v
+set_global_assignment -name VERILOG_FILE ../RTL/entrada/FIR_Decimator.v
 
-# -- FFT de 64 pontos --
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Top.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Control_FSM.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Addr_Gen.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Bit_Reverse.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Butterfly.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Memory.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Twiddle_ROM.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Magnitude.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Log2_Compress.v
-set_global_assignment -name VERILOG_FILE ../RTL/FP_Mult_Unit.v
-set_global_assignment -name VERILOG_FILE ../RTL/FP_Arith_Unit.v
+# -- buffers de amostras e de espectros --
+set_global_assignment -name VERILOG_FILE ../RTL/buffers/Frame_Builder.v
+set_global_assignment -name VERILOG_FILE ../RTL/buffers/Spectrum_Accumulator.v
+set_global_assignment -name VERILOG_FILE ../RTL/buffers/Spectrogram_Buffer.v
 
-# -- caracteristicas e classificador numerico --
-set_global_assignment -name VERILOG_FILE ../RTL/Feature_Spectral.v
-set_global_assignment -name VERILOG_FILE ../RTL/Feature_Temporal.v
-set_global_assignment -name VERILOG_FILE ../RTL/Divider_Q15.v
-set_global_assignment -name VERILOG_FILE ../RTL/ML_Tree_Classifier.v
+# -- modulo FFT (64 pontos) + compressao log2 do espectrograma --
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Top.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Control_FSM.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Addr_Gen.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Bit_Reverse.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Butterfly.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Memory.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Twiddle_ROM.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Magnitude.v
+set_global_assignment -name VERILOG_FILE ../RTL/fft/FFT_Log2_Compress.v
 
-# -- espectrograma e CNN --
-set_global_assignment -name VERILOG_FILE ../RTL/Spectrogram_Buffer.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Top.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Control_FSM.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Line_Buffer.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Conv_Layer.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_MAC_Unit.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_ReLU.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_MaxPool.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Dense_Classifier.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Weight_ROM.v
+# -- modulo MDC: detector de picos -> MDC (Euclides) -> frequencia fundamental --
+set_global_assignment -name VERILOG_FILE ../RTL/mdc/peak_detector.v
+set_global_assignment -name VERILOG_FILE ../RTL/mdc/mdc_gcd.v
+set_global_assignment -name VERILOG_FILE ../RTL/mdc/f0_estimator.v
+
+# -- modulo LMS: filtro adaptativo de 8 coeficientes --
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Filter_Top.v
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Control_FSM.v
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Input_Delay_Line.v
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Weight_Storage.v
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Processing_Element.v
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Accumulator_Error_Scale.v
+set_global_assignment -name VERILOG_FILE ../RTL/lms/LMS_Residual_Feature.v
+
+# -- modulo de inversao de matriz: autocorrelacao, Yule-Walker, Gauss-Jordan --
+set_global_assignment -name VERILOG_FILE ../RTL/matriz/autocorrelacao_yw.v
+set_global_assignment -name VERILOG_FILE ../RTL/matriz/Yule_Walker_Solver.v
+set_global_assignment -name VERILOG_FILE ../RTL/matriz/gauss_jordan_inv.v
+set_global_assignment -name VERILOG_FILE ../RTL/matriz/fixed_point_divider.v
+
+# -- acelerador de Machine Learning: features + arvore de decisao --
+set_global_assignment -name VERILOG_FILE ../RTL/ml/Feature_Spectral.v
+set_global_assignment -name VERILOG_FILE ../RTL/ml/Feature_Collector.v
+set_global_assignment -name VERILOG_FILE ../RTL/ml/ML_Tree_Classifier.v
+
+# -- acelerador CNN --
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_Top.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_Control_FSM.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_Line_Buffer.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_Conv_Layer.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_MAC_Unit.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_ReLU.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_MaxPool.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_Dense_Classifier.v
+set_global_assignment -name VERILOG_FILE ../RTL/cnn/CNN_Weight_ROM.v
+
+# -- aritmetica comum (ponto fixo Q1.15) --
+set_global_assignment -name VERILOG_FILE ../RTL/comum/FP_Mult_Unit.v
+set_global_assignment -name VERILOG_FILE ../RTL/comum/FP_Arith_Unit.v
+set_global_assignment -name VERILOG_FILE ../RTL/comum/Divider_Q15.v
 
 # ============================================================================
 # PINOS -- CONFERIR ANTES DE GRAVAR

@@ -10,8 +10,8 @@ Depois quantiza o vencedor para Q1.15 e exporta a ROM que o Verilog le.
 
 Saida:
     python/resultados/classificador.npz   (modelo quantizado)
-    RTL/vetores/arvore.hex                (ROM de nos, para o Verilog)
-    RTL/vetores/clf_teste.hex             (vetores de teste do testbench)
+    quartus/vetores/arvore.hex                (ROM de nos, para o Verilog)
+    quartus/vetores/clf_teste.hex             (vetores de teste do testbench)
     python/resultados/relatorio_clf.md
 
     python python/scripts/07_treinar_classificador.py

@@ -231,7 +231,8 @@ def features_espectrais_int(soma_bins) -> list:
 
 
 # ===========================================================================
-# FEATURES TEMPORAIS -- aritmetica identica ao Feature_Temporal.v
+# FEATURES TEMPORAIS -- aritmetica identica ao LMS_Filter_Top + LMS_Residual_Feature
+# e ao autocorrelacao_yw (RTL/lms, RTL/matriz)
 # ---------------------------------------------------------------------------
 # Substituem _feature_lms() e _features_ar(), que usavam float e algebra
 # exata (lstsq / linalg.solve) e por isso NAO correspondiam ao que o hardware
@@ -273,8 +274,8 @@ def feature_lms_int(x) -> int:
 
     O historico comeca ZERADO e so recebe x[n] depois de ser usado, de modo
     que a iteracao n=1 prediz com historico nulo -- x[0] nao entra no
-    preditor. O Feature_Temporal.v reproduz isso com uma historia separada
-    para a autocorrelacao, que ao contrario do preditor usa x[0].
+    preditor. O LMS_Residual_Feature.v reproduz isso nao enviando x[0] ao filtro;
+    a autocorrelacao, ao contrario do preditor, usa x[0].
     """
     taps = N_TAPS_LMS
     w = [0] * taps

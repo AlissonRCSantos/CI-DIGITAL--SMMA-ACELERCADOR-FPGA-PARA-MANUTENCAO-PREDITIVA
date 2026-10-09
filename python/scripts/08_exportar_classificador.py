@@ -24,8 +24,8 @@ execucao). So o filho DIREITO precisa ser guardado:
               bits [10:3]  indice do filho direito (8 bits)
 
 Saidas:
-    RTL/vetores/arvore.hex       ROM de nos
-    RTL/vetores/clf_teste.hex    vetores de teste (features + classe esperada)
+    quartus/vetores/arvore.hex       ROM de nos
+    quartus/vetores/clf_teste.hex    vetores de teste (features + classe esperada)
     python/resultados/relatorio_clf.md   (apendido)
 
     python python/scripts/08_exportar_classificador.py
@@ -42,7 +42,7 @@ import config as C
 from smma import features as F
 
 DIR_FEAT = C.RAIZ / "dados" / "processado" / "features"
-DIR_VET = C.DIR_RTL / "vetores"
+DIR_VET = C.DIR_VET
 Q = 1 << C.FRAC
 SEMENTE = 42
 PROFUNDIDADE = 9          # escolhida no passo 07 (melhor acuracia balanceada)

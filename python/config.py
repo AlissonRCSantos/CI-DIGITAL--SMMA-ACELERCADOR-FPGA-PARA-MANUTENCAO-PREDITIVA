@@ -18,7 +18,9 @@ DIR_MAT       = RAIZ / "dataset" / "vibration"
 DIR_BRUTOS    = RAIZ / "dados" / "processado" / "brutos"        # saida do passo 01
 DIR_ESPEC     = RAIZ / "dados" / "processado" / "espectrogramas"  # saida do passo 02
 DIR_RESULT    = RAIZ / "python" / "resultados"                  # modelos, relatorios
-DIR_RTL       = RAIZ / "RTL"
+DIR_RTL       = RAIZ / "RTL"                                # fontes Verilog (subpastas por modulo)
+DIR_VET       = RAIZ / "quartus" / "vetores"                # ROMs e vetores de teste (.hex)
+DIR_GOLDEN    = RAIZ / "sim" / "golden"                     # modelos de referencia do RTL
 
 # ---------------------------------------------------------------------------
 # Dataset (Jung et al., Data in Brief 48, 2023 -- KAIST)

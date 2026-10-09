@@ -30,9 +30,9 @@ Amostras CRUAS (25,6 kHz), nao decimadas: assim a demonstracao exercita a
 cadeia completa, incluindo o FIR anti-aliasing e o decimador.
 
 Saidas:
-    RTL/vetores/demo_amostras.hex   amostras Q1.15, janelas concatenadas
-    RTL/vetores/demo_rotulos.hex    por janela: {classe verdadeira, prevista}
-    RTL/vetores/demo_info.txt       legenda legivel das janelas
+    quartus/vetores/demo_amostras.hex   amostras Q1.15, janelas concatenadas
+    quartus/vetores/demo_rotulos.hex    por janela: {classe verdadeira, prevista}
+    quartus/vetores/demo_info.txt       legenda legivel das janelas
 
     python python/scripts/10_exportar_demo_fpga.py
 """
@@ -52,7 +52,7 @@ from importlib import import_module
 cadeia_frontend = import_module("06_gerar_features").cadeia_frontend
 
 DIR_FEAT = C.RAIZ / "dados" / "processado" / "features"
-DIR_VET = C.DIR_RTL / "vetores"
+DIR_VET = C.DIR_VET
 Q = 1 << C.FRAC
 CARGAS = ("0Nm", "2Nm", "4Nm")
 

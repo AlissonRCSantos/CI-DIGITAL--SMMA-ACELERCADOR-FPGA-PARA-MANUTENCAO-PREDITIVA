@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1010" viewBox="0 0 1720 1010" font-family="DejaVu Sans, Arial, sans-serif">
+<defs>
+<marker id="ad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#263238"/></marker>
+<marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7E57C2"/></marker>
+<style>
+.nm { font-family: DejaVu Sans Mono, Consolas, monospace; font-size: 13.5px; font-weight: bold; text-anchor: middle; }
+.sb { font-size: 11px; fill: #37474F; text-anchor: middle; }
+.lb { font-size: 11px; fill: #263238; }
+.fk { font-size: 10.5px; fill: #212121; font-style: italic; }
+.ct { font-size: 11.5px; fill: #5E35B1; }
+.lg { font-size: 12px; fill: #263238; }
+.d { fill: none; stroke: #263238; stroke-width: 1.5; }
+.c { fill: none; stroke: #7E57C2; stroke-width: 1.3; stroke-dasharray: 6 4; }
+</style>
+</defs>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<text x="28" y="40" font-size="22" font-weight="bold" fill="#263238">SMMA -- Smart Machine Monitoring Accelerator (DE0-CV, Cyclone V, 50 MHz)</text>
+<text x="28" y="64" font-size="13" fill="#546E7A">Arquitetura integrada: cada caixa e uma instancia real do SMMA_Top. Uma janela = 8503 amostras brutas = 1056 decimadas = 32 quadros de FFT.</text>
+<g id="src"><rect x="28" y="96" width="184" height="66" rx="8" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.6"/>
+<text x="120.0" y="120" class="nm" fill="#1565C0">Sample_Source</text>
+<text x="120.0" y="138" class="sb">ROM: 12 janelas reais</text>
+<text x="120.0" y="152" class="sb">25,6 kHz, Q1.15</text>
+</g>
+<g id="fir"><rect x="28" y="296" width="184" height="66" rx="8" fill="#E3F2FD" stroke="#1565C0" stroke-width="1.6"/>
+<text x="120.0" y="320" class="nm" fill="#1565C0">FIR_Decimator</text>
+<text x="120.0" y="338" class="sb">63 taps @1,4 kHz</text>
+<text x="120.0" y="352" class="sb">decimacao /8 -> 3,2 kHz</text>
+</g>
+<g id="fb"><rect x="262" y="96" width="184" height="66" rx="8" fill="#ECEFF1" stroke="#455A64" stroke-width="1.6"/>
+<text x="354.0" y="120" class="nm" fill="#455A64">Frame_Builder</text>
+<text x="354.0" y="138" class="sb">quadros de 64 amostras</text>
+<text x="354.0" y="152" class="sb">salto 32 (32 quadros)</text>
+</g>
+<g id="fft"><rect x="486" y="96" width="184" height="66" rx="8" fill="#E8F5E9" stroke="#2E7D32" stroke-width="1.6"/>
+<text x="578.0" y="120" class="nm" fill="#2E7D32">FFT_Top</text>
+<text x="578.0" y="138" class="sb">radix-2 DIT, 64 pontos</text>
+<text x="578.0" y="152" class="sb">Q1.15, 4 DSP, magnitude</text>
+</g>
+<g id="sa"><rect x="710" y="96" width="184" height="66" rx="8" fill="#ECEFF1" stroke="#455A64" stroke-width="1.6"/>
+<text x="802.0" y="120" class="nm" fill="#455A64">Spectrum_Accumulator</text>
+<text x="802.0" y="138" class="sb">espectro medio</text>
+<text x="802.0" y="152" class="sb">32 quadros x 32 bins</text>
+</g>
+<g id="fs"><rect x="934" y="96" width="184" height="66" rx="8" fill="#E0F7FA" stroke="#00838F" stroke-width="1.6"/>
+<text x="1026.0" y="120" class="nm" fill="#00838F">Feature_Spectral</text>
+<text x="1026.0" y="138" class="sb">8 features: r_1x..r_3x,</text>
+<text x="1026.0" y="152" class="sb">bandas, log2E, centroide</text>
+</g>
+<g id="pk"><rect x="934" y="196" width="184" height="66" rx="8" fill="#FFF8E1" stroke="#F57F17" stroke-width="1.6"/>
+<text x="1026.0" y="220" class="nm" fill="#F57F17">peak_detector</text>
+<text x="1026.0" y="238" class="sb">3 maiores picos</text>
+<text x="1026.0" y="252" class="sb">acima do limiar</text>
+</g>
+<g id="mdc"><rect x="1158" y="196" width="184" height="66" rx="8" fill="#FFF8E1" stroke="#F57F17" stroke-width="1.6"/>
+<text x="1250.0" y="220" class="nm" fill="#F57F17">mdc_gcd</text>
+<text x="1250.0" y="238" class="sb">k0 = MDC(picos)</text>
+<text x="1250.0" y="252" class="sb">Euclides (subtracoes)</text>
+</g>
+<g id="f0"><rect x="1158" y="296" width="184" height="66" rx="8" fill="#FFF8E1" stroke="#F57F17" stroke-width="1.6"/>
+<text x="1250.0" y="320" class="nm" fill="#F57F17">f0_estimator</text>
+<text x="1250.0" y="338" class="sb">f0 = k0 . fs / N</text>
+<text x="1250.0" y="352" class="sb">(50 Hz/bin)</text>
+</g>
+<g id="lg"><rect x="710" y="428" width="184" height="66" rx="8" fill="#E8F5E9" stroke="#2E7D32" stroke-width="1.6"/>
+<text x="802.0" y="452" class="nm" fill="#2E7D32">FFT_Log2_Compress</text>
+<text x="802.0" y="470" class="sb">log2 de Mitchell</text>
+<text x="802.0" y="484" class="sb">zero DSP</text>
+</g>
+<g id="sb"><rect x="934" y="428" width="184" height="66" rx="8" fill="#ECEFF1" stroke="#455A64" stroke-width="1.6"/>
+<text x="1026.0" y="452" class="nm" fill="#455A64">Spectrogram_Buffer</text>
+<text x="1026.0" y="470" class="sb">imagem 32x32</text>
+<text x="1026.0" y="484" class="sb">transposta</text>
+</g>
+<g id="cnn"><rect x="1158" y="428" width="184" height="66" rx="8" fill="#FBE9E7" stroke="#BF360C" stroke-width="1.6"/>
+<text x="1250.0" y="452" class="nm" fill="#BF360C">CNN_Top</text>
+<text x="1250.0" y="470" class="sb">conv 3x3 x8 + ReLU</text>
+<text x="1250.0" y="484" class="sb">pool + GAP + densa</text>
+</g>
+<g id="lr"><rect x="486" y="560" width="184" height="66" rx="8" fill="#F3E5F5" stroke="#6A1B9A" stroke-width="1.6"/>
+<text x="578.0" y="584" class="nm" fill="#6A1B9A">LMS_Residual_Feature</text>
+<text x="578.0" y="602" class="sb">janela + energias</text>
+<text x="578.0" y="616" class="sb">r_lms = Se^2 / Sd^2</text>
+</g>
+<g id="lms"><rect x="710" y="560" width="184" height="66" rx="8" fill="#F3E5F5" stroke="#6A1B9A" stroke-width="1.6"/>
+<text x="802.0" y="584" class="nm" fill="#6A1B9A">LMS_Filter_Top</text>
+<text x="802.0" y="602" class="sb">8 coef., mu = 2^-3</text>
+<text x="802.0" y="616" class="sb">preditor x[n-1] -> x[n]</text>
+</g>
+<g id="ac"><rect x="486" y="692" width="184" height="66" rx="8" fill="#FCE4EC" stroke="#AD1457" stroke-width="1.6"/>
+<text x="578.0" y="716" class="nm" fill="#AD1457">autocorrelacao_yw</text>
+<text x="578.0" y="734" class="sb">rho[0..3] = r[k]/r[0]</text>
+<text x="578.0" y="748" class="sb">2 multiplicadores</text>
+</g>
+<g id="yw"><rect x="710" y="692" width="184" height="66" rx="8" fill="#FCE4EC" stroke="#AD1457" stroke-width="1.6"/>
+<text x="802.0" y="716" class="nm" fill="#AD1457">Yule_Walker_Solver</text>
+<text x="802.0" y="734" class="sb">monta R (Toeplitz 3x3)</text>
+<text x="802.0" y="748" class="sb">a = R^-1 r</text>
+</g>
+<g id="gj"><rect x="934" y="692" width="184" height="66" rx="8" fill="#FCE4EC" stroke="#AD1457" stroke-width="1.6"/>
+<text x="1026.0" y="716" class="nm" fill="#AD1457">gauss_jordan_inv</text>
+<text x="1026.0" y="734" class="sb">Gauss-Jordan, pivo</text>
+<text x="1026.0" y="748" class="sb">parcial, ate 4x4, Q8.16</text>
+</g>
+<g id="col"><rect x="1382" y="96" width="150" height="662" rx="8" fill="#E0F7FA" stroke="#00838F" stroke-width="1.6"/>
+<text x="1457.0" y="120" class="nm" fill="#00838F">Feature_Collector</text>
+<text x="1457.0" y="138" class="sb"></text>
+</g>
+<g id="tree"><rect x="1560" y="330" width="140" height="80" rx="8" fill="#E0F7FA" stroke="#00838F" stroke-width="1.6"/>
+<text x="1630.0" y="354" class="nm" fill="#00838F">ML_Tree</text>
+<text x="1630.0" y="372" class="sb">arvore de decisao</text>
+<text x="1630.0" y="386" class="sb">141 nos, 0 DSP</text>
+</g>
+<g id="ctl"><rect x="262" y="830" width="1080" height="74" rx="8" fill="#EDE7F6" stroke="#311B92" stroke-width="1.6"/>
+<text x="802.0" y="854" class="nm" fill="#311B92">SMMA_Global_Control</text>
+<text x="802.0" y="872" class="sb">FSM: PARADO > ARRANCA > ADQUIRE > DECIDE > PRONTO</text>
+<text x="802.0" y="886" class="sb">start unico (arranca) para todos os blocos; espera ready/done de todos; registra o veredito</text>
+</g>
+<g id="pan"><rect x="1382" y="830" width="150" height="60" rx="8" fill="#F1F8E9" stroke="#33691E" stroke-width="1.6"/>
+<text x="1457.0" y="854" class="nm" fill="#33691E">SMMA_Panel</text>
+<text x="1457.0" y="872" class="sb">HEX0..5, LEDR[9:0]</text>
+</g>
+<text x="1457" y="166" class="sb">vetor de 16</text>
+<text x="1457" y="184" class="sb">caracteristicas</text>
+<text x="1457" y="202" class="sb"></text>
+<text x="1457" y="220" class="sb">0-7  FFT</text>
+<text x="1457" y="238" class="sb">8    LMS</text>
+<text x="1457" y="256" class="sb">9-11 rho</text>
+<text x="1457" y="274" class="sb">12   f0 (MDC)</text>
+<text x="1457" y="292" class="sb">13-15 a1..a3</text>
+<text x="1457" y="310" class="sb"></text>
+<text x="1457" y="328" class="sb">arvore usa</text>
+<text x="1457" y="346" class="sb">0..11 (treino)</text>
+<path d="M120.0,162 L120.0,296" class="d" marker-end="url(#ad)"/>
+<text x="128.0" y="233.0" class="lb" text-anchor="start">25,6 kHz</text>
+<circle cx="232" cy="329.0" r="5" fill="#212121"/>
+<text x="239" y="321.0" class="fk">Stream_Fork (a)</text>
+<path d="M212,329.0 L232,329.0" class="d"/>
+<text x="216" y="345.0" class="lb" text-anchor="start">3,2 kHz</text>
+<path d="M232,329.0 L232,129.0 L262,129.0" class="d" marker-end="url(#ad)"/>
+<path d="M232,329.0 L232,593.0 L486,593.0" class="d" marker-end="url(#ad)"/>
+<text x="240" y="585.0" class="lb" text-anchor="start">1056 amostras</text>
+<path d="M232,329.0 L232,725.0 L486,725.0" class="d" marker-end="url(#ad)"/>
+<path d="M446,129.0 L486,129.0" class="d" marker-end="url(#ad)"/>
+<circle cx="688" cy="129.0" r="5" fill="#212121"/>
+<text x="695" y="121.0" class="fk">(b)</text>
+<path d="M670,129.0 L688,129.0" class="d"/>
+<path d="M688,129.0 L710,129.0" class="d" marker-end="url(#ad)"/>
+<path d="M688,129.0 L688,461.0 L710,461.0" class="d" marker-end="url(#ad)"/>
+<text x="682" y="418" class="lb" text-anchor="end">|X[k]|, k=0..31</text>
+<circle cx="912" cy="129.0" r="5" fill="#212121"/>
+<text x="919" y="121.0" class="fk">(c)</text>
+<path d="M894,129.0 L912,129.0" class="d"/>
+<path d="M912,129.0 L934,129.0" class="d" marker-end="url(#ad)"/>
+<path d="M912,129.0 L912,229.0 L934,229.0" class="d" marker-end="url(#ad)"/>
+<path d="M1118,229.0 L1158,229.0" class="d" marker-end="url(#ad)"/>
+<text x="1138.0" y="223.0" class="lb" text-anchor="middle">bins</text>
+<path d="M1250.0,262 L1250.0,296" class="d" marker-end="url(#ad)"/>
+<text x="1258.0" y="283.0" class="lb" text-anchor="start">k0</text>
+<path d="M1118,129.0 L1382,129.0" class="d" marker-end="url(#ad)"/>
+<text x="1270" y="123.0" class="lb" text-anchor="middle">8 features</text>
+<path d="M1342,329.0 L1382,329.0" class="d" marker-end="url(#ad)"/>
+<text x="1366" y="323.0" class="lb" text-anchor="end">f0 (Hz)</text>
+<path d="M894,461.0 L934,461.0" class="d" marker-end="url(#ad)"/>
+<path d="M1118,461.0 L1158,461.0" class="d" marker-end="url(#ad)"/>
+<text x="1138.0" y="455.0" class="lb" text-anchor="middle">pixels</text>
+<path d="M670,581.0 L710,581.0" class="d" marker-end="url(#ad)"/>
+<text x="690.0" y="575.0" class="lb" text-anchor="middle">x, d</text>
+<path d="M710,605.0 L670,605.0" class="d" marker-end="url(#ad)"/>
+<text x="690.0" y="621.0" class="lb" text-anchor="middle">e(n)</text>
+<path d="M618.0,626 L618.0,648 L1362,648 L1362,593.0 L1382,593.0" class="d" marker-end="url(#ad)"/>
+<text x="1300" y="642" class="lb" text-anchor="middle">r_lms</text>
+<path d="M670,725.0 L710,725.0" class="d" marker-end="url(#ad)"/>
+<text x="690.0" y="719.0" class="lb" text-anchor="middle">rho</text>
+<path d="M894,713.0 L934,713.0" class="d" marker-end="url(#ad)"/>
+<text x="914.0" y="707.0" class="lb" text-anchor="middle">R</text>
+<path d="M934,737.0 L894,737.0" class="d" marker-end="url(#ad)"/>
+<text x="914.0" y="753.0" class="lb" text-anchor="middle">R^-1</text>
+<path d="M578.0,758 L578.0,786 L1340,786 L1340,744 L1382,744" class="d" marker-end="url(#ad)"/>
+<text x="1000" y="780" class="lb" text-anchor="middle">rho1..rho3</text>
+<path d="M852.0,692 L852.0,672 L1300,672 L1300,710 L1382,710" class="d" marker-end="url(#ad)"/>
+<text x="1180" y="666" class="lb" text-anchor="middle">a1/2..a3/2</text>
+<path d="M1532,370 L1560,370.0" class="d" marker-end="url(#ad)"/>
+<text x="1546" y="362" class="lb" text-anchor="middle">16</text>
+<path d="M1630.0,410 L1630,806 L1300,806 L1300,830" class="d" marker-end="url(#ad)"/>
+<text x="1560" y="800" class="lb" text-anchor="middle">classe arvore</text>
+<path d="M1250.0,494 L1250.0,830" class="d" marker-end="url(#ad)"/>
+<text x="1256.0" y="514" class="lb" text-anchor="start">classe CNN</text>
+<path d="M1342,860 L1382,860.0" class="d" marker-end="url(#ad)"/>
+<text x="1378" y="852" class="lb" text-anchor="end">veredito</text>
+<path d="M1532,860 L1700,860" class="d" marker-end="url(#ad)"/>
+<text x="1600" y="882" class="lb" text-anchor="middle">HEX / LEDR</text>
+<path d="M120.0,960 L120.0,860 L262,860" class="d" marker-end="url(#ad)"/>
+<text x="128.0" y="950" class="lb" text-anchor="start">KEY, SW</text>
+<path d="M302,830 L302,802" class="c" marker-end="url(#ac)"/>
+<path d="M526,830 L526,802" class="c" marker-end="url(#ac)"/>
+<path d="M750,830 L750,802" class="c" marker-end="url(#ac)"/>
+<path d="M974,830 L974,802" class="c" marker-end="url(#ac)"/>
+<text x="28" y="470" class="lg" font-weight="bold">Legenda</text>
+<rect x="28" y="484" width="18" height="14" rx="3" fill="#E3F2FD" stroke="#1565C0"/>
+<text x="54" y="495" class="lg">Interface de entrada</text>
+<rect x="28" y="506" width="18" height="14" rx="3" fill="#ECEFF1" stroke="#455A64"/>
+<text x="54" y="517" class="lg">Buffers / memorias</text>
+<rect x="28" y="528" width="18" height="14" rx="3" fill="#E8F5E9" stroke="#2E7D32"/>
+<text x="54" y="539" class="lg">Modulo FFT</text>
+<rect x="28" y="550" width="18" height="14" rx="3" fill="#FFF8E1" stroke="#F57F17"/>
+<text x="54" y="561" class="lg">Modulo MDC</text>
+<rect x="28" y="572" width="18" height="14" rx="3" fill="#F3E5F5" stroke="#6A1B9A"/>
+<text x="54" y="583" class="lg">Modulo LMS</text>
+<rect x="28" y="594" width="18" height="14" rx="3" fill="#FCE4EC" stroke="#AD1457"/>
+<text x="54" y="605" class="lg">Inversao de matriz</text>
+<rect x="28" y="616" width="18" height="14" rx="3" fill="#E0F7FA" stroke="#00838F"/>
+<text x="54" y="627" class="lg">Acelerador de ML</text>
+<rect x="28" y="638" width="18" height="14" rx="3" fill="#FBE9E7" stroke="#BF360C"/>
+<text x="54" y="649" class="lg">Acelerador CNN</text>
+<rect x="28" y="660" width="18" height="14" rx="3" fill="#EDE7F6" stroke="#311B92"/>
+<text x="54" y="671" class="lg">Controle global</text>
+<rect x="28" y="682" width="18" height="14" rx="3" fill="#F1F8E9" stroke="#33691E"/>
+<text x="54" y="693" class="lg">Interface de saida</text>
+<path d="M28,712 L68,712" class="d" marker-end="url(#ad)"/><text x="76" y="716" class="lg">dados (valid/ready)</text>
+<path d="M28,732 L68,732" class="c" marker-end="url(#ac)"/><text x="76" y="736" class="lg">controle</text>
+<circle cx="48" cy="752" r="5" fill="#212121"/><text x="76" y="756" class="lg">Stream_Fork (join)</text>
+</svg>

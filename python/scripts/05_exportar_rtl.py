@@ -6,14 +6,14 @@ Passo 05 -- Leva os pesos treinados para o RTL.
     python python/scripts/05_exportar_rtl.py --bits 8   # exporta a versao 8 bits
 
 Gera / atualiza (NADA e editado a mao):
-  RTL/CNN_Weight_ROM.v        -- ROM com os pesos treinados (mesma interface)
-  RTL/golden_model.py         -- constantes KER/BIAS/DENSE_W/DENSE_B atualizadas
-  RTL/vetores/rom_pesos.hex   -- 116 pesos esperados      (tb_CNN_Weight_ROM)
-  RTL/vetores/conv_esperado.hex  -- saidas da convolucao  (tb_CNN_Conv_Layer)
-  RTL/vetores/dense_esperado.hex -- features/scores/classe (tb_CNN_Dense_Classifier)
-  RTL/vetores/top_imagens.hex    -- espectrogramas REAIS do conjunto de teste
-  RTL/vetores/top_esperado.hex   -- saida esperada do CNN_Top para cada um
-Os valores esperados sao calculados com o RTL/golden_model.py (modelo
+  RTL/cnn/CNN_Weight_ROM.v        -- ROM com os pesos treinados (mesma interface)
+  sim/golden/golden_model_cnn.py         -- constantes KER/BIAS/DENSE_W/DENSE_B atualizadas
+  quartus/vetores/rom_pesos.hex   -- 116 pesos esperados      (tb_CNN_Weight_ROM)
+  quartus/vetores/conv_esperado.hex  -- saidas da convolucao  (tb_CNN_Conv_Layer)
+  quartus/vetores/dense_esperado.hex -- features/scores/classe (tb_CNN_Dense_Classifier)
+  quartus/vetores/top_imagens.hex    -- espectrogramas REAIS do conjunto de teste
+  quartus/vetores/top_esperado.hex   -- saida esperada do CNN_Top para cada um
+Os valores esperados sao calculados com o sim/golden/golden_model_cnn.py (modelo
 bit-exato original) e conferidos com smma/golden.py.
 """
 import sys, re, argparse, importlib
@@ -147,7 +147,7 @@ def atualiza_golden(path, p):
             f"DENSE_B = [{', '.join(str(int(v)) for v in p['db'])}]\n")
     s2, n = re.subn(r"# ---- (Kernels|PESOS TREINADOS).*?DENSE_B = \[[^\]]*\]\n", lambda m: novo, s, flags=re.S)
     if n != 1:
-        sys.exit("nao encontrei o bloco de pesos em golden_model.py")
+        sys.exit("nao encontrei o bloco de pesos em golden_model_cnn.py")
     path.write_text(s2, encoding="utf-8")
 
 
@@ -164,13 +164,12 @@ def main():
     _, _, pr = V.run(X, p["ker"], p["bias"], p["dw"], p["db"])
     acc = f"{(pr == y).mean() * 100:.1f}% no conjunto de teste ({len(y)} imagens, ponto fixo bit-exato)"
 
-    rtl = C.DIR_RTL
-    (rtl / "CNN_Weight_ROM.v").write_text(gera_rom(p, a.bits, acc), encoding="utf-8")
-    atualiza_golden(rtl / "golden_model.py", p)
-    sys.path.insert(0, str(rtl))
-    G = importlib.import_module("golden_model"); importlib.reload(G)
+    (C.DIR_RTL / "cnn" / "CNN_Weight_ROM.v").write_text(gera_rom(p, a.bits, acc), encoding="utf-8")
+    atualiza_golden(C.DIR_GOLDEN / "golden_model_cnn.py", p)
+    sys.path.insert(0, str(C.DIR_GOLDEN))
+    G = importlib.import_module("golden_model_cnn"); importlib.reload(G)
 
-    vet = rtl / "vetores"; vet.mkdir(exist_ok=True)
+    vet = C.DIR_VET; vet.mkdir(exist_ok=True)
     # 1) ROM: 72 conv (filtro, tap) + 8 bias + 32 densa + 4 bias
     rom = list(p["ker"].reshape(-1)) + list(p["bias"]) + list(p["dw"].reshape(-1)) + list(p["db"])
     (vet / "rom_pesos.hex").write_text("\n".join(h16(v) for v in rom) + "\n")
@@ -215,7 +214,7 @@ def main():
         "\n".join(f"{n}: {o} (classe real {C.CLASSES[y[i]]})" for n, (o, i) in enumerate(zip(origem, idx))) + "\n")
 
     print(f"Pesos de {a.bits} bits exportados. {acc}")
-    print("Gerados: RTL/CNN_Weight_ROM.v, RTL/golden_model.py, RTL/vetores/*.hex")
+    print("Gerados: RTL/cnn/CNN_Weight_ROM.v, sim/golden/golden_model_cnn.py, quartus/vetores/*.hex")
 
 
 if __name__ == "__main__":

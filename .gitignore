@@ -233,3 +233,26 @@ dados/
 RTL/sim_out/
 _to_delete/
 dataset
+
+# --- Quartus: saidas de compilacao (geradas a cada Start Compilation) ---
+quartus/db/
+quartus/incremental_db/
+quartus/output_files/
+quartus/simulation/
+quartus/greybox_tmp/
+quartus/*.qws
+quartus/*.rpt
+quartus/c5_pin_model_dump.txt
+quartus/devkits/
+
+# --- ModelSim / Questa ---
+work/
+transcript
+*.wlf
+modelsim.ini
+quartus/top_saida_hw.txt
+quartus/sim_out/
+
+# PDFs da documentacao do projeto (o resto continua ignorado)
+!docs/*.pdf
+!docs/diagramas/*.pdf

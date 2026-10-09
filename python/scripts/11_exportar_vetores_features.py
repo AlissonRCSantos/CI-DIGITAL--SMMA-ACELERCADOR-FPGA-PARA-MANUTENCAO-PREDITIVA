@@ -2,8 +2,8 @@
 """
 Passo 11 -- Gera os vetores de teste dos dois extratores de caracteristicas.
 
-    RTL/vetores/feat_teste.hex   8 janelas: 1024 |X[k]| + as 8 espectrais
-    RTL/vetores/temp_teste.hex   6 janelas: 1056 amostras + as 4 temporais
+    quartus/vetores/feat_teste.hex   8 janelas: 1024 |X[k]| + as 8 espectrais
+    quartus/vetores/temp_teste.hex   6 janelas: 1056 amostras + as 4 temporais
 
 As janelas sao REAIS e vem todas da particao de TESTE (nunca de treino: um
 vetor de verificacao tirado do treino nao prova nada sobre o hardware, so
@@ -27,7 +27,7 @@ import config as C
 from smma import features as F
 from smma.espectrograma import coef_fir, FUNDO_ESCALA_G
 
-DIR_VET = C.RAIZ / "RTL" / "vetores"
+DIR_VET = C.DIR_VET
 
 # Janelas do vetor ESPECTRAL: as 4 classes x cargas variadas.
 CASOS_ESP = [

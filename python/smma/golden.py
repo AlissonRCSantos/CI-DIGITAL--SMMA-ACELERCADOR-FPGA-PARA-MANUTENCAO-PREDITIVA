@@ -4,7 +4,7 @@ smma/golden.py -- Modelo BIT-EXATO da CNN do RTL, vetorizado com numpy.
 Faz exatamente as mesmas contas inteiras do hardware (Q1.15, acumuladores
 largos, arredondamento "+2^(s-1) e >>s", saturacao em 16 bits, ReLU, max
 pooling 2x2, GAP por >>8, camada densa e argmax com empate -> menor indice).
-E a versao "em lote" do RTL/golden_model.py: processa milhares de imagens de
+E a versao "em lote" do sim/golden/golden_model_cnn.py: processa milhares de imagens de
 uma vez para medir a acuracia REAL que o FPGA tera.
 
 Pesos no formato:

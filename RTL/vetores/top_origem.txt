@@ -1,9 +1,0 @@
-Imagens usadas em tb_CNN_Top (ordem):
-0: 4Nm_Normal (classe real normal)
-1: 4Nm_Normal (classe real normal)
-2: 2Nm_Unbalance_0583mg (classe real desbalanceamento)
-3: 0Nm_Unbalance_1751mg (classe real desbalanceamento)
-4: 0Nm_Misalign_05 (classe real desalinhamento)
-5: 0Nm_Misalign_01 (classe real desalinhamento)
-6: 2Nm_BPFO_03 (classe real rolamento)
-7: 0Nm_BPFO_30 (classe real rolamento)

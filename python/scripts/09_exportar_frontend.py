@@ -3,8 +3,8 @@
 Passo 09 -- Exporta o front-end de aquisicao para o hardware.
 
 Gera:
-    RTL/vetores/fir_coef.hex    63 coeficientes Q1.15 do FIR anti-aliasing
-    RTL/vetores/fir_teste.hex   estimulo real + saida esperada do decimador
+    quartus/vetores/fir_coef.hex    63 coeficientes Q1.15 do FIR anti-aliasing
+    quartus/vetores/fir_teste.hex   estimulo real + saida esperada do decimador
 
 Nota sobre arredondamento
 -------------------------
@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config as C
 from smma.espectrograma import coef_fir, FUNDO_ESCALA_G
 
-DIR_VET = C.DIR_RTL / "vetores"
+DIR_VET = C.DIR_VET
 Q = 1 << C.FRAC
 N_TESTE = 4096          # amostras de entrada gravadas para o testbench
 
