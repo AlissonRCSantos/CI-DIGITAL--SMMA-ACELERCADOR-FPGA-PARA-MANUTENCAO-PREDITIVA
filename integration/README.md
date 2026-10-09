@@ -13,16 +13,21 @@
 
 O fluxo conectado é **LMS → buffer de 64 amostras → FFT → detector de picos → MDC → f0**. O top aceita uma amostra LMS por vez (`sample_start` e `sample_valid` juntos, quando `sample_ready` está alto). `analysis_done` sinaliza a conclusão da cadeia espectral e libera uma nova janela. Os bins de pico são transmitidos internamente com `valid/ready`; o bin fundamental e a frequência ficam nas saídas `fundamental_bin`, `fundamental_hz_int` e `fundamental_hz_frac`.
 
-O classificador de árvore da branch remota `top_level` foi incorporado como `ML_Tree_Classifier`, junto com sua ROM de 141 nós (`RTL/vetores/arvore.hex`). A interface `tree_*` do `SMMA_Top` recebe 12 features Q1.15 em sequência: `start` inicia, e cada palavra é aceita quando `tree_feature_valid && tree_feature_ready`. A saída é `tree_class` com `tree_class_valid`; mantenha `tree_class_ready` alto para consumir o resultado. `tree_error` indica percurso inválido.
+O classificador de árvore e o seu front-end da branch `top_level` foram integrados. O caminho automático recebe `sample_x` e calcula: FIR de 63 taps + decimação por 8; 32 quadros FFT de 64 pontos com hop 32; 8 features espectrais; e 4 temporais. As features seguem na ordem treinada: `r_1x`, `r_2x`, `r_3x`, três energias de banda, `log2E`, centroide, `r_lms`, `rho1`, `rho2`, `rho3`. A árvore usa a ROM de 141 nós `RTL/vetores/arvore.hex`.
 
-A ordem exigida pelo modelo é: 8 features espectrais (`r_1x`, `r_2x`, `r_3x`, três energias de banda, `log2E`, centroide) e 4 temporais (`r_lms`, `rho1`, `rho2`, `rho3`). O front-end atual ainda não calcula esse vetor de 12 features: FFT/MDC/f0 não substituem `Feature_Spectral` e `Feature_Temporal`. Por isso a árvore está integrada com sua interface de entrada correta, mas a fonte das 12 features ainda precisa ser conectada para obter classificação automática da janela.
+Como no `top_level` atualizado, árvore e CNN processam a mesma janela e produzem classes comparáveis. A imagem para a CNN é montada e transposta pelo buffer de espectrograma, após compressão log2 das magnitudes FFT. O `CNN_Top` existente é compartilhado: por padrão usa esse caminho automático (`AUTO_CNN_FROM_VIBRATION=1`); para o modo antigo de pixels externos, configure o parâmetro como 0. Nesse modo, as saídas `cnn_class`, `cnn_valid` e `cnn_busy` correspondem ao caminho selecionado. As saídas `auto_cnn_*` identificam especificamente o resultado automático.
 
-A CNN e o inversor também são instanciados no top, mas usam interfaces independentes. O PBL não especifica uma conversão direta das amostras/saídas LMS em espectrograma 32×32, nem define a matriz de estimação e sua origem. Portanto, o espectrograma é fornecido pela interface `cnn_*` e a matriz pela interface `inv_*`. A CNN espera 1024 pixels assinados Q1.15 em ordem raster; carregue todos os elementos de A antes de `inv_start`.
+Por padrão, a fonte faz parte do RTL sintetizável: `Vibration_ROM_Source` lê a ROM síncrona `RTL/vetores/vibration_input.hex`, marcada para inferência em M10K. `dataset_start` inicia a leitura, e `dataset_busy`/`dataset_done` indicam o progresso da reprodução. Cada entrada ROM tem 32 bits `{sample_d[15:0], sample_x[15:0]}`; a fonte emite 8503 amostras por janela a 25,6 kHz (`DATA_ROM_RATE_DIV=1953`). Para usar um ADC ou outra fonte de stream, configure `USE_VIBRATION_ROM=0`; nesse modo o top aceita `sample_*` e sinaliza `sample_ready`.
+
+O resultado da árvore aparece em `auto_tree_class` durante `auto_tree_class_valid`; `auto_tree_done` sinaliza a conclusão da árvore e `auto_tree_error` indica percurso inválido. A CNN sinaliza a conclusão em `auto_cnn_done` e sua classe em `auto_cnn_class` durante `auto_cnn_class_valid`. O caminho recebe janelas contíguas de 8503 amostras e reinicia após ambas as classificações. A interface manual `tree_*` continua disponível para testes com um vetor de features externo.
+
+O inversor usa a interface independente `inv_*`, pois o PBL não define a origem da matriz de estimação. Por padrão, o espectrograma da CNN é calculado internamente com a mesma janela da árvore. A interface manual `cnn_*` pode ser selecionada com `AUTO_CNN_FROM_VIBRATION=0`. Carregue todos os elementos de A antes de `inv_start`.
 
 ## Requisitos considerados
 
 - Clock alvo de 50 MHz, reset ativo alto e habilitação global.
-- Janela da FFT com 64 amostras; índices espectrais de 6 bits.
+- FFT de 64 pontos no caminho legado e 32 quadros de 64 pontos (hop 32) no caminho da árvore.
+- Janela da árvore de 1056 amostras decimadas, obtidas de 8503 amostras brutas a 25,6 kHz.
 - LMS com 8 coeficientes; formato padrão Q1.15.
 - Três picos acima de `peak_threshold`; `min_gcd_bin` filtra MDC inválido.
 - Frequência fundamental calculada a partir de `sample_rate_hz` e do bin MDC.
@@ -32,7 +37,7 @@ A CNN e o inversor também são instanciados no top, mas usam interfaces indepen
 
 ## Fontes e compilação
 
-As fontes originais foram preservadas em `RTL/blocks/`. Da branch `top_level`, foram trazidos somente o classificador de árvore e sua ROM; o top-level completo daquela branch não foi reutilizado. As unidades `FP_Arith_Unit` e `FP_Mult_Unit`, duplicadas nas branches de LMS e FFT, aparecem uma vez em `blocks/fixed_point/`.
+As fontes originais foram preservadas em `RTL/blocks/`. Da branch `top_level`, foram trazidos o classificador, ROM, filtro/decimador, montador de quadros e extratores espectral/temporal necessários ao caminho da árvore. O restante do top-level daquela branch não foi reutilizado. A cadeia original LMS → FFT → detector de picos → MDC → frequência, além das interfaces CNN e inversor, permanece no `SMMA_Top`.
 
 Com Icarus Verilog, a partir de `integration/RTL`:
 
@@ -40,7 +45,7 @@ Com Icarus Verilog, a partir de `integration/RTL`:
 iverilog -g2012 -s SMMA_Top -o smma_top.out -f filelist.f
 ```
 
-Essa integração conecta e organiza os módulos existentes; ela não altera seus algoritmos internos nem implica validação de temporização/síntese na FPGA-alvo.
+O pipeline da árvore usa uma FFT de 64 pontos dedicada, pois precisa processar 32 quadros da janela decimada enquanto a cadeia espectral legada analisa janelas LMS separadas. A CNN existente é compartilhada entre o modo automático e o modo de pixels externos, sem instanciar um segundo classificador.
 
 ## Inserir os arquivos de `vibração/`
 
@@ -51,24 +56,27 @@ Os arquivos `.mat` não são uma memória de entrada que o FPGA consiga abrir em
 - `Signal.function_record.primary_channel.label`: `Point1` a `Point4`;
 - o canal Point1 do arquivo verificado teve pico de `9.58 g`.
 
-O script `integration/tools/export_vibration_mat.m` transforma um `.mat` em uma palavra hex por amostra: `{sample_d[15:0], sample_x[15:0]}`. Ele usa Q1.15 com escala configurável e, por padrão, `±32 g`, igual à escala definida no fluxo da CNN da branch `feat/CNN`. Por padrão exporta 64 amostras para uma primeira janela; `maxSamples=0` exporta o arquivo inteiro. O segundo canal LMS é configurável: por padrão copia o canal selecionado para `d`; use dois canais distintos somente quando o papel do canal de referência estiver definido.
+Os arquivos `.mat` da pasta `vibração/` contêm sinais brutos, não as 12 features já calculadas. O exportador `integration/tools/export_vibration_mat.py` lê MATLAB v5 sem dependências externas e gera palavras `{sample_d[15:0], sample_x[15:0]}` em Q1.15, escala padrão `±32 g`. Ele atualiza tanto o HEX de simulação (`integration/data/`) quanto a ROM RTL (`integration/RTL/vetores/`). O exportador MATLAB também atualiza os dois arquivos. Para o caminho atual, `d` recebe a mesma amostra de `x`, pois o LMS original requer os dois sinais e não há um canal de referência especificado.
 
-Exemplo no MATLAB, a partir da raiz do repositório:
+Exemplo usando Python padrão, a partir da raiz do repositório:
 
-```matlab
-export_vibration_mat('vibração/4Nm_Normal.mat', ...
-    'integration/data/vibration_input.hex', 1, 1, 32, 64)
+```powershell
+python integration/tools/export_vibration_mat.py `
+  vibração/4Nm_Normal.mat integration/data/vibration_input.hex `
+  --channel 1 --full-scale-g 32 --samples 8503
 ```
 
-O último `64` limita a exportação a uma janela de FFT. O argumento `1` seleciona Point1 tanto como `sample_x` quanto como `sample_d`. Para transmitir todos os dados do arquivo, troque `64` por `0`; para selecionar canais diferentes, altere os argumentos terceiro e quarto. O script informa a taxa, canais e quantidade de amostras saturadas.
+O parâmetro `--samples 8503` exporta uma janela completa da árvore; use `--samples 0` para exportar todos os dados do arquivo. O canal selecionado é usado para `sample_x` e `sample_d`. O script informa a quantidade de amostras saturadas.
 
-O testbench `RTL/tb_smma_dataset.v` lê `integration/data/vibration_input.hex` com `$readmemh`. Cada palavra tem `sample_x` nos 16 bits baixos e `sample_d` nos 16 bits altos. Para cada palavra, aguarda `sample_ready` e mantém `sample_start=sample_valid=1` por um ciclo. O parâmetro `SAMPLE_COUNT` define quantas amostras lê (64 por padrão). Compile e rode a partir de `integration/RTL`:
+Também é possível usar o exportador MATLAB `integration/tools/export_vibration_mat.m`, passando `8503` como último argumento.
+
+O arquivo `integration/data/vibration_input.hex` e a ROM `integration/RTL/vetores/vibration_input.hex` já contêm 8503 amostras do canal Point1 de `4Nm_Normal.mat`, em Q1.15. O testbench `RTL/tb_smma_dataset.v` aciona `dataset_start` e exercita a mesma fonte ROM RTL usada pelo top sintetizável. Compile e rode a partir de `integration/RTL`:
 
 ```sh
 iverilog -g2012 -s tb_smma_dataset -o tb_smma.out -f filelist.f tb_smma_dataset.v
 vvp tb_smma.out
 ```
 
-O top recolhe 64 saídas LMS, executa a FFT e sinaliza `analysis_done`; configure `sample_rate_hz=25600`. No FPGA físico, uma interface de aquisição deve fornecer as amostras pela mesma interface `sample_*`; o arquivo MATLAB não é lido pelo hardware.
+O testbench reproduz a janela em modo rápido (`DATA_ROM_FAST=1`) e aguarda as saídas árvore/CNN. Para síntese, o padrão é `DATA_ROM_FAST=0` e a ROM fornece a taxa de 25,6 kHz. `analysis_done` sinaliza cada bloco de 64 amostras processado pela cadeia LMS/FFT/MDC/Frequência. No FPGA, o arquivo `.hex` inicializa a ROM; o `.mat` não é lido pelo hardware.
 
-O `FFT_Top` integrado processa diretamente os 64 valores recebidos a 25,6 kHz (bin de 400 Hz). A entrada da CNN continua sendo independente: a branch `feat/CNN` define outra preparação para espectrograma — FIR de 63 taps, decimação ×8, FFT de 64 pontos com hop de 32, magnitude e compressão log2 — resultando em pixels 32×32 Q1.15. Esses 1024 pixels precisam ser gerados e enviados pela interface `cnn_*`; o top atual não contém esse pré-processamento. A documentação Python da branch associa seus CSVs a `x_A/y_A/x_B/y_B`, mas os MAT inspecionados identificam os canais apenas como Point1–Point4, então a correspondência física deve ser confirmada antes de fixar o canal para classificação.
+O `FFT_Top` do caminho legado analisa blocos de 64 saídas LMS e envia os bins ao detector de picos/MDC/frequência. A FFT dedicada da árvore alimenta tanto as features espectrais quanto o espectrograma 32×32 da CNN. As amostras `.mat` usam canais `Point1`–`Point4`; confirme qual canal físico corresponde ao eixo de vibração desejado antes de usar outros arquivos.

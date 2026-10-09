@@ -30,3 +30,12 @@ blocks/cnn/CNN_Weight_ROM.v
 blocks/inverse_matrix/fixed_point_divider.v
 blocks/inverse_matrix/gauss_jordan_inv.v
 blocks/tree/ML_Tree_Classifier.v
+blocks/tree/Divider_Q15.v
+blocks/tree/FIR_Decimator.v
+blocks/tree/Frame_Builder.v
+blocks/tree/Feature_Spectral.v
+blocks/tree/Feature_Temporal.v
+blocks/tree/FFT_Log2_Compress.v
+blocks/tree/Spectrogram_Buffer.v
+blocks/tree/SMMA_Tree_Feature_Pipeline.v
+blocks/tree/Vibration_ROM_Source.v

@@ -2,18 +2,18 @@ function export_vibration_mat(matFile, hexFile, inputChannel, desiredChannel, fu
 % Exporta um .mat Test.Lab para palavras de simulacao {d[15:0], x[15:0]}.
 % Uso (a partir da raiz do repositorio):
 %   export_vibration_mat('vibração/4Nm_Normal.mat', ...
-%       'integration/data/vibration_input.hex', 1, 1, 32, 64)
+%       'integration/data/vibration_input.hex', 1, 1, 32, 8503)
 %
 % inputChannel/desiredChannel sao indices 1..4 em Signal.y_values.values.
 % desiredChannel=inputChannel usa o mesmo sinal como x(n) e d(n), adequado
 % para exercitar o LMS como preditor quando nao ha canal de referencia definido.
 % fullScaleG define a escala fixa comum: Q1.15 = aceleracao/fullScaleG.
-% maxSamples=0 exporta o arquivo inteiro; o padrao 64 cria um quadro FFT.
+% maxSamples=0 exporta o arquivo inteiro; 8503 gera uma janela da arvore.
 
     if nargin < 3 || isempty(inputChannel),  inputChannel = 1; end
     if nargin < 4 || isempty(desiredChannel), desiredChannel = inputChannel; end
     if nargin < 5 || isempty(fullScaleG), fullScaleG = 32; end
-    if nargin < 6 || isempty(maxSamples), maxSamples = 64; end
+    if nargin < 6 || isempty(maxSamples), maxSamples = 8503; end
 
     if inputChannel < 1 || inputChannel > 4 || inputChannel ~= fix(inputChannel)
         error('inputChannel deve ser um indice inteiro de 1 a 4.');
@@ -63,10 +63,18 @@ function export_vibration_mat(matFile, hexFile, inputChannel, desiredChannel, fu
         error('Nao foi possivel criar %s.', hexFile);
     end
     closeFile = onCleanup(@() fclose(fid));
+    synthHexFile = fullfile(fileparts(mfilename('fullpath')), '..', 'RTL', ...
+        'vetores', 'vibration_input.hex');
+    fidSynth = fopen(synthHexFile, 'w');
+    if fidSynth < 0
+        error('Nao foi possivel criar a ROM sintetizavel %s.', synthHexFile);
+    end
+    closeSynthFile = onCleanup(@() fclose(fidSynth));
     chunk = 65536;
     for first = 1:chunk:count
         last = min(first + chunk - 1, count);
         fprintf(fid, '%08X\n', packed(first:last));
+        fprintf(fidSynth, '%08X\n', packed(first:last));
     end
 
     dt = loaded.Signal.x_values.increment;
@@ -74,5 +82,6 @@ function export_vibration_mat(matFile, hexFile, inputChannel, desiredChannel, fu
     fprintf('Taxa de amostragem: %.6f Hz (dt=%.12g s)\n', 1 / dt, dt);
     fprintf('Canais: x=Point%d, d=Point%d; escala Q1.15=+/-%.6g g\n', ...
         inputChannel, desiredChannel, fullScaleG);
-    fprintf('Saturacoes: x=%d, d=%d; arquivo=%s\n', xClipCount, dClipCount, hexFile);
+    fprintf('Saturacoes: x=%d, d=%d; arquivo=%s; ROM RTL=%s\n', ...
+        xClipCount, dClipCount, hexFile, synthHexFile);
 end

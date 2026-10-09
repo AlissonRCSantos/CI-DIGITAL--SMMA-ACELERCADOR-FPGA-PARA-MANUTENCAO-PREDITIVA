@@ -158,7 +158,8 @@ module ML_Tree_Classifier #(
             busy       <= 1'b0;
             done       <= 1'b0;
             no_addr    <= {IDX_W{1'b0}};
-            no_cur     <= {IDX_W{1'b0}};
+            // no_cur NAO e resetado aqui: ele ja e escrito no always da ROM
+            // (linha 110). Dois always no mesmo reg = erro 10028 no Quartus.
             feat_cnt   <= 4'd0;
             passos     <= 4'd0;
             classe_reg <= 2'd0;

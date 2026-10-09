@@ -1,8 +1,6 @@
 `timescale 1ns / 1ps
 
 module tb_smma_dataset;
-    parameter integer SAMPLE_COUNT = 64;
-    parameter DATA_FILE = "../data/vibration_input.hex";
     localparam WIDTH = 16;
 
     reg clk = 1'b0;
@@ -12,9 +10,11 @@ module tb_smma_dataset;
     reg enable = 1'b1;
     reg sample_start = 1'b0;
     reg sample_valid = 1'b0;
+    reg dataset_start = 1'b0;
     reg signed [WIDTH-1:0] sample_x = 0;
     reg signed [WIDTH-1:0] sample_d = 0;
     wire sample_ready;
+    wire dataset_busy, dataset_done;
     wire signed [WIDTH-1:0] lms_y, lms_error;
     wire lms_valid;
     wire [5:0] fundamental_bin, fundamental_hz_frac;
@@ -22,14 +22,16 @@ module tb_smma_dataset;
     wire fundamental_valid, gcd_error, analysis_busy, analysis_done;
     wire cnn_pixel_ready, cnn_valid, cnn_busy;
     wire [1:0] cnn_class;
+    wire auto_tree_busy, auto_tree_done, auto_tree_class_valid, auto_tree_error;
+    wire auto_cnn_busy, auto_cnn_done, auto_cnn_class_valid;
+    wire [1:0] auto_tree_class, auto_cnn_class;
     wire inv_ready, inv_valid_out, inv_busy, inv_singular;
     wire signed [WIDTH-1:0] inv_read_data;
 
-    reg [31:0] words [0:SAMPLE_COUNT-1];
-    integer index;
-
-    SMMA_Top dut (
+    SMMA_Top #(.DATA_ROM_FAST(1)) dut (
         .clk(clk), .reset(reset), .enable(enable),
+        .dataset_start(dataset_start), .dataset_busy(dataset_busy),
+        .dataset_done(dataset_done),
         .sample_start(sample_start), .sample_valid(sample_valid),
         .sample_x(sample_x), .sample_d(sample_d), .sample_ready(sample_ready),
         .lms_y(lms_y), .lms_error(lms_error), .lms_valid(lms_valid),
@@ -40,6 +42,11 @@ module tb_smma_dataset;
         .tree_start(1'b0), .tree_feature_valid(1'b0), .tree_feature(16'sd0),
         .tree_feature_ready(), .tree_ready(), .tree_busy(), .tree_done(),
         .tree_class_ready(1'b1), .tree_class_valid(), .tree_class(), .tree_error(),
+        .auto_tree_busy(auto_tree_busy), .auto_tree_done(auto_tree_done),
+        .auto_tree_class_valid(auto_tree_class_valid), .auto_tree_class(auto_tree_class),
+        .auto_tree_error(auto_tree_error),
+        .auto_cnn_busy(auto_cnn_busy), .auto_cnn_done(auto_cnn_done),
+        .auto_cnn_class_valid(auto_cnn_class_valid), .auto_cnn_class(auto_cnn_class),
         .cnn_start(1'b0), .cnn_pixel_valid(1'b0), .cnn_pixel(16'sd0),
         .cnn_pixel_ready(cnn_pixel_ready), .cnn_class(cnn_class),
         .cnn_valid(cnn_valid), .cnn_busy(cnn_busy),
@@ -50,24 +57,17 @@ module tb_smma_dataset;
     );
 
     initial begin
-        $readmemh(DATA_FILE, words);
         repeat (5) @(negedge clk);
         reset = 1'b0;
-
-        for (index = 0; index < SAMPLE_COUNT; index = index + 1) begin
-            while (sample_ready !== 1'b1) @(negedge clk);
-            sample_x = words[index][15:0];
-            sample_d = words[index][31:16];
-            sample_valid = 1'b1;
-            sample_start = 1'b1;
-            @(negedge clk);
-            sample_valid = 1'b0;
-            sample_start = 1'b0;
-        end
-
-        wait (analysis_done);
-        $display("Analysis done: bin=%0d, f0=%0d + frac, gcd_error=%b",
-                 fundamental_bin, fundamental_hz_int, gcd_error);
+        dataset_start = 1'b1;
+        @(negedge clk);
+        dataset_start = 1'b0;
+        wait (dataset_done);
+        wait (auto_tree_done);
+        wait (auto_cnn_done);
+        $display("Same vibration window: tree=%0d (error=%b), CNN=%0d; legacy f0=%0d + frac, gcd_error=%b",
+                 auto_tree_class, auto_tree_error, auto_cnn_class,
+                 fundamental_hz_int, gcd_error);
         $finish;
     end
 endmodule

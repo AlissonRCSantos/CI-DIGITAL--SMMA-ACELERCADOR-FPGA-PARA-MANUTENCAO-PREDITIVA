@@ -63,10 +63,11 @@
 //   Saida real/imaginaria : Q1.15 com sinal (16 bits)
 //   Magnitude             : Q1.15 SEM sinal (16 bits), faixa [0, 2)
 //
-//   Escalonamento de 1/2 por estagio -> a saida e X[k]/64 (DFT normalizada),
-//   o que elimina completamente a possibilidade de overflow ao custo de ~1 bit
-//   de SNR por estagio. Como o detector de picos e o MDC comparam bins entre
-//   si, o fator constante 1/64 nao afeta o resultado do diagnostico.
+//   Escalonamento CONFIGURAVEL por estagio (parametro SCALE_MASK, detalhado
+//   logo abaixo). O padrao escala 4 dos 6 estagios -> a saida e X[k]/16, que
+//   e a escala com que a CNN foi treinada. O fator e constante para todos os
+//   bins, portanto nao afeta o detector de picos nem o MDC, que comparam bins
+//   entre si; mas afeta a CNN, cujos pesos foram ajustados nesta escala.
 //
 // ----------------------------------------------------------------------------
 // 4. PROTOCOLO DE COMUNICACAO
@@ -84,7 +85,33 @@
 module FFT_Top #(
     parameter WIDTH = 16,   // Largura da palavra de dados (Q1.15)
     parameter FRAC  = 15,   // Bits fracionarios
-    parameter LOG2N = 6     // N = 2^LOG2N = 64 pontos
+    parameter LOG2N = 6,    // N = 2^LOG2N = 64 pontos
+
+    // ------------------------------------------------------------------------
+    // ESCALONAMENTO POR ESTAGIO (bit i = 1 -> estagio i+1 divide por 2)
+    // ------------------------------------------------------------------------
+    //   Este parametro define o GANHO TOTAL da FFT: 2^-(numero de bits em 1).
+    //
+    //   6'b111111 -> divide por 64 (X[k]/N): impossivel estourar, mas perde
+    //                ~1 bit de SNR por estagio.
+    //   6'b001111 -> divide por 16  [PADRAO]: escala apenas os estagios 1..4.
+    //
+    //   O padrao e 1/16 porque ESSA e a especificacao do caminho
+    //   FFT -> espectrograma com que a CNN foi TREINADA
+    //   (python/smma/espectrograma.py: "ESCALA_FFT = 16", e o comentario
+    //   "escala 1/2 em 4 dos 6 estagios radix-2; margem medida no dataset:
+    //   pico maximo ~50% do fundo de escala").
+    //
+    //   Se a FFT dividisse por 64, as magnitudes entregues ao detector de
+    //   picos e a CNN sairiam 4x menores do que as usadas no treino - o que,
+    //   depois da compressao log2 do espectrograma, desloca TODOS os pixels
+    //   em 2 niveis de expoente (~4096 de 32767) e degrada a classificacao.
+    //
+    //   Os dois estagios sem escala sao os DOIS ULTIMOS de proposito: assim
+    //   os valores intermediarios permanecem no menor nivel possivel pelo
+    //   maior tempo possivel, e o crescimento de 4x so ocorre no fim, onde a
+    //   margem de 50% medida no dataset garante que nao ha saturacao.
+    parameter [5:0] SCALE_MASK = 6'b001111
 )(
     input  wire                     clk,        // Clock do sistema (50 MHz)
     input  wire                     rst,        // Reset sincrono ativo em alto
@@ -106,9 +133,9 @@ module FFT_Top #(
     input  wire                     out_ready,  // Consumidor pronto (detector de picos)
     output wire                     out_valid,  // Bin valido
     output wire [LOG2N-1:0]         out_index,  // Indice k do bin (0..63)
-    output wire signed [WIDTH-1:0]  out_real,   // Re{X[k]}/64 (Q1.15)
-    output wire signed [WIDTH-1:0]  out_imag,   // Im{X[k]}/64 (Q1.15)
-    output wire [WIDTH-1:0]         out_mag,    // |X[k]|/64 aproximado (Q1.15 sem sinal)
+    output wire signed [WIDTH-1:0]  out_real,   // Re{X[k]}/16 (Q1.15, ver SCALE_MASK)
+    output wire signed [WIDTH-1:0]  out_imag,   // Im{X[k]}/16 (Q1.15, ver SCALE_MASK)
+    output wire [WIDTH-1:0]         out_mag,    // |X[k]|/16 aproximado (Q1.15 sem sinal)
 
     // ---- Observabilidade ----
     output wire [2:0]               stage_dbg   // Estagio corrente (1..6)
@@ -133,6 +160,7 @@ module FFT_Top #(
 
     // Butterfly
     wire                    bf_in_valid;
+    wire                    bf_scale_en;
     wire                    bf_out_valid;
     wire signed [WIDTH-1:0] bf_p_real, bf_p_imag;
     wire signed [WIDTH-1:0] bf_q_real, bf_q_imag;
@@ -147,7 +175,8 @@ module FFT_Top #(
     // ========================================================================
     FFT_Control_FSM #(
         .LOG2N(LOG2N),
-        .BF_PIPE(7)          // 1 ciclo de RAM + 6 ciclos do butterfly
+        .BF_PIPE(7),         // 1 ciclo de RAM + 6 ciclos do butterfly
+        .SCALE_MASK(SCALE_MASK)
     ) u_control (
         .clk(clk),
         .rst(rst),
@@ -167,6 +196,7 @@ module FFT_Top #(
         .tw_addr(tw_addr),
         .tw_rd_en(tw_rd_en),
         .bf_in_valid(bf_in_valid),
+        .bf_scale_en(bf_scale_en),
         .unload_rd(unload_rd),
         .unload_index(unload_index),
         .out_pipe_adv(out_pipe_adv),
@@ -226,6 +256,7 @@ module FFT_Top #(
         .clk(clk),
         .rst(rst),
         .in_valid(bf_in_valid),
+        .scale_en(bf_scale_en),
         .a_real(mem_a_dout[WIDTH-1:0]),
         .a_imag(mem_a_dout[DATA_W-1:WIDTH]),
         .b_real(mem_b_dout[WIDTH-1:0]),

@@ -1,8 +1,9 @@
 `timescale 1ns / 1ps
 
-// Integra a cadeia LMS -> FFT -> detector de picos -> MDC -> f0.
-// CNN e inversao de matriz sao subsistemas controlados por interfaces proprias:
-// o projeto nao define um gerador de espectrograma nem a origem da matriz.
+// Integra a cadeia LMS -> FFT -> detector de picos -> MDC -> f0 e o caminho
+// de features da arvore de decisao alimentado pelas amostras cruas.
+// A CNN recebe o espectrograma da janela de vibracao por padrao; opcionalmente
+// aceita pixels externos. O inversor recebe a matriz pela interface inv_*.
 module SMMA_Top #(
     parameter WIDTH = 16,
     parameter FRAC = 15,
@@ -10,11 +11,20 @@ module SMMA_Top #(
     parameter FS_WIDTH = 20,
     parameter INV_FRAC = 12,
     parameter signed [WIDTH-1:0] INV_EPSILON = 16'sd8,
-    parameter TREE_N_NODES = 141
+    parameter TREE_N_NODES = 141,
+    parameter AUTO_CNN_FROM_VIBRATION = 1,
+    parameter USE_VIBRATION_ROM = 1,
+    parameter DATA_ROM_SAMPLES = 8503,
+    parameter DATA_ROM_RATE_DIV = 1953,
+    parameter DATA_ROM_FAST = 0,
+    parameter DATA_ROM_FILE = "vetores/vibration_input.hex"
 )(
     input wire clk,
     input wire reset,
     input wire enable,
+    input wire dataset_start,
+    output wire dataset_busy,
+    output wire dataset_done,
 
     // Entrada de uma amostra LMS. start e valid devem estar altos juntos.
     input wire sample_start,
@@ -38,8 +48,7 @@ module SMMA_Top #(
     output wire analysis_busy,
     output reg analysis_done,
 
-    // Classificador por arvore: recebe 12 features Q1.15 em ordem definida
-    // pelo modelo treinado; este top nao calcula essas features internamente.
+    // Interface manual/legada para fornecer features externamente.
     input wire tree_start,
     input wire tree_feature_valid,
     input wire signed [WIDTH-1:0] tree_feature,
@@ -51,6 +60,17 @@ module SMMA_Top #(
     output wire tree_class_valid,
     output wire [1:0] tree_class,
     output wire tree_error,
+
+    // Caminho automatico da arvore: janela completa de vibracao em sample_x.
+    output wire auto_tree_busy,
+    output wire auto_tree_done,
+    output wire auto_tree_class_valid,
+    output wire [1:0] auto_tree_class,
+    output wire auto_tree_error,
+    output wire auto_cnn_busy,
+    output wire auto_cnn_done,
+    output wire auto_cnn_class_valid,
+    output wire [1:0] auto_cnn_class,
 
     // CNN: recebe diretamente os 1024 pixels do espectrograma (raster).
     input wire cnn_start,
@@ -86,17 +106,53 @@ module SMMA_Top #(
     reg fft_finished, frequency_finished;
 
     wire lms_ready, lms_busy;
+    wire tree_source_ready;
+    wire auto_window_start, auto_image_valid;
+    wire [WIDTH-1:0] auto_image_pixel;
+    wire cnn_core_ready, cnn_core_done;
     wire signed [WIDTH-1:0] lms_w0,lms_w1,lms_w2,lms_w3;
     wire signed [WIDTH-1:0] lms_w4,lms_w5,lms_w6,lms_w7;
-    wire lms_start = sample_start && sample_valid && sample_ready && enable;
-    assign sample_ready = (state == S_IDLE) && enable && lms_ready && !lms_busy;
+    wire core_sample_valid, core_sample_start;
+    wire signed [WIDTH-1:0] core_sample_x, core_sample_d;
+    wire core_sample_ready;
+    wire [31:0] rom_sample_word;
+    wire rom_sample_valid, rom_sample_busy, rom_sample_done;
+    wire lms_start = core_sample_start && core_sample_valid && core_sample_ready && enable;
+    assign core_sample_ready = (state == S_IDLE) && enable && lms_ready && !lms_busy &&
+                               tree_source_ready;
     assign analysis_busy = (state != S_IDLE) || lms_busy || (load_count != 0);
+
+    generate if (USE_VIBRATION_ROM) begin : g_vibration_rom
+        Vibration_ROM_Source #(.WIDTH(32), .N_SAMPLES(DATA_ROM_SAMPLES),
+            .DIV_RATE(DATA_ROM_RATE_DIV), .FAST(DATA_ROM_FAST),
+            .ROM_FILE(DATA_ROM_FILE)) u_source (
+            .clk(clk), .rst(reset), .start(dataset_start),
+            .busy(rom_sample_busy), .done(rom_sample_done),
+            .out_ready(core_sample_ready), .out_valid(rom_sample_valid),
+            .out_sample(rom_sample_word)
+        );
+        assign core_sample_valid = rom_sample_valid;
+        assign core_sample_start = rom_sample_valid;
+        assign core_sample_x = $signed(rom_sample_word[WIDTH-1:0]);
+        assign core_sample_d = $signed(rom_sample_word[2*WIDTH-1:WIDTH]);
+        assign sample_ready = 1'b0;
+        assign dataset_busy = rom_sample_busy;
+        assign dataset_done = rom_sample_done;
+    end else begin : g_external_stream
+        assign core_sample_valid = sample_valid;
+        assign core_sample_start = sample_start;
+        assign core_sample_x = sample_x;
+        assign core_sample_d = sample_d;
+        assign sample_ready = core_sample_ready;
+        assign dataset_busy = 1'b0;
+        assign dataset_done = 1'b0;
+    end endgenerate
 
     LMS_Filter_Top #(.WIDTH(WIDTH), .FRAC(FRAC)) u_lms (
         .clk(clk), .rst(reset), .start(lms_start), .enable(enable),
-        .valid_in(sample_valid && sample_start && sample_ready),
+        .valid_in(core_sample_valid && core_sample_start && core_sample_ready),
         .ready(lms_ready), .busy(lms_busy), .valid_out(lms_valid),
-        .in_x(sample_x), .in_d(sample_d), .out_y(lms_y), .out_error(lms_error),
+        .in_x(core_sample_x), .in_d(core_sample_d), .out_y(lms_y), .out_error(lms_error),
         .w0(lms_w0), .w1(lms_w1), .w2(lms_w2), .w3(lms_w3),
         .w4(lms_w4), .w5(lms_w5), .w6(lms_w6), .w7(lms_w7)
     );
@@ -109,7 +165,9 @@ module SMMA_Top #(
     wire signed [WIDTH-1:0] fft_out_real, fft_out_imag;
     wire [WIDTH-1:0] fft_out_mag;
     wire [2:0] fft_stage;
-    FFT_Top #(.WIDTH(WIDTH), .FRAC(FRAC), .LOG2N(FFT_LOG2N)) u_fft (
+    // Preserve o escalonamento historico (/64) usado pela analise de picos.
+    FFT_Top #(.WIDTH(WIDTH), .FRAC(FRAC), .LOG2N(FFT_LOG2N),
+              .SCALE_MASK(6'b111111)) u_fft (
         .clk(clk), .rst(reset), .start(fft_start), .enable(enable),
         .ready(fft_ready), .busy(fft_busy), .done(fft_done),
         .in_valid(fft_in_valid), .in_ready(fft_in_ready),
@@ -155,6 +213,23 @@ module SMMA_Top #(
         .f0_frac(fundamental_hz_frac)
     );
 
+    // A mesma amostra aceita segue em paralelo ao pipeline original e ao
+    // front-end da arvore (FIR/decimacao, 32 FFTs, 12 features e classificacao).
+    SMMA_Tree_Feature_Pipeline #(.WIDTH(WIDTH), .FRAC(FRAC),
+        .TREE_N_NODES(TREE_N_NODES), .FIR_COEF("vetores/fir_coef.hex"),
+        .TREE_ROM("vetores/arvore.hex")) u_tree_pipeline (
+        .clk(clk), .rst(reset), .enable(enable),
+        .sample_valid(core_sample_valid && core_sample_start && core_sample_ready),
+        .sample(core_sample_x), .sample_ready(tree_source_ready),
+        .window_start(auto_window_start),
+        .image_ready(AUTO_CNN_FROM_VIBRATION ? cnn_core_ready : 1'b1),
+        .image_done(AUTO_CNN_FROM_VIBRATION ? cnn_core_done : 1'b1),
+        .image_valid(auto_image_valid), .image_pixel(auto_image_pixel),
+        .busy(auto_tree_busy), .done(auto_tree_done),
+        .class_valid(auto_tree_class_valid), .class_out(auto_tree_class),
+        .tree_error(auto_tree_error)
+    );
+
     ML_Tree_Classifier #(
         .WIDTH(WIDTH), .N_FEATURES(12), .N_NOS(TREE_N_NODES),
         .PROF_MAX(9), .ARQ_ROM("vetores/arvore.hex")
@@ -167,11 +242,20 @@ module SMMA_Top #(
         .out_error(tree_error)
     );
 
+    wire cnn_core_start = AUTO_CNN_FROM_VIBRATION ? auto_window_start : cnn_start;
+    wire cnn_core_valid = AUTO_CNN_FROM_VIBRATION ? auto_image_valid : cnn_pixel_valid;
+    wire signed [WIDTH-1:0] cnn_core_pixel = AUTO_CNN_FROM_VIBRATION
+                                             ? $signed(auto_image_pixel) : cnn_pixel;
+    assign cnn_pixel_ready = AUTO_CNN_FROM_VIBRATION ? 1'b0 : cnn_core_ready;
+    assign auto_cnn_busy = AUTO_CNN_FROM_VIBRATION ? cnn_busy : 1'b0;
+    assign auto_cnn_done = AUTO_CNN_FROM_VIBRATION ? cnn_core_done : 1'b0;
+    assign auto_cnn_class_valid = AUTO_CNN_FROM_VIBRATION ? cnn_valid : 1'b0;
+    assign auto_cnn_class = cnn_class;
     CNN_Top #(.WIDTH(WIDTH), .FRAC(FRAC)) u_cnn (
-        .clk(clk), .rst(reset), .start(cnn_start), .enable(enable),
-        .in_valid(cnn_pixel_valid), .in_ready(cnn_pixel_ready),
-        .busy(cnn_busy), .ready(), .done(), .valid_out(cnn_valid),
-        .in_pixel(cnn_pixel), .out_class(cnn_class), .out_scores(),
+        .clk(clk), .rst(reset), .start(cnn_core_start), .enable(enable),
+        .in_valid(cnn_core_valid), .in_ready(cnn_core_ready),
+        .busy(cnn_busy), .ready(), .done(cnn_core_done), .valid_out(cnn_valid),
+        .in_pixel(cnn_core_pixel), .out_class(cnn_class), .out_scores(),
         .out_features()
     );
 
