@@ -1,21 +1,5 @@
 // ============================================================================
-// Module: tb_Yule_Walker_Solver
-// Description: Testbench do MODULO DE INVERSAO DE MATRIZ completo, ligado como
-//              no SMMA_Top:
-//
-//     amostras -> autocorrelacao_yw -> Yule_Walker_Solver <-> gauss_jordan_inv
-//                                                 |
-//                                          a1/2, a2/2, a3/2 (Q1.15)
-//
-// Referencia: numpy.linalg.solve(R, r) / 2 em PONTO FLUTUANTE, sobre os
-// mesmos rho em Q1.15 que o hardware produz (6 janelas reais de
-// vetores/temp_teste.hex). A diferenca aceita e de 4 LSB (1,2e-4): o
-// hardware faz Gauss-Jordan em Q8.16, e a comparacao e justamente a
-// "analise de diferencas numericas" pedida no 6.6 -- o desvio maximo
-// observado e impresso no final.
-//
-// A janela 4 e a mais mal condicionada (cond(R) ~ 66, |R^-1| ~ 16): e o caso
-// que estoura o formato Q4.12 original e motivou o Q8.16.
+// tb_Yule_Walker_Solver -- testbench: autocorrelacao -> Yule-Walker -> Gauss-Jordan
 // ============================================================================
 
 `timescale 1ns / 1ps

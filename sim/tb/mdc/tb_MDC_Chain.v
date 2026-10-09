@@ -1,17 +1,5 @@
 // ============================================================================
-// Module: tb_MDC_Chain
-// Description: Testbench do MODULO MDC completo, ligado como no SMMA_Top:
-//
-//     espectro medio (32 bins) -> peak_detector -> mdc_gcd -> f0_estimator
-//
-// Casos:
-//   1. Exemplo do enunciado (3.1): picos nos bins 12, 18 e 30
-//      -> k0 = MDC(12,18,30) = 6 -> f0 = 6 * 3200 / 64 = 300 Hz.
-//   2. Harmonicos de 50 Hz (bins 2, 4, 6 de uma rotacao em 100 Hz)
-//      -> k0 = 2 -> f0 = 100 Hz.
-//   3. Picos sem fator comum (bins 7, 11, 13) -> k0 = 1 -> 50 Hz.
-//   4. Espectro plano abaixo do limiar: nenhum pico -> MDC sinaliza erro.
-//   5. Reuso sem reset (caso 1 de novo).
+// tb_MDC_Chain -- testbench: picos -> MDC -> f0 como no top level
 // ============================================================================
 
 `timescale 1ns / 1ps

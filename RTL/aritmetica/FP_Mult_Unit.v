@@ -1,20 +1,5 @@
 // ============================================================================
-// Module: FP_Mult_Unit
-// Description: Parameterized Signed Fixed-Point Multiplier Unit designed for 
-//              optimal inference of Variable-Precision DSP blocks on Intel 
-//              Cyclone V FPGAs.
-//
-// Features:
-//   - Fully parameterizable widths and fractions.
-//   - Fully pipelined (3 clock cycles of latency) for maximum clock speed.
-//   - Infers Cyclone V Variable-Precision DSP blocks in 18x18 or 27x27 modes.
-//   - Integrates optional symmetric rounding (Round to Nearest).
-//   - Built-in overflow/underflow detection and saturation to prevent wrapping.
-//
-// Latency: exactly 3 clock cycles.
-//   - Cycle 1: Registered Inputs (inside DSP input register stage)
-//   - Cycle 2: Registered Product (inside DSP product register stage)
-//   - Cycle 3: Rounding, Saturation, and Registered Output (in logic fabric)
+// FP_Mult_Unit -- multiplicador com sinal em ponto fixo (infere DSP)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -35,19 +20,15 @@ module FP_Mult_Unit #(
     output reg  signed [WIDTH_Y-1:0] out_Y   // Fixed-point product output Y
 );
 
-    // ------------------------------------------------------------------------
     // Local Parameters & Sizing
-    // ------------------------------------------------------------------------
     localparam FRAC_PROD = FRAC_A + FRAC_B;
     localparam FRAC_DIFF = FRAC_PROD - FRAC_Y;
-    
+
     // Saturation limits (signed)
     localparam signed [WIDTH_Y-1:0] OUT_MAX = {1'b0, {(WIDTH_Y-1){1'b1}}}; // e.g. 0x7FFF for 16-bit
     localparam signed [WIDTH_Y-1:0] OUT_MIN = {1'b1, {(WIDTH_Y-1){1'b0}}}; // e.g. 0x8000 for 16-bit
 
-    // ------------------------------------------------------------------------
     // Pipeline Stage 1: Registered Inputs (to infer DSP input registers)
-    // ------------------------------------------------------------------------
     reg signed [WIDTH_A-1:0] r_A;
     reg signed [WIDTH_B-1:0] r_B;
 
@@ -61,9 +42,7 @@ module FP_Mult_Unit #(
         end
     end
 
-    // ------------------------------------------------------------------------
     // Pipeline Stage 2: Registered Product (to infer DSP product register)
-    // ------------------------------------------------------------------------
     reg signed [WIDTH_A+WIDTH_B-1:0] r_prod;
 
     always @(posedge clk) begin
@@ -74,9 +53,7 @@ module FP_Mult_Unit #(
         end
     end
 
-    // ------------------------------------------------------------------------
     // Pipeline Stage 3: Rounding, Scaling and Saturation
-    // ------------------------------------------------------------------------
     wire signed [WIDTH_A+WIDTH_B-1:0] rounded_prod;
     wire signed [WIDTH_A+WIDTH_B-1:0] shifted_prod;
 

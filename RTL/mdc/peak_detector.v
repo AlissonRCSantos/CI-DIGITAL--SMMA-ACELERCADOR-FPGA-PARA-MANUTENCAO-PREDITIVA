@@ -1,10 +1,14 @@
+// ============================================================================
+// peak_detector -- PEAK DETECTOR: os 3 maiores picos do espectro
+// ============================================================================
+
 module peak_detector #(
-    parameter integer FFT_N        = 64,        
-    parameter integer IDX_WIDTH    = 6,         
-    parameter integer MAG_WIDTH    = 16,        
-    parameter integer NUM_PEAKS    = 3,        
-    parameter integer SEARCH_START = 1,         
-    parameter integer SEARCH_END   = (FFT_N/2) - 1 
+    parameter integer FFT_N        = 64,
+    parameter integer IDX_WIDTH    = 6,
+    parameter integer MAG_WIDTH    = 16,
+    parameter integer NUM_PEAKS    = 3,
+    parameter integer SEARCH_START = 1,
+    parameter integer SEARCH_END   = (FFT_N/2) - 1
 )(
     input  wire                   clk,
     input  wire                   rst_n,
@@ -15,7 +19,7 @@ module peak_detector #(
 
     input  wire                   mag_valid,
     output wire                   mag_ready,
-    input  wire [MAG_WIDTH-1:0]   mag_data,   
+    input  wire [MAG_WIDTH-1:0]   mag_data,
 
     input  wire [MAG_WIDTH-1:0]   cfg_threshold,
 
@@ -31,17 +35,14 @@ module peak_detector #(
 
     reg [1:0] state;
 
+    reg [IDX_WIDTH-1:0] bin_counter;
+    reg [MAG_WIDTH-1:0] mag_prev2;
+    reg [MAG_WIDTH-1:0] mag_prev1;
 
-    reg [IDX_WIDTH-1:0] bin_counter;      
-    reg [MAG_WIDTH-1:0] mag_prev2;        
-    reg [MAG_WIDTH-1:0] mag_prev1;        
-
- 
     reg [MAG_WIDTH-1:0] mag_top0, mag_top1, mag_top2;
     reg [IDX_WIDTH-1:0] idx_top0, idx_top1, idx_top2;
 
-    reg [1:0] out_ptr; 
-
+    reg [1:0] out_ptr;
 
     wire [IDX_WIDTH-1:0] cand_idx = bin_counter - 1'b1;
 
@@ -70,7 +71,7 @@ module peak_detector #(
             mag_top2 <= {MAG_WIDTH{1'b0}}; idx_top2 <= {IDX_WIDTH{1'b0}};
             out_ptr  <= 2'd0;
         end else begin
-            done <= 1'b0; 
+            done <= 1'b0;
 
             case (state)
 
@@ -89,9 +90,6 @@ module peak_detector #(
                 end
             end
 
-            // consome 1 amostra/ciclo; atualiza a janela deslizante;
-            // se o bin do meio da janela (mag_prev1) for candidato,
-            // insere-o na cascata top-3 (mux/comparadores em cadeia)
             S_SCAN: begin
                 busy <= 1'b1;
                 if (mag_valid && mag_ready) begin

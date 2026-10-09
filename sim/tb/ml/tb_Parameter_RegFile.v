@@ -1,14 +1,5 @@
 // ============================================================================
-// Module: tb_Parameter_RegFile
-// Description: Testbench do montador do vetor de 16 caracteristicas.
-//
-//   Cada origem entrega em momento e ordem diferentes (como no sistema: MDC
-//   e LMS terminam muito antes da inversao de matriz). Verifica-se que:
-//     1. a saida so comeca com as 16 posicoes preenchidas;
-//     2. a ordem de saida e a do vetor (0..15), independente da chegada;
-//     3. cada origem entrega o numero certo de palavras (ready cai depois);
-//     4. contrapressao na saida nao perde nem duplica palavras;
-//     5. reuso sem reset.
+// tb_Parameter_RegFile -- testbench: 16 posicoes em ordem, chegada embaralhada
 // ============================================================================
 
 `timescale 1ns / 1ps

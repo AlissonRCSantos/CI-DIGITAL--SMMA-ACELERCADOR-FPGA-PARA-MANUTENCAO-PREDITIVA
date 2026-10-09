@@ -1,21 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_Control_FSM
-// Verifica a unidade de controle global ISOLADA, com um datapath falso
-// (modelo comportamental simples) conectado no lugar dos modulos reais.
-//
-// O que e verificado:
-//   1) Estado de repouso: ready=1, busy=0 antes de qualquer start
-//   2) start -> busy=1, ready=0
-//   3) BACKPRESSURE: com conv_ready=0 a varredura CONGELA (push_en=0),
-//      mesmo com pixel valido -> e isso que impede sobrescrita de dados
-//   4) FALTA DE DADO: com in_valid=0 em um passo que precisa de pixel,
-//      push_en=0 -> e isso que impede perda de dado
-//   5) Nos passos de PADDING (need_pixel=0) a varredura avanca sozinha,
-//      sem exigir pixel do host
-//   6) Transicao para DRAIN no ultimo passo, e para DENSE apos NUM_POOL
-//      resultados do pooling
-//   7) dense_run e valid_out sao pulsos de EXATAMENTE 1 ciclo
-//   8) Ao final: done=1, ready=1 e retorno ao repouso
+// tb_CNN_Control_FSM -- testbench do controle da CNN
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -74,12 +58,10 @@ module tb_CNN_Control_FSM;
         rst = 0;
         @(negedge clk);
 
-        // ------------------------------------------------------------------
         $display("-- 1. Repouso");
         chk("ready=1 e busy=0 antes do start", (ready === 1'b1) && (busy === 1'b0));
         chk("push_en=0 em repouso",            (push_en === 1'b0));
 
-        // ------------------------------------------------------------------
         $display("\n-- 2. Disparo (start)");
         in_valid = 1'b1;
         @(negedge clk); start = 1'b1;
@@ -87,12 +69,10 @@ module tb_CNN_Control_FSM;
         chk("busy=1 e ready=0 apos start", (busy === 1'b1) && (ready === 1'b0));
         chk("frame_start pulsou 1 vez",    (n_frame_start === 1));
 
-        // ------------------------------------------------------------------
         $display("\n-- 3. Fluxo normal: pixel valido e convolucao livre");
         chk("push_en=1 (avanca a varredura)", (push_en === 1'b1));
         chk("in_ready=1 (consome pixel)",     (in_ready === 1'b1));
 
-        // ------------------------------------------------------------------
         $display("\n-- 4. BACKPRESSURE: convolucao ocupada (conv_ready=0)");
         conv_ready = 1'b0;
         #1;
@@ -102,7 +82,6 @@ module tb_CNN_Control_FSM;
         #1;
         chk("push_en volta a 1 quando conv libera", (push_en === 1'b1));
 
-        // ------------------------------------------------------------------
         $display("\n-- 5. FALTA DE DADO: host sem pixel valido (in_valid=0)");
         in_valid = 1'b0;
         #1;
@@ -110,7 +89,6 @@ module tb_CNN_Control_FSM;
         in_valid = 1'b1;
         #1;
 
-        // ------------------------------------------------------------------
         $display("\n-- 6. PADDING: passo que nao consome pixel (need_pixel=0)");
         need_pixel = 1'b0;
         in_valid   = 1'b0;         // host nao fornece nada
@@ -121,7 +99,6 @@ module tb_CNN_Control_FSM;
         in_valid   = 1'b1;
         #1;
 
-        // ------------------------------------------------------------------
         $display("\n-- 7. Fim da varredura -> DRAIN");
         @(negedge clk);
         last_push = 1'b1;
@@ -131,7 +108,6 @@ module tb_CNN_Control_FSM;
         chk("busy continua 1 durante o DRAIN", (busy === 1'b1));
         chk("push_en=0 apos o ultimo passo",   (push_en === 1'b0));
 
-        // ------------------------------------------------------------------
         $display("\n-- 8. Pooling entrega NUM_POOL resultados -> DENSE");
         for (i = 0; i < NUM_POOL; i = i + 1) begin
             @(negedge clk); pool_out_valid = 1'b1;
@@ -140,7 +116,6 @@ module tb_CNN_Control_FSM;
         @(negedge clk);
         chk("dense_run pulsou exatamente 1 vez", (n_dense_run === 1));
 
-        // ------------------------------------------------------------------
         $display("\n-- 9. Classificador termina -> FINISH");
         @(negedge clk); dense_done = 1'b1;
         @(negedge clk); dense_done = 1'b0;
@@ -151,7 +126,6 @@ module tb_CNN_Control_FSM;
         chk("ready=1 (pronto para nova imagem)", (ready === 1'b1));
         chk("busy=0 ao terminar",                (busy  === 1'b0));
 
-        // ------------------------------------------------------------------
         $display("\n-- 10. Pulsos nao ficam presos em nivel alto");
         repeat (5) @(negedge clk);
         chk("frame_start continua com 1 pulso apenas", (n_frame_start === 1));

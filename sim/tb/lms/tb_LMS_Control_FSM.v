@@ -1,6 +1,5 @@
 // ============================================================================
-// Module: tb_LMS_Control_FSM
-// Description: Testbench corrigida para validar os 26 ciclos da LMS_Control_FSM
+// tb_LMS_Control_FSM -- testbench do escalonador do LMS
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -68,7 +67,7 @@ module tb_LMS_Control_FSM;
         input       exp_wr_en_gate;
         begin
             total_tests = total_tests + 1;
-            
+
             if (uut.counter !== exp_counter) begin
                 fail_count = fail_count + 1;
                 $display("[FAIL: COUNTER] Esperado Cnt = %d | Obtido = %d", exp_counter, uut.counter);
@@ -114,9 +113,7 @@ module tb_LMS_Control_FSM;
         rst = 0;
         $display("[INFO] Reset desativado. FSM em IDLE.");
 
-        // --------------------------------------------------------------------
         // TESTE 1: Estado de IDLE
-        // --------------------------------------------------------------------
         @(negedge clk);
         if (busy !== 1'b0 || ready !== 1'b1 || valid_out !== 1'b0 || uut.counter !== 5'd0) begin
             total_tests = total_tests + 1;
@@ -126,15 +123,13 @@ module tb_LMS_Control_FSM;
             $display("[PASS] Handshake estavel em IDLE.");
         end
 
-        // --------------------------------------------------------------------
         // TESTE 2: Ciclo Completo (Ciclos 0 a 25)
-        // --------------------------------------------------------------------
         $display("\n--- TESTE 2: Ciclo de Transicoes Naturais Completo (Ciclos 0 a 25) ---");
-        
+
         @(negedge clk);
         start = 1'b1;
         valid_in = 1'b1;
-        
+
         // Ciclo 0: Carga de Amostra e Reset do Acumulador
         @(posedge clk); #1;
         check_outputs(5'd0, 1'b1, 1'b0, 1'b0, 1'b1, 3'd0, 1'b0, 1'b0, 1'b1, 3'd0, 1'b0);
@@ -158,9 +153,6 @@ module tb_LMS_Control_FSM;
         @(posedge clk); #1; check_outputs(5'd10, 1'b1, 1'b0, 1'b0, 1'b0, 3'd0, 1'b0, 1'b0, 1'b0, 3'd4, 1'b0);
         @(posedge clk); #1; check_outputs(5'd11, 1'b1, 1'b0, 1'b0, 1'b0, 3'd0, 1'b0, 1'b0, 1'b0, 3'd5, 1'b0);
 
-        // Ciclo 12: o FSM REGISTRA valid_out/ready ao fim deste ciclo; eles ficam
-        // visiveis no ciclo 13, alinhados com out_error do acumulador (que tambem
-        // e registrado). wr_addr e rd_addr atrasado de 5 ciclos (latencia da PE).
         @(posedge clk); #1; check_outputs(5'd12, 1'b1, 1'b0, 1'b0, 1'b0, 3'd0, 1'b0, 1'b0, 1'b0, 3'd6, 1'b0);
 
         // Ciclos 13 a 20: Fase 2 - Atualizacao de Pesos (rd_addr de 0 a 7, pe_sel=1, pe_valid=1, wr_en_gate=1)
@@ -193,15 +185,13 @@ module tb_LMS_Control_FSM;
 
         #(CLK_PERIOD * 4);
 
-        // --------------------------------------------------------------------
         // TESTE 3: Congelamento por Enable (enable = 0)
-        // --------------------------------------------------------------------
         $display("\n--- TESTE 3: Congelamento Sincrono (Enable = 0) ---");
-        
+
         @(negedge clk);
         start = 1'b1;
         valid_in = 1'b1;
-        
+
         @(posedge clk); #1;
         @(negedge clk);
         start = 1'b0;
@@ -235,9 +225,7 @@ module tb_LMS_Control_FSM;
         #1;
         $display("[PASS] FSM retomou e concluiu com sucesso.");
 
-        // --------------------------------------------------------------------
         // CONSOLIDAÇÃO DOS RESULTADOS
-        // --------------------------------------------------------------------
         $display("\n======================================================================");
         $display("                      RELATORIO FINAL DE SIMULACAO                    ");
         $display("======================================================================");

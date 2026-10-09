@@ -1,26 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_Dense_Classifier
-// Verifica a etapa final: GAP -> camada densa 8x4 -> argmax.
-//
-// TESTE 1 (stream constante)
-//   Injeta 256 amostras IGUAIS. Como a media de N valores iguais e o proprio
-//   valor, as features do GAP devem reproduzir exatamente o vetor injetado.
-//   Isso testa, de uma vez: o acumulador, a contagem das 256 posicoes, o
-//   deslocamento de 8 bits (divisao por 256) e o arredondamento.
-//   Em seguida confere os 4 scores e a classe vencedora contra o modelo de
-//   referencia em ponto fixo.
-//
-// TESTE 2 (stream com media conhecida)
-//   Injeta metade das amostras com valor A e metade com valor B: a media deve
-//   ser (A+B)/2. Prova que o GAP realmente acumula ao longo do quadro, e nao
-//   apenas repete a ultima amostra.
-//
-// TESTE 3 (features nulas)
-//   Com todas as features em zero, os scores devem ser exatamente os bias.
-//
-// Features, scores e classe esperados vem de vetores/dense_esperado.hex
-// (13 palavras por teste: 8 features, 4 scores, classe), calculados pelo
-// RTL/golden_model.py com os pesos treinados.
+// tb_CNN_Dense_Classifier -- testbench: GAP + densa bit a bit com o golden model
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -154,9 +133,7 @@ module tb_CNN_Dense_Classifier;
         repeat (3) @(negedge clk);
         rst = 0;
 
-        // ------------------------------------------------------------------
         // TESTE 1: stream constante -> GAP deve devolver o proprio vetor
-        // ------------------------------------------------------------------
         $display("-- Teste 1: 256 amostras identicas (media = proprio valor)");
         @(negedge clk); start = 1;
         @(negedge clk); start = 0;
@@ -168,9 +145,7 @@ module tb_CNN_Dense_Classifier;
         do_run;
         check_all("stream constante", ecl);
 
-        // ------------------------------------------------------------------
         // TESTE 2: metade com valor A, metade com valor B -> media (A+B)/2
-        // ------------------------------------------------------------------
         $display("\n-- Teste 2: 128 amostras de A + 128 de B (media = (A+B)/2)");
         @(negedge clk); start = 1;
         @(negedge clk); start = 0;
@@ -184,9 +159,7 @@ module tb_CNN_Dense_Classifier;
         do_run;
         check_all("media de A e B", ecl);
 
-        // ------------------------------------------------------------------
         // TESTE 3: features todas ZERO -> scores = apenas os bias
-        // ------------------------------------------------------------------
         $display("\n-- Teste 3: features nulas -> scores = bias");
         @(negedge clk); start = 1;
         @(negedge clk); start = 0;

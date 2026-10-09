@@ -1,11 +1,7 @@
 // ============================================================================
-// fixed_point_divider.v
-// Divisor sequencial (restoring division, 1 bit/ciclo) em ponto fixo Qm.f.
-// Calcula quotient = numerator / denominator, ambos em formato Qm.f.
-// O "numerator" já deve chegar pré-deslocado (numerator_real << FRAC) para
-// que o resultado saia corretamente escalado em Qm.f.
-// Usado pelo módulo de inversão para calcular o RECIPROCO do pivô: 1/pivo.
+// fixed_point_divider -- divisor sequencial em ponto fixo (1/pivo do Gauss-Jordan)
 // ============================================================================
+
 module fixed_point_divider #(
     parameter WIDTH = 16,   // largura do dado em Qm.f (ex: 16 bits)
     parameter FRAC  = 12    // bits fracionarios

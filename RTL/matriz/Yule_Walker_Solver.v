@@ -1,54 +1,5 @@
 // ============================================================================
-// Module: Yule_Walker_Solver
-// Description: Unidade de controle do MODULO DE INVERSAO DE MATRIZ
-//              (enunciado 3.3). Monta a matriz de Toeplitz a partir da
-//              autocorrelacao, conduz o gauss_jordan_inv (que fica no top
-//              level) e resolve as equacoes de Yule-Walker:
-//
-//                    R a = r     ->     a = R^-1 r
-//
-//              Os coeficientes AR(3) a1..a3 sao os "parametros do motor"
-//              estimados a partir de um sistema linear obtido dos dados do
-//              sensor, e vao para o classificador junto com as demais
-//              caracteristicas.
-//
-// ----------------------------------------------------------------------------
-// FLUXO (ORDEM = 3)
-// ----------------------------------------------------------------------------
-//   1. S_RHO   : captura rho[1..3] do stream r_valid/r_index/r_data do
-//                autocorrelacao_yw (o mesmo stream que vai ao classificador).
-//   2. S_LOAD  : escreve os 9 elementos de
-//
-//                     | 1     rho1  rho2 |
-//                R =  | rho1  1     rho1 |       (Toeplitz simetrica)
-//                     | rho2  rho1  1    |
-//
-//                pela porta de carga do gauss_jordan_inv (valid_in/ready),
-//                um elemento por ciclo, convertidos de Q1.15 para o formato
-//                do inversor.
-//   3. S_START : pulso de start com n = 3 (o inversor aceita ate 4x4).
-//   4. S_WAIT  : espera valid_out. Se 'singular' (pivo < EPSILON), os
-//                coeficientes saem ZERADOS -- mesma convencao do modelo
-//                Python (_features_ar), e o sinal 'singular' fica registrado.
-//   5. S_RD/S_MAC : a_i = sum_j Rinv[i][j] * rho[j+1], lendo R^-1 pela
-//                porta de leitura do inversor. 1 multiplicador, 9 MACs,
-//                2 ciclos cada (leitura registrada, depois produto).
-//   6. S_OUT   : entrega a1/2, a2/2, a3/2 em Q1.15 (valid/ready).
-//
-// ----------------------------------------------------------------------------
-// FORMATO NUMERICO
-// ----------------------------------------------------------------------------
-//   Inversor: Q8.16 em 24 bits (W_INV/F_INV). O Q4.12 da branch original
-//   satura: medido nas janelas do dataset, o numero de condicao de R chega a
-//   ~66 e |R^-1| a ~16, alem dos +-8 que o Q4.12 representa. Com 8 bits
-//   inteiros (sinal + 7) ha folga ate |R^-1| < 128, e 16 bits fracionarios dao
-//   resolucao de 1,5e-5. O inversor e parametrizado, entao nada nele mudou.
-//
-//   Saida: a_i / 2 em Q1.15. A divisao por 2 traz os coeficientes (|a1| chega
-//   a ~1,5) para dentro da faixa de Q1.15, como em smma/features.py.
-//
-//   Produto: Rinv (Q8.16) x rho (Q1.15) -> Q.31, acumulado em 48 bits;
-//   a/2 em Q1.15 = round(acc / 2^17), saturado.
+// Yule_Walker_Solver -- GAUSS_JORDAN: monta a Toeplitz, inverte e calcula a1..a3 (enunciado 3.3)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -100,9 +51,7 @@ module Yule_Walker_Solver #(
     localparam signed [ACC_W-1:0] A_MIN = -(1 <<< (WIDTH-1));       // -32768
     localparam signed [ACC_W-1:0] MEIO  =  (1 <<< F_INV);           // 0,5 LSB de saida
 
-    // ------------------------------------------------------------------------
     // Registradores
-    // ------------------------------------------------------------------------
     reg signed [WIDTH-1:0] rho  [1:ORDEM];
     reg signed [WIDTH-1:0] a_q  [0:ORDEM-1];
     reg [1:0]              i, j;
@@ -121,9 +70,7 @@ module Yule_Walker_Solver #(
                      S_OUT   = 4'd7;
     reg [3:0] state;
 
-    // ------------------------------------------------------------------------
     // Elemento R[i][j] da Toeplitz, no formato do inversor
-    // ------------------------------------------------------------------------
     wire [1:0] dist_ij = (i > j) ? (i - j) : (j - i);
     wire signed [WIDTH-1:0] rho_dist = rho[dist_ij == 2'd0 ? 1 : dist_ij];
     // Q1.15 -> Q(W_INV-F_INV-1).F_INV : extensao de sinal + deslocamento
@@ -139,9 +86,7 @@ module Yule_Walker_Solver #(
     assign inv_read_row  = i;
     assign inv_read_col  = ORDEM + j;          // R^-1 ocupa as colunas n..2n-1
 
-    // ------------------------------------------------------------------------
     // MAC: Rinv (Q.F_INV) x rho (Q1.15)
-    // ------------------------------------------------------------------------
     wire signed [W_INV+WIDTH-1:0] prod = rinv_reg * rho_reg;
     wire signed [ACC_W-1:0]       acc_prox = acc + {{(ACC_W-W_INV-WIDTH){prod[W_INV+WIDTH-1]}}, prod};
 

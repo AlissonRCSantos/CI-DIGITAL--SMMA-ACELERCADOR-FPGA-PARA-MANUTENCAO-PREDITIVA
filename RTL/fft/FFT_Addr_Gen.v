@@ -1,34 +1,5 @@
 // ============================================================================
-// Module: FFT_Addr_Gen
-// Description: Gerador combinacional de enderecos da FFT radix-2 DIT in-place.
-//
-//   A partir do par (estagio, indice do butterfly) este bloco produz:
-//     - addr_p : endereco do operando superior A (que recebe A + t)
-//     - addr_q : endereco do operando inferior B (que recebe A - t)
-//     - tw_addr: indice k do fator de rotacao W_64^k usado no butterfly
-//
-// Mapeamento algoritmo -> arquitetura (Cooley-Tukey iterativo, DIT):
-//
-//   para s = 1 .. log2(N):                  // 6 estagios
-//       m    = 2^s                          // tamanho do bloco DFT do estagio
-//       half = m/2 = 2^(s-1)                // distancia entre A e B
-//       para b = 0 .. N/2-1:                // 32 butterflies por estagio
-//           j     = b mod half              // posicao dentro do bloco
-//           grupo = b / half                // qual bloco DFT
-//           p     = grupo*m + j
-//           q     = p + half
-//           k     = j * (N/m) = j << (log2N - s)
-//
-//   As divisoes/multiplicacoes por potencia de 2 viram deslocamentos, e as
-//   operacoes de modulo viram mascaras de bits. O bloco e, portanto, apenas
-//   um barrel shifter + AND + OR: sem multiplicadores e sem registradores.
-//
-//   Propriedade importante: dentro de um mesmo estagio todos os pares (p,q)
-//   sao DISJUNTOS. Isso garante que nao existe hazard RAW entre butterflies
-//   consecutivos e permite emitir um novo butterfly a cada 2 ciclos sem
-//   qualquer logica de bypass.
-//
-// Custo: 0 DSP, 0 registradores, ~30 LUTs (barrel shifters de 6 bits).
+// FFT_Addr_Gen -- enderecos (p, q, k) de cada butterfly da FFT
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -56,9 +27,6 @@ module FFT_Addr_Gen #(
     wire [LOG2N-1:0] j     = b_ext & half_mask;
     wire [LOG2N-1:0] group = b_ext >> (stage - 3'd1);
 
-    // p = grupo * 2^stage + j     (o OR substitui a soma pois os campos de
-    //                              bits de 'group << stage' e 'j' nao se
-    //                              sobrepoem: j < half <= 2^(stage-1))
     assign addr_p = (group << stage) | j;
 
     // q = p + half  (idem: o bit 'half' esta livre em p)

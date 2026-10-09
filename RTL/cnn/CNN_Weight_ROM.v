@@ -1,31 +1,5 @@
 // ============================================================================
-// Module: CNN_Weight_ROM
-// Description: Memoria somente-leitura com TODOS os pesos TREINADOS da CNN.
-//
-//   *** ARQUIVO GERADO AUTOMATICAMENTE -- NAO EDITAR A MAO ***
-//   Gerado por: python/scripts/05_exportar_rtl.py
-//   Treino    : python/scripts/03_treinar.py (PyTorch, arquitetura identica
-//               a deste RTL, pesos de 16 bits em Q1.15)
-//   Dataset   : Jung et al., Data in Brief 48 (2023) -- KAIST, acelerometro
-//               x do mancal A, espectrograma 32x32 (FFT 64 pts, 3.2 kHz, 10 ms)
-//   Acuracia  : 83.2% no conjunto de teste (4021 imagens, ponto fixo bit-exato)
-//
-// ORGANIZACAO DOS PESOS (inalterada)
-// ----------------------------------
-// A convolucao processa 1 tap por ciclo, mas os 8 FILTROS em PARALELO. Logo,
-// no ciclo do tap t, precisamos dos 8 pesos w[filtro][t] SIMULTANEAMENTE.
-// Por isso a ROM e organizada "por tap":
-//
-//     endereco = t (0..8)  ->  palavra de 8 x 16 = 128 bits
-//                              { w7[t], w6[t], ..., w1[t], w0[t] }
-//     tap t = linha*3 + coluna da janela 3x3
-//
-// Camada densa: endereco = classe*8 + feature (4 classes x 8 features).
-// Classes: 0 = normal, 1 = desbalanceamento, 2 = desalinhamento,
-//          3 = desgaste de rolamento (ordem pedida no enunciado, secao 3.5).
-//
-// Codificacao Q1.15: valor_inteiro = valor_real * 32768, faixa [-1, +0.99997].
-// Bloco puramente COMBINACIONAL (ROM assincrona), sintetiza em LUTs.
+// CNN_Weight_ROM -- pesos treinados da CNN (gerado por python/scripts/05_exportar_rtl.py)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -46,10 +20,8 @@ module CNN_Weight_ROM #(
     output reg  signed [WIDTH-1:0]           dense_bias
 );
 
-    // ========================================================================
     // 1. Kernels convolucionais 3x3 (8 filtros treinados)
     //    Formato da palavra: { F7, F6, F5, F4, F3, F2, F1, F0 }
-    // ========================================================================
     always @(*) begin
         case (tap_addr)
             4'd0: conv_w = {  -16'sd32737,  -16'sd11103,     16'sd989,  -16'sd18437,   -16'sd5866,  -16'sd20767,   16'sd14414,  -16'sd12872 };
@@ -68,9 +40,7 @@ module CNN_Weight_ROM #(
     // Ordem: { b7, b6, b5, b4, b3, b2, b1, b0 }
     assign conv_bias = { -16'sd13305, -16'sd2132, -16'sd2544, 16'sd32752, 16'sd3040, 16'sd31392, -16'sd32766, -16'sd2269 };
 
-    // ========================================================================
     // 2. Camada densa (classificador): 4 classes x 8 features
-    // ========================================================================
     always @(*) begin
         case (dense_addr)
             // ---- Classe 0: NORMAL ----

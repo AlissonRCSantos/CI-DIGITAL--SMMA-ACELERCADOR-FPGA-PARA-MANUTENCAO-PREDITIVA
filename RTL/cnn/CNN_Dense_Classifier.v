@@ -1,47 +1,5 @@
 // ============================================================================
-// Module: CNN_Dense_Classifier
-// Description: Etapa final da CNN. Faz tres coisas:
-//                1) GLOBAL AVERAGE POOLING (GAP) sobre o mapa 16x16x8
-//                2) CAMADA DENSA (totalmente conectada) 8 -> 4
-//                3) ARGMAX -> classe final do motor
-//
-// POR QUE GLOBAL AVERAGE POOLING?
-// -------------------------------
-// Se ligassemos a camada densa direto no mapa 16x16x8, terrilamos
-//        16*16*8 = 2048 entradas x 4 classes = 8192 PESOS
-// ou seja 128 kbit so de pesos, alem de 2048 palavras de memoria para guardar
-// o mapa inteiro. Inviavel para o prototipo (e o enunciado limita o uso de
-// memorias internas).
-//
-// O GAP resolve isso: em vez de guardar o mapa, ACUMULA cada canal ao longo
-// das 256 posicoes e divide pelo total. Sobram apenas 8 numeros -- um por
-// filtro -- que respondem a pergunta "o quanto esta caracteristica aparece na
-// imagem inteira?". A camada densa passa a ter apenas
-//        8 entradas x 4 classes = 32 PESOS.
-//
-// Ganhos:
-//   * 8192 -> 32 pesos            (reducao de 256x)
-//   * 2048 -> 8 palavras de estado (nao precisa guardar o mapa!)
-//   * o acumulador e atualizado EM STREAMING, no mesmo ciclo em que o pooling
-//     entrega o dado; quando o ultimo pixel passa, as features ja estao prontas
-//
-// A divisao por 256 e apenas um deslocamento aritmetico de 8 bits
-// (GAP_SHIFT = log2(256)), portanto NAO usa divisor -- o enunciado pede
-// atencao a divisao e aqui ela simplesmente nao existe.
-//
-// CAMADA DENSA: RECURSO COMPARTILHADO
-// -----------------------------------
-// Sao 4 x 8 = 32 multiplicacoes. Em vez de instanciar 32 multiplicadores,
-// usamos UM UNICO CNN_MAC_Unit reutilizado 32 vezes (32 ciclos = 0,64 us),
-// exatamente a mesma estrategia "folded" do PE do filtro LMS. Custo: 1 DSP.
-//
-// ARGMAX
-// ------
-// A classe predita e o indice do maior score. Nao usamos softmax porque
-// softmax exige exponencial e divisao (caros em FPGA) e NAO altera qual e o
-// maior valor -- ela so normaliza os scores em probabilidades. Para decidir a
-// classe, comparar os scores brutos e matematicamente equivalente.
-// Empate -> vence o menor indice (comportamento deterministico).
+// CNN_Dense_Classifier -- global average pooling + camada densa 8x4 + argmax
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -73,9 +31,7 @@ module CNN_Dense_Classifier #(
     output wire [NUM_CH*WIDTH-1:0]     out_features // Features do GAP (debug/demo)
 );
 
-    // ========================================================================
     // 1. GLOBAL AVERAGE POOLING (acumulacao em streaming)
-    // ========================================================================
     reg signed [GAP_ACC_W-1:0] gap_acc [0:NUM_CH-1];
     wire [NUM_CH*WIDTH-1:0]    gap_feat;   // media ja reescalada para Q1.15
 
@@ -113,9 +69,7 @@ module CNN_Dense_Classifier #(
     reg [NUM_CH*WIDTH-1:0] feat_reg;
     assign out_features = feat_reg;
 
-    // ========================================================================
     // 2. Sequenciador da camada densa (1 MAC reutilizado 32 vezes)
-    // ========================================================================
     reg       d_active;
     reg [5:0] d_cnt;      // 0..31  -> d_cnt[4:3]=classe, d_cnt[2:0]=feature
 
@@ -156,9 +110,7 @@ module CNN_Dense_Classifier #(
         endcase
     end
 
-    // ========================================================================
     // 3. ROM de pesos da camada densa
-    // ========================================================================
     wire signed [WIDTH-1:0] dense_w;
     wire signed [WIDTH-1:0] dense_bias;
 
@@ -179,9 +131,7 @@ module CNN_Dense_Classifier #(
     wire signed [ACC_W-1:0] dense_init =
         { {(ACC_W-WIDTH-FRAC){dense_bias[WIDTH-1]}}, dense_bias, {FRAC{1'b0}} };
 
-    // ========================================================================
     // 4. MAC compartilhado
-    // ========================================================================
     wire signed [ACC_W-1:0] dense_acc;
     wire                    dense_mac_valid;
 
@@ -214,9 +164,7 @@ module CNN_Dense_Classifier #(
         .out_y(score_now)
     );
 
-    // ========================================================================
     // 5. Coleta dos 4 scores e ARGMAX
-    // ========================================================================
     reg signed [WIDTH-1:0] score0, score1, score2, score3;
     reg [2:0]              score_idx;
 

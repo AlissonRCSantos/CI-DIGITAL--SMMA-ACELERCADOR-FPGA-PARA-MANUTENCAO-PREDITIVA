@@ -1,35 +1,5 @@
 // ============================================================================
-// Module: Divider_Q15
-// Description: Divisor sem sinal por restauracao, com resultado em Q1.15.
-//              Calcula  q = (num << 15) / den,  saturado em 0x7FFF.
-//
-// ----------------------------------------------------------------------------
-// PARA QUE SERVE
-// ----------------------------------------------------------------------------
-//   Seis das oito caracteristicas espectrais do classificador sao RAZOES
-//   (energia de um bin ou de uma banda dividida pela energia total). Sao elas
-//   que tornam a decisao independente do nivel absoluto do sinal -- e por
-//   isso que a arvore aguenta a variacao de carga melhor que a CNN. Razao
-//   exige divisao, e nao ha divisor em ponto fixo Q1.15 no projeto (o
-//   fixed_point_divider existente e Q4.12 e pertence a cadeia AR).
-//
-// ----------------------------------------------------------------------------
-// ALGORITMO
-// ----------------------------------------------------------------------------
-//   Divisao por restauracao, 1 bit por ciclo: 16 ciclos por resultado. Usa
-//   apenas um subtrator e um comparador -- ZERO DSP, que e o recurso escasso
-//   (a CNN leva 8 e a FFT 4).
-//
-//   O orcamento e enorme: sao 7 divisoes por decisao do classificador, isto
-//   e, 7 x 16 = 112 ciclos a cada 330 ms (16,5 milhoes de ciclos). Qualquer
-//   esquema mais rapido seria otimizar o que ja e irrelevante.
-//
-//   Como todas as razoes do classificador sao de grandezas NAO NEGATIVAS
-//   (magnitudes espectrais), o divisor e sem sinal. Isso evita a ambiguidade
-//   de arredondamento de quociente negativo, que e fonte classica de
-//   divergencia entre modelo e hardware.
-//
-//   den = 0 nao trava nem devolve lixo: levanta 'div_zero' e satura a saida.
+// Divider_Q15 -- divisor por restauracao: q = (num << 15) / den, saturado em Q1.15
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -53,9 +23,6 @@ module Divider_Q15 #(
     output reg                   div_zero    // 1 = denominador era zero
 );
 
-    // Para obter floor(num * 2^FRAC / den) sao exatamente FRAC passos de
-    // deslocamento-subtracao -- um a mais dobraria o resultado. Como as
-    // razoes do classificador tem num < den, o quociente cabe nos FRAC bits.
     localparam PASSOS = FRAC;                     // 15 passos -> 15 bits
     localparam W      = NUM_W + FRAC + 1;         // resto alinhado
     localparam [FRAC:0] SAT = {1'b0, {FRAC{1'b1}}};   // 0x7FFF

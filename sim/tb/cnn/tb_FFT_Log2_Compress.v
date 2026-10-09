@@ -1,22 +1,5 @@
 // ============================================================================
-// Module: tb_FFT_Log2_Compress
-// Description: Testbench EXAUSTIVO da compressao log2 do espectrograma.
-//
-// Estrategia:
-//   O espaco de entrada tem apenas 2^16 = 65.536 valores, entao nao ha razao
-//   para amostrar: testamos TODOS. Nao existe caso de canto escondido.
-//
-//   A referencia NAO repete a implementacao do DUT. O hardware acha o
-//   expoente com um priority encoder (varre os bits); aqui o expoente e
-//   obtido DIVIDINDO m por 2 ate sobrar 1. Sao dois caminhos diferentes para
-//   o mesmo numero, de modo que um erro de implementacao no DUT nao se
-//   reproduz silenciosamente na referencia.
-//
-//   Alem da igualdade bit a bit, verificamos duas PROPRIEDADES que a CNN
-//   depende e que um erro de deslocamento quebraria sem necessariamente
-//   quebrar casos isolados:
-//     - monotonicidade: magnitude maior nunca gera pixel menor;
-//     - continuidade nas oitavas: o degrau entre 2^e-1 e 2^e e pequeno.
+// tb_FFT_Log2_Compress -- testbench: log2 nas 65 536 entradas
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -46,9 +29,7 @@ module tb_FFT_Log2_Compress;
 
     always #(CLK_PERIOD/2) clk = ~clk;
 
-    // ------------------------------------------------------------------
     // Referencia independente: expoente por divisoes sucessivas
-    // ------------------------------------------------------------------
     function integer pixel_ref;
         input integer mag;
         integer m, e, tmp, frac, mant, pix;
@@ -105,10 +86,6 @@ module tb_FFT_Log2_Compress;
                 end
             end
 
-            // Propriedade 1: monotonicidade nao-decrescente
-            // (pulada em k=0: nao ha valor anterior. Comparar contra o
-            //  sentinela -1 produziria falso positivo, porque 'out_pixel' e
-            //  SEM sinal e o Verilog converteria o -1 para 65535.)
             if ((k > 0) && (out_pixel < pix_anterior)) begin
                 fail_count = fail_count + 1;
                 if (erros_mostrados < 10) begin

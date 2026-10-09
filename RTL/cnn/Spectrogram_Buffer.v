@@ -1,36 +1,5 @@
 // ============================================================================
-// Module: Spectrogram_Buffer
-// Description: Monta a imagem 32x32 do espectrograma a partir de 32 quadros
-//              consecutivos da FFT e a entrega a CNN em ordem raster.
-//
-// ----------------------------------------------------------------------------
-// O QUE ELE FAZ
-// ----------------------------------------------------------------------------
-//   Recebe, quadro a quadro, os 32 pixels ja comprimidos em log2 (bins 0..31
-//   de uma FFT de 64 pontos) e os acumula em uma memoria 32x32. Quando 32
-//   quadros tiverem chegado, emite os 1024 pixels na ordem que o CNN_Top
-//   espera: LINHA = bin de frequencia, COLUNA = quadro no tempo, varrendo
-//   linha por linha.
-//
-//   Essa transposicao e a razao de o buffer existir: os dados CHEGAM por
-//   quadro (todos os bins de um instante) e precisam SAIR por linha (todos os
-//   instantes de um bin). Sem a memoria intermediaria nao ha como reordenar.
-//
-// ----------------------------------------------------------------------------
-// DIMENSIONAMENTO
-// ----------------------------------------------------------------------------
-//   32 quadros x 32 bins x 16 bits = 16.384 bits = 2 kB -> 2 blocos M10K.
-//
-//   Uma imagem cobre 32 quadros com salto de 32 amostras a 3,2 kHz, ou seja
-//   (32-1)*32 + 64 = 1056 amostras = 330 ms de sinal -- exatamente a janela
-//   que uma decisao do classificador tambem consome, o que mantem os dois
-//   caminhos (CNN e arvore) sincronizados sobre o mesmo trecho.
-//
-//   O fluxo Python gera uma imagem NOVA a cada 16 quadros (PASSO_IMAGEM),
-//   deslizando sobre os anteriores. Aqui a imagem e montada do zero a cada 32
-//   quadros: para a demonstracao, cada janela da ROM produz exatamente uma
-//   imagem, e o modo deslizante exigiria memoria dupla sem acrescentar nada
-//   ao que precisa ser demonstrado.
+// Spectrogram_Buffer -- espectrograma 32x32 (32 quadros da FFT) entregue a CNN
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -64,11 +33,7 @@ module Spectrogram_Buffer #(
     localparam ADDR_W = 10;                      // log2(1024)
     localparam CNT_W  = 6;                       // conta ate 32
 
-    // ------------------------------------------------------------------------
     // Memoria da imagem. Endereco de ESCRITA e organizado por quadro
-    // (quadro*N_BINS + bin) e o de LEITURA por linha (bin*N_QUADROS + quadro):
-    // e a transposicao, feita so no calculo do endereco, sem mover dado.
-    // ------------------------------------------------------------------------
     reg [WIDTH-1:0] mem [0:TOTAL-1];
 
     reg [CNT_W-1:0]  bin_cnt;      // bin dentro do quadro corrente
@@ -119,9 +84,7 @@ module Spectrogram_Buffer #(
                     end
                 end
 
-                // ----------------------------------------------------------
                 // Enche a memoria: 32 quadros x 32 bins
-                // ----------------------------------------------------------
                 S_ENCHE: begin
                     if (in_valid && in_ready) begin
                         mem[wr_addr] <= in_pixel;
@@ -140,14 +103,7 @@ module Spectrogram_Buffer #(
                     end
                 end
 
-                // ----------------------------------------------------------
                 // Entrega em ordem raster, com contrapressao.
-                //
-                // Alterna carregar e apresentar (2 ciclos por pixel, 2048 no
-                // total). Poderia ser 1 ciclo por pixel com um pipeline, mas
-                // a imagem inteira sai em 41 us contra os 10 ms de orcamento
-                // -- nao vale trocar clareza por velocidade aqui.
-                // ----------------------------------------------------------
                 S_LE: begin
                     if (!rd_valid) begin
                         rd_dado  <= mem[rd_fisico];

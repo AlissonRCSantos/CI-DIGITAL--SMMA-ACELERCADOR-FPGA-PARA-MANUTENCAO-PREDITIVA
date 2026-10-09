@@ -1,13 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_ReLU
-// Verifica a unidade de ativacao / requantizacao nas tres funcoes que ela faz:
-//   1) Reescala Q?.30 -> Q1.15 com arredondamento simetrico
-//   2) Satura em +32767 / -32768 em vez de dar wrap-around
-//   3) Aplica ReLU  f(x) = max(0,x)  quando ENABLE_RELU = 1
-//
-// Sao instanciadas DUAS copias do modulo, com ENABLE_RELU = 1 e = 0, para
-// provar que a mesma unidade serve para a saida da convolucao (com ReLU) e
-// para os scores da camada densa (sem ReLU, pois scores podem ser negativos).
+// tb_CNN_ReLU -- testbench da requantizacao/ReLU
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -58,9 +50,7 @@ module tb_CNN_ReLU;
         $display(" TESTBENCH: CNN_ReLU (ativacao + requantizacao)");
         $display("========================================================\n");
 
-        // --------------------------------------------------------------
         // Reescala basica: 1.0 em Q?.30 vale 32768 -> 1 em Q1.15
-        // --------------------------------------------------------------
         $display("-- Grupo 1: reescala e arredondamento");
         check_case("zero",              40'sd0,       16'sd0,  16'sd0);
         check_case("+1 LSB de Q1.15",   40'sd32768,   16'sd1,  16'sd1);
@@ -68,16 +58,12 @@ module tb_CNN_ReLU;
         check_case("valor medio +",     40'sd100000,  16'sd3,  16'sd3);
         check_case("valor medio -",    -40'sd100000,  16'sd0, -16'sd3);
 
-        // --------------------------------------------------------------
         // ReLU: tudo que e negativo vira exatamente zero
-        // --------------------------------------------------------------
         $display("\n-- Grupo 2: ReLU zera negativos (e a versao linear nao)");
         check_case("-1 LSB",           -40'sd32768,   16'sd0, -16'sd1);
         check_case("-1.5 LSB",         -40'sd49152,   16'sd0, -16'sd1);
 
-        // --------------------------------------------------------------
         // Saturacao: sem ela, +max viraria -max e destruiria a classificacao
-        // --------------------------------------------------------------
         $display("\n-- Grupo 3: saturacao simetrica (anti wrap-around)");
         check_case("overflow positivo",  40'sd1073741824,  16'sd32767,  16'sd32767);
         check_case("overflow negativo", -40'sd1073741824,  16'sd0,     -16'sd32768);

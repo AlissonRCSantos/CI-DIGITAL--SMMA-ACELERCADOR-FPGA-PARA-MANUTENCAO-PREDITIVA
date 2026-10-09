@@ -1,5 +1,8 @@
-`timescale 1ns/1ps
+// ============================================================================
+// tb_mdc_gcd -- testbench do MDC (Euclides)
+// ============================================================================
 
+`timescale 1ns/1ps
 module tb_mdc_gcd;
 
     localparam IDX_WIDTH = 6;
@@ -39,9 +42,7 @@ module tb_mdc_gcd;
 
     always #(CLK_PERIOD/2) clk = ~clk;
 
-    // -------------------------------------------------------------
     // task: envia um pico via handshake in_valid/in_ready
-    // -------------------------------------------------------------
     task send_peak(input [IDX_WIDTH-1:0] value);
         begin
             @(posedge clk);
@@ -53,9 +54,7 @@ module tb_mdc_gcd;
         end
     endtask
 
-    // -------------------------------------------------------------
     // task: roda um caso de teste completo com 3 picos
-    // -------------------------------------------------------------
     task run_case(
         input [IDX_WIDTH-1:0] p0, p1, p2,
         input [IDX_WIDTH-1:0] min_valid,

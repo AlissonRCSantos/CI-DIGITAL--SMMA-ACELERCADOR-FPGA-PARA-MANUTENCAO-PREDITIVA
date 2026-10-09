@@ -1,42 +1,5 @@
 // ============================================================================
-// Module: Frame_Builder
-// Description: Monta os quadros de 64 amostras que alimentam a FFT, com salto
-//              de 32 -- a sobreposicao de 50% que o enunciado 5 pede (uma
-//              decisao a cada 10 ms).
-//
-// ----------------------------------------------------------------------------
-// POR QUE ESTE BLOCO EXISTE
-// ----------------------------------------------------------------------------
-//   A FFT_Top consome 64 amostras por transformada, mas os quadros avancam de
-//   32 em 32. Cada amostra decimada participa portanto de DOIS quadros, e o
-//   fluxo que sai do FIR_Decimator nao pode ser ligado direto na FFT: alguem
-//   tem de reapresentar as 32 amostras antigas antes das 32 novas.
-//
-//   Para uma janela de 32 quadros sao 64 + 31*32 = 1056 amostras decimadas --
-//   exatamente a janela que o LMS e a autocorrelacao tambem consomem.
-//
-// ----------------------------------------------------------------------------
-// POR QUE E SEGURO PARAR DE ACEITAR DURANTE O DESPEJO
-// ----------------------------------------------------------------------------
-//   Enquanto reapresenta um quadro, o modulo baixa in_ready. Isso NAO perde
-//   amostra porque a fonte respeita a contrapressao: o Sample_Source le de uma
-//   ROM e segura a amostra ate ser aceita.
-//
-//   E o orcamento e folgado: a 3,2 kHz chega uma amostra a cada 15.625 ciclos
-//   de 50 MHz, e o despejo de um quadro custa 64. A pausa e tres ordens de
-//   grandeza menor que o intervalo entre amostras.
-//
-//   Num sistema com sensor real (sem contrapressao possivel) este bloco teria
-//   de ser de duplo buffer. Com fonte em ROM, parar e correto e muito menor.
-//
-// ----------------------------------------------------------------------------
-// MEMORIA
-// ----------------------------------------------------------------------------
-//   Buffer circular de 64 x 16 bits com leitura COMBINACIONAL. Sao 1024 bits,
-//   que o Cyclone V acomoda em LUT-RAM sem gastar um M10K. A leitura sem
-//   registro e deliberada: a FFT_Memory, que tem leitura registrada, custou
-//   dois bugs de alinhamento (indice x dado sob contrapressao) -- aqui o
-//   endereco e o dado andam juntos.
+// Frame_Builder -- MEM_A: quadros de 64 amostras com salto de 32 para a FFT
 // ============================================================================
 
 `timescale 1ns / 1ps

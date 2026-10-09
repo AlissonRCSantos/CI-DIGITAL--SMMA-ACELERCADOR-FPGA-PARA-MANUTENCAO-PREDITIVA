@@ -1,27 +1,5 @@
 // ============================================================================
-// Module: FFT_Twiddle_ROM
-// Description: ROM dos fatores de rotacao (twiddle factors) da FFT de 64 pontos.
-//
-//   W_N^k = e^(-j*2*pi*k/N) = cos(2*pi*k/N) - j*sin(2*pi*k/N)
-//
-//   Para uma FFT radix-2 de N=64 pontos sao necessarios apenas N/2 = 32
-//   fatores (k = 0..31), pois W_N^(k+N/2) = -W_N^k. A simetria negativa ja
-//   esta embutida na propria operacao butterfly (A+t / A-t), de modo que a
-//   ROM armazena somente o primeiro semiciclo.
-//
-// Armazenamento dos fatores (item exigido no enunciado, secao 3.2):
-//   - 32 palavras de 32 bits = 1024 bits (cabe folgadamente em 1 M10K, ou e
-//     mapeada como LUT-ROM distribuida pelo sintetizador);
-//   - cada palavra empacota {parte imaginaria, parte real} em Q1.15;
-//   - valores pre-calculados em tempo de sintese (constantes), portanto NAO
-//     ha CORDIC nem calculo de seno/cosseno em tempo de execucao;
-//   - leitura registrada (latencia de 1 ciclo) para casar com a latencia de
-//     leitura da memoria de dados e permitir inferencia de block RAM.
-//
-// Formato numerico: Q1.15 com sinal (1 bit de sinal + 15 bits fracionarios).
-//   Observacao: +1.0 nao e representavel em Q1.15; W^0 = 1.0 e armazenado
-//   como 16'h7FFF (0.999969), erro de 3.05e-5 -> desprezivel para o
-//   classificador (tolerancia de precisao permitida pelo enunciado).
+// FFT_Twiddle_ROM -- fatores de rotacao W64^k em Q1.15
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -40,10 +18,8 @@ module FFT_Twiddle_ROM #(
 
     localparam DEPTH = (1 << ADDR_W);   // 32 fatores
 
-    // ------------------------------------------------------------------------
     // Tabela de constantes: {w_imag[15:0], w_real[15:0]}
     // Gerada offline para N = 64 e quantizada em Q1.15 (arredondamento).
-    // ------------------------------------------------------------------------
     reg [2*WIDTH-1:0] ROM [0:DEPTH-1];
 
     initial begin
@@ -81,9 +57,7 @@ module FFT_Twiddle_ROM #(
         ROM[31] = {16'hF374, 16'h809E}; // k=31  W = -0.995185 -0.098017j
     end
 
-    // ------------------------------------------------------------------------
     // Leitura sincrona (1 ciclo de latencia)
-    // ------------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
             w_real <= {WIDTH{1'b0}};

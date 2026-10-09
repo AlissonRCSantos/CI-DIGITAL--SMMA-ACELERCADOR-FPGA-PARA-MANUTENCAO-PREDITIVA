@@ -1,20 +1,5 @@
 // ============================================================================
-// Module: LMS_Control_FSM_v4
-// Description: Global Counter-Based Scheduler for a folded 8-tap LMS filter
-//              with complete industrial-grade handshake interface.
-//
-// Scheduling Pipeline:
-//   - Total cycle window: 26 clock cycles (Counter 0 to 25)
-//   - Cycle 0: Dedicated sample load & accumulator reset (load_sample = 1, clear_acc = 1).
-//              Shift register captures new sample in_x at end of Cycle 0.
-//   - Cycles 1 to 8: Phase 1 FIR Filtering (Taps 0 to 7).
-//                    rd_addr = counter - 1 (0 to 7). pe_sel = 0, pe_valid = 1.
-//                    Partial products arrive at accumulator on cycles 4 to 11.
-//   - Cycle 12: Accumulator output y(n) and raw error e(n) = d(n) - y(n) are ready.
-//               Pulses 'valid_out' strobe for 1 cycle and asserts 'ready' = 1.
-//   - Cycles 13 to 20: Phase 2 Weight Update (Taps 0 to 7).
-//                      rd_addr = counter - 13 (0 to 7). pe_sel = 1, pe_valid = 1.
-//   - Cycles 21 to 25: Pipeline drain for 5-cycle weight write-back latency.
+// LMS_Control_FSM -- escalonador do LMS de 8 taps com recursos compartilhados
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -22,12 +7,12 @@
 module LMS_Control_FSM (
     input  wire         clk,          // System clock (50 MHz)
     input  wire         rst,          // Synchronous reset (active-high)
-    
+
     // Handshake & Control Ports
     input  wire         start,        // Pulses high for 1 cycle to start operation
     input  wire         enable,       // Active high global module enable (clock-enable)
     input  wire         valid_in,     // Active high when input sample is valid
-    
+
     output reg          ready,        // High when output is ready and stable
     output reg          busy,         // High during calculation window
     output reg          valid_out,    // Pulses high for 1 cycle when output is ready (strobe)
@@ -55,9 +40,7 @@ module LMS_Control_FSM (
     reg        state;
     reg [4:0]  counter; // Counts from 0 to 25 to schedule all actions
 
-    // --------------------------------------------------------------------
     // 1. Scheduler Counter & State Transition Logic (with Handshake)
-    // --------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
             state       <= STATE_IDLE;
@@ -73,7 +56,7 @@ module LMS_Control_FSM (
                     busy        <= 1'b0;
                     valid_out   <= 1'b0;
                     load_sample <= 1'b0;
-                    
+
                     if (start && valid_in) begin
                         state       <= STATE_RUNNING;
                         busy        <= 1'b1;
@@ -84,7 +67,7 @@ module LMS_Control_FSM (
 
                 STATE_RUNNING: begin
                     load_sample <= 1'b0;
-                    
+
                     // valid_out strobe is high for exactly 1 cycle at Cycle 12 (when y(n) and e(n) are ready)
                     if (counter == 5'd12) begin
                         valid_out   <= 1'b1;
@@ -108,9 +91,7 @@ module LMS_Control_FSM (
         end
     end
 
-    // --------------------------------------------------------------------
     // 2. Control Signal Generation based on Counter Scheduler
-    // --------------------------------------------------------------------
     always @(*) begin
         // Default outputs
         rd_addr    = 3'b000;
@@ -148,12 +129,7 @@ module LMS_Control_FSM (
         end
     end
 
-    // --------------------------------------------------------------------
     // 3. Write Address Pipeline Routing (Flat Registers)
-    // --------------------------------------------------------------------
-    // Processing Element (PE) has an internal latency of 5 clock cycles
-    // during weight update. wr_addr_pipe4 provides the 5-cycle delay line.
-    // --------------------------------------------------------------------
     reg [2:0] wr_addr_pipe0;
     reg [2:0] wr_addr_pipe1;
     reg [2:0] wr_addr_pipe2;

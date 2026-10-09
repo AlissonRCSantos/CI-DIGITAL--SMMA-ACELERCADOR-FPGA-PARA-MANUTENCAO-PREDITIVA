@@ -1,45 +1,5 @@
 // ============================================================================
-// Module: CNN_Control_FSM
-// Description: Unidade de controle GLOBAL do acelerador CNN.
-//              Segue o mesmo padrao adotado no LMS_Control_FSM: uma maquina de
-//              estados enxuta coordenando um datapath auto-temporizado por
-//              sinais 'valid', com interface de handshake industrial completa
-//              (start / enable / valid / ready / busy / done).
-//
-// DIAGRAMA DE ESTADOS
-// -------------------
-//
-//   +--------+  start & enable   +----------+  ultimo push   +---------+
-//   |  IDLE  |------------------>|  STREAM  |--------------->|  DRAIN  |
-//   +--------+                   +----------+                +---------+
-//       ^                         (1089 passos)                   |
-//       |                                                         | 256 saidas
-//       |                                                         | do pooling
-//   +--------+   dense_done      +----------+                     v
-//   | FINISH |<------------------|  DENSE   |<--------------------+
-//   +--------+                   +----------+     dense_run
-//       |
-//       +--> volta para IDLE (done + valid_out pulsados)
-//
-// PAPEL DE CADA ESTADO
-// --------------------
-//   IDLE   : ready=1. Espera 'start'. Ao sair, pulsa 'frame_start', que zera
-//            line buffers, contadores do pooling e acumuladores do GAP.
-//   STREAM : avanca a varredura do line buffer. Cada passo so acontece se
-//            (a) a convolucao pode aceitar dado (conv_ready) e
-//            (b) ha pixel valido, QUANDO o passo consome pixel real.
-//            Nos 65 passos de padding nao e preciso pixel (need_pixel=0).
-//            => e este AND que impede perda ou sobrescrita de dados.
-//   DRAIN  : nao entra mais pixel; espera o pipeline (conv -> ReLU -> pooling)
-//            esvaziar e o pooling completar suas 256 saidas.
-//   DENSE  : dispara a camada densa (GAP ja esta pronto) e espera 'dense_done'.
-//   FINISH : pulsa done/valid_out por 1 ciclo e volta a ficar 'ready'.
-//
-// CONTAGEM DE CICLOS (por imagem 32x32)
-//   STREAM ~ 1024 janelas x 9 ciclos + 65 passos de padding ~= 9.281
-//   DRAIN  ~ 15
-//   DENSE  ~ 36
-//   TOTAL  ~ 9.332 ciclos ~= 187 us @ 50 MHz  (limite do enunciado: 10 ms)
+// CNN_Control_FSM -- controle do acelerador CNN (convolucao, pooling, densa)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -74,9 +34,7 @@ module CNN_Control_FSM #(
     output reg         dense_run     // Pulso: dispara a camada densa
 );
 
-    // ------------------------------------------------------------------------
     // Codificacao dos estados
-    // ------------------------------------------------------------------------
     localparam ST_IDLE   = 3'd0;
     localparam ST_STREAM = 3'd1;
     localparam ST_DRAIN  = 3'd2;
@@ -86,24 +44,13 @@ module CNN_Control_FSM #(
     reg [2:0]  state;
     reg [15:0] pool_cnt;   // conta as saidas do max pooling deste quadro
 
-    // ------------------------------------------------------------------------
     // Logica de fluxo de entrada (combinacional)
-    //
-    //   push_en  = posso avancar a varredura?
-    //   in_ready = vou consumir um pixel do host neste ciclo?
-    //
-    // Note o AND com conv_ready: se a convolucao ainda esta mastigando os 9
-    // taps da janela anterior, a varredura CONGELA e o host segura o pixel.
-    // Nenhum dado e perdido nem sobrescrito.
-    // ------------------------------------------------------------------------
     assign push_en  = enable && (state == ST_STREAM) && conv_ready &&
                       (need_pixel ? in_valid : 1'b1);
 
     assign in_ready = enable && (state == ST_STREAM) && conv_ready && need_pixel;
 
-    // ------------------------------------------------------------------------
     // Maquina de estados
-    // ------------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
             state       <= ST_IDLE;
@@ -125,7 +72,6 @@ module CNN_Control_FSM #(
                 pool_cnt <= pool_cnt + 16'd1;
 
             case (state)
-                // ------------------------------------------------------------
                 ST_IDLE: begin
                     busy  <= 1'b0;
                     ready <= 1'b1;
@@ -139,14 +85,12 @@ module CNN_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 ST_STREAM: begin
                     // A varredura terminou quando o ultimo passo foi efetivado
                     if (push_en && last_push)
                         state <= ST_DRAIN;
                 end
 
-                // ------------------------------------------------------------
                 ST_DRAIN: begin
                     // Espera o pipeline esvaziar e o pooling fechar as 256 saidas
                     if (pool_cnt == NUM_POOL) begin
@@ -155,13 +99,11 @@ module CNN_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 ST_DENSE: begin
                     if (dense_done)
                         state <= ST_FINISH;
                 end
 
-                // ------------------------------------------------------------
                 ST_FINISH: begin
                     state     <= ST_IDLE;
                     busy      <= 1'b0;
@@ -170,7 +112,6 @@ module CNN_Control_FSM #(
                     valid_out <= 1'b1;         // strobe de resultado valido
                 end
 
-                // ------------------------------------------------------------
                 default: state <= ST_IDLE;
             endcase
         end

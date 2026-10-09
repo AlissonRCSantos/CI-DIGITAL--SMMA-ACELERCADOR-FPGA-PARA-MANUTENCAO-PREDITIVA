@@ -1,16 +1,9 @@
 #!/bin/bash
-# ============================================================================
-# Simulacao com Cadence Xcelium / SimVision (fluxo do laboratorio)
-#
-#   ./sim/run_xcelium.sh tb_SMMA_Top          abre o SimVision
-#   ./sim/run_xcelium.sh -cmd tb_FFT_Top      modo texto
-#   ./sim/run_xcelium.sh -c                   limpa os arquivos da Cadence
-#
-# Compila sim/filelist.f (todo o RTL) + o testbench pedido (procurado em
-# sim/tb/**). Roda a partir de quartus/, onde fica a pasta vetores/ que os
-# modulos e testbenches abrem por caminho relativo.
-# Para rodar TODOS os testes sem Xcelium: ./sim/run_regressao.sh (Icarus).
-# ============================================================================
+# Simulacao com Cadence Xcelium/SimVision (laboratorio), a partir de quartus/
+#   ./sim/run_xcelium.sh tb_SMMA_Top       abre o SimVision
+#   ./sim/run_xcelium.sh -cmd tb_FFT_Top   modo texto
+#   ./sim/run_xcelium.sh -c                limpa os arquivos da Cadence
+
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
 GUI_FLAG="-gui"; TB_TOP=""
 

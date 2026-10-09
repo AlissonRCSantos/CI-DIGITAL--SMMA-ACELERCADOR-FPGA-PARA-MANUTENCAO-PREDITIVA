@@ -1,13 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_MAC_Unit
-// Verifica:
-//   1) Acumulacao de 9 produtos (uma janela 3x3 completa)
-//   2) Uso do init_acc como BIAS pre-carregado
-//   3) Produtos negativos / acumulacao negativa
-//   4) Acumulacoes CONSECUTIVAS sem bolha: comprova que o flag 'first'
-//      recarrega o acumulador no momento certo, sem vazar o resultado
-//      anterior (bug classico de aceleradores com pipeline)
-//   5) Latencia exata de 3 ciclos entre o produto 'last' e o strobe out_valid
+// tb_CNN_MAC_Unit -- testbench da unidade MAC
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -111,9 +103,7 @@ module tb_CNN_MAC_Unit;
         repeat (3) @(negedge clk);
         rst = 0;
 
-        // ------------------------------------------------------------------
         // TESTE 1: 9 produtos, sem bias.  sum((i+1)*1000 * 10) = 450000
-        // ------------------------------------------------------------------
         $display("\n-- Teste 1: acumulacao de 9 produtos (janela 3x3), bias=0");
         for (i = 0; i < 9; i = i + 1) begin
             va[i] = (i+1)*1000;
@@ -123,10 +113,8 @@ module tb_CNN_MAC_Unit;
         repeat (6) @(negedge clk);
         check("soma de 9 produtos", cap_acc, 40'sd450000);
 
-        // ------------------------------------------------------------------
         // TESTE 2: mesma soma com BIAS pre-carregado (5 << 15 = 163840)
         //          9 * (100 * -200) = -180000 ; -180000 + 163840 = -16160
-        // ------------------------------------------------------------------
         $display("\n-- Teste 2: init_acc usado como bias + produtos negativos");
         for (i = 0; i < 9; i = i + 1) begin
             va[i] = 100;
@@ -136,11 +124,7 @@ module tb_CNN_MAC_Unit;
         repeat (6) @(negedge clk);
         check("bias + 9 produtos negativos", cap_acc, -40'sd16160);
 
-        // ------------------------------------------------------------------
         // TESTE 3: duas acumulacoes CONSECUTIVAS (sem bolha entre elas).
-        //          Se o flag 'first' nao recarregasse corretamente, o
-        //          resultado da segunda viria contaminado pela primeira.
-        // ------------------------------------------------------------------
         $display("\n-- Teste 3: acumulacoes consecutivas (back-to-back)");
         n_res = 0;
         for (i = 0; i < 9; i = i + 1) begin va[i] = 7; vb[i] = 11; end
@@ -166,9 +150,7 @@ module tb_CNN_MAC_Unit;
         end else
             $display("  [ OK  ] exatamente 2 strobes out_valid emitidos");
 
-        // ------------------------------------------------------------------
         // TESTE 4: latencia medida no teste 1
-        // ------------------------------------------------------------------
         $display("\n-- Teste 4: latencia do pipeline");
         checks = checks + 1;
         if (lat_meas !== 3) begin
@@ -177,7 +159,6 @@ module tb_CNN_MAC_Unit;
         end else
             $display("  [ OK  ] out_valid exatamente 3 ciclos apos o produto 'last'");
 
-        // ------------------------------------------------------------------
         $display("\n========================================================");
         if (errors == 0)
             $display(" RESULTADO: TODOS OS %0d TESTES PASSARAM", checks);

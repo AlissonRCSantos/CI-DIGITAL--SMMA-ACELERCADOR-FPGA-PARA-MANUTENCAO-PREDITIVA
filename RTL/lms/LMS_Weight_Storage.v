@@ -1,15 +1,5 @@
 // ============================================================================
-// Module: LMS_Weight_Storage
-// Description: Sychronous Weight Storage (Register Bank) for an 8-tap folded
-//              LMS adaptive filter using Q1.15 fixed-point representation.
-//
-// Features:
-//   - Stores 8 coefficients (w0 to w7) of 16-bit width.
-//   - Asynchronous/combinational read of the selected coefficient (rd_addr)
-//     to prevent adding an extra cycle of latency to the PE input.
-//   - Sychronous write of the updated coefficient (wr_addr) using the PE
-//     validation signal as Write Enable (we).
-//   - Supports initialization/reset of weights to 0 (or a default value).
+// LMS_Weight_Storage -- banco dos 8 pesos do LMS em Q1.15
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -19,16 +9,16 @@ module LMS_Weight_Storage #(
 )(
     input  wire                 clk,       // System clock (50 MHz)
     input  wire                 rst,       // Synchronous reset (active-high)
-    
+
     // Read Interface (Fase 1 & Fase 2 reading)
     input  wire [2:0]           rd_addr,   // Address of the weight to read (0 to 7)
     output wire signed [WIDTH-1:0] rd_data,   // Selected weight output w_k(n)
-    
+
     // Write Interface (Fase 2 updating)
     input  wire                 we,        // Write Enable (connected to valid_w_next of PE)
     input  wire [2:0]           wr_addr,   // Address of the weight to update (0 to 7)
     input  wire signed [WIDTH-1:0] wr_data,   // Updated weight input w_k(n+1) from PE
-    
+
     // Debug Interface (to monitor convergence/all weights in parallel if needed)
     output wire signed [WIDTH-1:0] w0, w1, w2, w3, w4, w5, w6, w7
 );

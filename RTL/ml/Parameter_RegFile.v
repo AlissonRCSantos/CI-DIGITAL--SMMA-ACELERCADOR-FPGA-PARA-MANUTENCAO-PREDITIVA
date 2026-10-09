@@ -1,42 +1,5 @@
 // ============================================================================
-// Module: Parameter_RegFile
-// Description: BANCO DE REGISTRADORES DE PARAMETROS do classificador -- o
-//              bloco "PARAMETER REGFILE" do diagrama de arquitetura. Guarda o
-//              VETOR DE CARACTERISTICAS (enunciado 3.5) vindo das quatro
-//              etapas de extracao e o entrega a arvore em ordem fixa.
-//
-// ----------------------------------------------------------------------------
-// O VETOR (16 posicoes, Q1.15 salvo indicacao)
-// ----------------------------------------------------------------------------
-//   idx  origem                      conteudo
-//   0-7  FFT (Feature_Spectral)      r_1x r_2x r_3x r_banda1..3 log2E centroide
-//   8    LMS (LMS_Stage)             r_lms
-//   9-11 estimacao matricial         rho1 rho2 rho3   (autocorrelacao_yw)
-//   12   MDC (f0_estimator)          f0 em Hz (inteiro); 0 se o MDC falhou
-//   13-15 estimacao matricial        a1/2 a2/2 a3/2   (Yule_Walker_Solver +
-//                                                      gauss_jordan_inv)
-//
-//   As posicoes 0..11 sao exatamente as 12 caracteristicas com que a arvore
-//   em vetores/arvore.hex foi treinada. As posicoes 12..15 levam ao
-//   classificador o resultado do MDC (como pede o 3.1: "a frequencia
-//   fundamental estimada devera ser encaminhada ao classificador") e o da
-//   inversao de matriz (3.5: "caracteristicas ... da etapa de estimacao
-//   matricial"). A ROM da arvore atual nao possui nos que as consultem --
-//   ela continua decidindo sobre 0..11, e por isso a classificacao em placa
-//   e identica a do modelo. Retreinar a arvore com as 16 entradas passa a
-//   ser apenas uma questao de gerar outra ROM (nenhum fio muda).
-//
-// ----------------------------------------------------------------------------
-// PROTOCOLO
-// ----------------------------------------------------------------------------
-//   Cada origem tem seu proprio handshake e termina em momentos diferentes
-//   (o MDC e o LMS acabam muito antes da inversao). O coletor aceita cada
-//   palavra uma unica vez, em qualquer ordem entre origens, e so comeca a
-//   entregar quando as 16 posicoes estao preenchidas. Assim a arvore SEMPRE
-//   recebe um vetor coerente, de uma unica janela.
-//
-//   rho chega pelo protocolo do autocorrelacao_yw (r_valid/r_index, sem
-//   ready): por isso o coletor o captura em qualquer estado apos o start.
+// Parameter_RegFile -- PARAMETER REGFILE: vetor de 16 caracteristicas para a arvore
 // ============================================================================
 
 `timescale 1ns / 1ps

@@ -1,15 +1,18 @@
-module mdc_gcd #(
-    parameter integer IDX_WIDTH = 6,   
+// ============================================================================
+// mdc_gcd -- EUCLIDES: MDC dos indices dos picos (enunciado 3.1)
+// ============================================================================
 
-    parameter integer NUM_PEAKS = 3   
+module mdc_gcd #(
+    parameter integer IDX_WIDTH = 6,
+
+    parameter integer NUM_PEAKS = 3
 )(
     input  wire                   clk,
-    input  wire                   rst_n,      
+    input  wire                   rst_n,
 
-    input  wire                   start,      
-    output reg                    busy,      
-    output reg                    done,       
-
+    input  wire                   start,
+    output reg                    busy,
+    output reg                    done,
 
     input  wire                   in_valid,
     output wire                   in_ready,
@@ -22,7 +25,6 @@ module mdc_gcd #(
     output reg  [IDX_WIDTH-1:0]   out_data,   // k0 estimado
     output reg                    out_error   // 1 = resultado invalido
 );
-
 
     localparam integer CNT_W  = (NUM_PEAKS <= 1) ? 1 : $clog2(NUM_PEAKS + 1);
     localparam integer ITER_W = IDX_WIDTH + 2;
@@ -37,12 +39,12 @@ module mdc_gcd #(
 
     reg [2:0] state;
 
-    reg [IDX_WIDTH-1:0] reg_a, reg_b;   
-    reg [IDX_WIDTH-1:0] acc;           
-    reg                 acc_valid;      
-    reg [CNT_W-1:0]     peak_cnt;       
-    reg [ITER_W-1:0]    iter_cnt;       
-    reg                 timeout_err;    
+    reg [IDX_WIDTH-1:0] reg_a, reg_b;
+    reg [IDX_WIDTH-1:0] acc;
+    reg                 acc_valid;
+    reg [CNT_W-1:0]     peak_cnt;
+    reg [ITER_W-1:0]    iter_cnt;
+    reg                 timeout_err;
 
     wire a_gt_b = (reg_a > reg_b);
     wire a_eq_b = (reg_a == reg_b);
@@ -50,7 +52,6 @@ module mdc_gcd #(
     wire [IDX_WIDTH-1:0] diff_ba = reg_b - reg_a;  // subtrator: b-a
 
     assign in_ready = (state == S_RECV);
-
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -72,7 +73,6 @@ module mdc_gcd #(
 
             case (state)
 
-            // -----------------------------------------------------
             S_IDLE: begin
                 busy <= 1'b0;
                 if (start) begin
@@ -128,7 +128,7 @@ module mdc_gcd #(
                 out_valid <= 1'b1;
                 state     <= S_OUT;
             end
-            
+
             S_OUT: begin
                 if (out_valid && out_ready) begin
                     out_valid <= 1'b0;

@@ -1,33 +1,5 @@
 // ============================================================================
-// Module: Spectrum_Accumulator
-// Description: Memoria de espectros da janela. Acumula |X[k]| dos 32 quadros
-//              da FFT e entrega o ESPECTRO MEDIO (32 bins) como um stream
-//              valid/ready.
-//
-// ----------------------------------------------------------------------------
-// POR QUE ESTE BLOCO EXISTE
-// ----------------------------------------------------------------------------
-//   O espectro medio dos 32 quadros alimenta DOIS consumidores:
-//
-//     - Feature_Spectral : as 8 caracteristicas espectrais do classificador;
-//     - peak_detector    : os 3 picos que o modulo MDC usa para estimar a
-//                          frequencia fundamental (enunciado 3.1).
-//
-//   Antes, este acumulador vivia DENTRO do Feature_Spectral e o detector de
-//   picos ficava fora do caminho de dados. Separado, o mesmo espectro e
-//   entregue aos dois pelo Stream_Fork -- sem duplicar os 32 acumuladores.
-//
-// ----------------------------------------------------------------------------
-// ARITMETICA (bit a bit com smma/features.py)
-// ----------------------------------------------------------------------------
-//   espec[k] = (soma dos 32 quadros de |X[k]|) >> 5
-//
-//   A media e um DESLOCAMENTO, nao uma divisao. Como |X[k]| <= 65535 (16 bits
-//   sem sinal), a media tambem cabe em 16 bits, e o stream de saida tem a
-//   mesma largura do de entrada.
-//
-// Recursos: 32 acumuladores de 24 bits, 0 DSP.
-// Latencia: 1024 entradas + 32 saidas (1 por ciclo se out_ready = 1).
+// Spectrum_Accumulator -- MEM_B: acumula |X[k]| dos 32 quadros e entrega o espectro medio
 // ============================================================================
 
 `timescale 1ns / 1ps

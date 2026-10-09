@@ -1,26 +1,9 @@
 #!/bin/bash
-# ============================================================================
-# Regressao completa do SMMA com Icarus Verilog
-#
-#   ./sim/run_regressao.sh                 roda todos os testbenches
-#   ./sim/run_regressao.sh tb_SMMA_Top     roda so os que casam com o nome
-#   TETO=600 ./sim/run_regressao.sh        muda o teto de tempo por teste (s)
-#
-# Estrutura usada:
-#   RTL/**/*.v          fontes de projeto (uma subpasta por modulo do PBL)
-#   sim/tb/**/tb_*.v    testbenches (mesma organizacao do RTL)
-#   quartus/vetores/    ROMs e vetores de teste (.hex) -- copiados para a
-#                       pasta de execucao, porque os testbenches e as ROMs
-#                       abrem "vetores/<arquivo>.hex" relativo ao diretorio
-#                       corrente (o mesmo caminho que o Quartus usa).
-#
-# Um testbench e APROVADO quando as TRES condicoes valem:
-#   (a) nenhuma linha COMECA com um marcador de falha ([FAIL], [ERRO], ...);
-#   (b) todo contador explicito de falhas que ele imprima e zero;
-#   (c) aparece alguma frase de sucesso.
-# Nenhuma basta sozinha: (a)+(b) sem (c) aprovariam um teste que travou antes
-# de concluir; (c) sem (a) aprovaria um que imprime o resumo mesmo com falhas.
-# ============================================================================
+# Regressao do SMMA com Icarus Verilog (todos os testbenches de sim/tb)
+#   ./sim/run_regressao.sh               roda todos
+#   ./sim/run_regressao.sh tb_SMMA_Top   so os que casam com o nome
+# Aprovado = nenhuma linha [FAIL]/[ERRO], contadores de falha zerados e frase de sucesso.
+
 set -u
 
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"

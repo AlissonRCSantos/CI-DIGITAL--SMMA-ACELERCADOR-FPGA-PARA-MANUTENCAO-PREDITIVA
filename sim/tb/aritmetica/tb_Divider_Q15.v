@@ -1,15 +1,5 @@
 // ============================================================================
-// Module: tb_Divider_Q15
-// Description: Testbench do divisor Q1.15 usado nas razoes do classificador.
-//
-// A referencia e a propria definicao inteira do resultado,
-//     esperado = min( (num << 15) / den , 0x7FFF ),
-// calculada com a divisao inteira do simulador -- um caminho totalmente
-// diferente do algoritmo de restauracao do DUT, de modo que um erro de
-// implementacao nao se reproduz nos dois lados.
-//
-// Varre casos de borda (0, 1, denominador unitario, num >= den, maximos) e
-// depois faz uma varredura ampla pseudo-aleatoria.
+// tb_Divider_Q15 -- testbench do divisor Q1.15
 // ============================================================================
 
 `timescale 1ns / 1ps

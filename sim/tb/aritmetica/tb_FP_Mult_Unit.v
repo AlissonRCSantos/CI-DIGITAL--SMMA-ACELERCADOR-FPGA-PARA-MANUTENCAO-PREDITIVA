@@ -1,11 +1,5 @@
 // ============================================================================
-// Module: tb_FP_Mult_Unit
-// Description: Self-checking pipelined testbench for FP_Mult_Unit.v.
-//              Implements a stress test feeding a new multiplication every 
-//              clock cycle and checking the output with a 3-cycle pipeline delay.
-//
-// Formats Tested: Q1.15 (sfixed 16 bits: 1 sign, 15 fraction bits)
-// Latency: 3 clock cycles
+// tb_FP_Mult_Unit -- testbench do multiplicador em ponto fixo
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -51,11 +45,7 @@ module tb_FP_Mult_Unit;
     // Clock Generator (50 MHz => 20ns period)
     always #10 clk = ~clk;
 
-    // ------------------------------------------------------------------------
     // Pipelined Expected Value Logic
-    // Since the multiplier has a latency of 3 clock cycles, we must delay the
-    // expected check value by exactly 3 clock edges.
-    // ------------------------------------------------------------------------
     reg signed [WIDTH-1:0] next_expected;
     reg                    next_valid;
 
@@ -82,11 +72,7 @@ module tb_FP_Mult_Unit;
         end
     end
 
-    // ------------------------------------------------------------------------
     // Dynamic Expected Value Generator Task
-    // Receives two 16-bit inputs and computes the expected Q1.15 product 
-    // with rounding and saturation. This output will feed the expected queue.
-    // ------------------------------------------------------------------------
     task calc_expected;
         input  signed [WIDTH-1:0] a;
         input  signed [WIDTH-1:0] b;
@@ -96,7 +82,7 @@ module tb_FP_Mult_Unit;
         reg    signed [2*WIDTH-1:0] shifted_prod;
         begin
             raw_prod = a * b;
-            
+
             // Step 2: Apply Rounding
             if (ROUNDING) begin
                 // Add half of LSB of target fraction (1 << (FRAC_A + FRAC_B - FRAC_Y - 1))
@@ -120,10 +106,8 @@ module tb_FP_Mult_Unit;
         end
     endtask
 
-    // ------------------------------------------------------------------------
     // Automatic Checking Block
     // Monitored on the clock edge, shortly after outputs transition (#1ns)
-    // ------------------------------------------------------------------------
     always @(posedge clk) begin
         #1; // Delay slightly from posedge to avoid race conditions
         if (!rst && valid_pipeline[2]) begin
@@ -132,15 +116,13 @@ module tb_FP_Mult_Unit;
                 success_count = success_count + 1;
             end else begin
                 fail_count = fail_count + 1;
-                $display("[FAIL ERROR] at %t: Input A = %d, B = %d | Got = %d (hex: %h), Expected = %d (hex: %h)", 
+                $display("[FAIL ERROR] at %t: Input A = %d, B = %d | Got = %d (hex: %h), Expected = %d (hex: %h)",
                          $time, uut.r_A, uut.r_B, tb_out_Y, tb_out_Y, exp_pipeline[2], exp_pipeline[2]);
             end
         end
     end
 
-    // ------------------------------------------------------------------------
     // Main Simulation Stimulus (Stress Test)
-    // ------------------------------------------------------------------------
     integer i;
     reg signed [WIDTH-1:0] test_a, test_b;
 
@@ -179,10 +161,6 @@ module tb_FP_Mult_Unit;
         tb_in_A = 0; tb_in_B = 0; next_expected = 0; next_valid = 0;
         #100;
 
-        // --- STAGE 2: Pipelined Stress Test (Continuous Dataflow) ---
-        // We will feed a new random pair of coordinates every single clock cycle.
-        // This validates that the pipeline registers inside the DSP are processing
-        // data correctly with overlapping cycles.
         for (i = 0; i < 2000; i = i + 1) begin
             @(negedge clk);
             // Generate pseudo-random signed inputs
@@ -192,7 +170,7 @@ module tb_FP_Mult_Unit;
 
             tb_in_A = test_a;
             tb_in_B = test_b;
-            
+
             calc_expected(test_a, test_b, next_expected);
             next_valid = 1;
         end
@@ -214,7 +192,7 @@ module tb_FP_Mult_Unit;
         $display("  Total Operations Checked : %d", total_tests);
         $display("  Successes ([PASS])       : %d", success_count);
         $display("  Failures  ([FAIL])       : %d", fail_count);
-        
+
         if (fail_count == 0 && total_tests > 0) begin
             $display("  >>> SUCCESS: All operations verified flawlessly on Cyclone V!");
         end else begin

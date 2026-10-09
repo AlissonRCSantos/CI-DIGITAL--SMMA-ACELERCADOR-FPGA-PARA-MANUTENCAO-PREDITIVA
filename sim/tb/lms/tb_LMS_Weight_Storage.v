@@ -1,6 +1,5 @@
 // ============================================================================
-// Module: tb_LMS_Weight_Storage
-// Description: Self-checking testbench for LMS_Weight_Storage module in Verilog.
+// tb_LMS_Weight_Storage -- testbench do banco de pesos do LMS
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -73,10 +72,10 @@ module tb_LMS_Weight_Storage;
         we = 1'b1;
         wr_addr = 3'd2;
         wr_data = 16'h1234; // Peso fictício
-        
+
         @(negedge clk);
         we = 1'b0; // Desativa escrita
-        
+
         // Leitura imediata (combinatória)
         rd_addr = 3'd2;
         #1;
@@ -94,7 +93,7 @@ module tb_LMS_Weight_Storage;
         we = 1'b0;
         wr_addr = 3'd5;
         wr_data = 16'hAAAA;
-        
+
         @(negedge clk);
         rd_addr = 3'd5;
         #1;

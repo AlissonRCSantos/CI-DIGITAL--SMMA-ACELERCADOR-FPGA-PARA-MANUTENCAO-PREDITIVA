@@ -1,85 +1,5 @@
 // ============================================================================
-// Module: FFT_Control_FSM
-// Description: Unidade de controle (maquina de estados) da FFT de 64 pontos.
-//              Escalona a carga das amostras, os 6 estagios de butterflies e
-//              a descarga do espectro, controlando as duas portas da memoria.
-//
-// ----------------------------------------------------------------------------
-// DIAGRAMA DE ESTADOS
-// ----------------------------------------------------------------------------
-//
-//   S_IDLE ---- start & enable ----> S_LOAD
-//     ^                                |
-//     |                        64 amostras aceitas
-//     |                                v
-//     |                           S_COMPUTE <---------+
-//     |                                |              |
-//     |                    32 butterflies emitidos    | stage < 6
-//     |                                v              |
-//     |                           S_DRAIN ------------+
-//     |                                |
-//     |                          stage == 6
-//     |                                v
-//     |                           S_UNLOAD
-//     |                                |
-//     |                        64 bins entregues
-//     |                                v
-//     |                           S_FLUSH  (esvazia pipeline de saida)
-//     |                                |
-//     +---------- done -----------  S_DONE
-//
-// ----------------------------------------------------------------------------
-// ESCALONAMENTO DOS BUTTERFLIES (nucleo do projeto)
-// ----------------------------------------------------------------------------
-//   Cada butterfly precisa de 2 leituras (A e B) e 2 escritas (P e Q). Como a
-//   memoria tem 2 portas, sao necessarios 2 ciclos por butterfly. O FSM
-//   alterna um sinal 'phase':
-//
-//       phase = 0 -> ciclo de LEITURA : porta A le addr_p, porta B le addr_q
-//       phase = 1 -> ciclo de ESCRITA : porta A grava P,   porta B grava Q
-//
-//   A latencia entre emitir a leitura e ter o resultado pronto para escrita e
-//   de BF_PIPE = 7 ciclos (1 ciclo de leitura da RAM + 6 ciclos do butterfly).
-//   Como 7 e IMPAR, uma leitura emitida em um ciclo par sempre resulta em uma
-//   escrita em um ciclo impar: leituras e escritas NUNCA disputam as portas.
-//   Essa e a razao de a latencia do butterfly ter sido fixada em 6 ciclos.
-//
-//   Os enderecos de escrita percorrem uma linha de atraso de 7 posicoes
-//   (wb_p / wb_q / wb_valid) que acompanha o dado dentro do pipeline.
-//
-//   Dentro de um mesmo estagio os pares (p,q) sao disjuntos -> nao ha hazard
-//   RAW e nenhuma logica de bypass e necessaria. Entre estagios existe
-//   dependencia total, por isso o estado S_DRAIN esvazia o pipeline antes de
-//   iniciar o proximo estagio.
-//
-// ----------------------------------------------------------------------------
-// CONTAGEM DE CICLOS (requisito: 1 janela a cada 10 ms @ 50 MHz = 500.000 ciclos)
-// ----------------------------------------------------------------------------
-//   Carga     :  64 ciclos (1 amostra/ciclo)
-//   Calculo   :  6 estagios x (32 butterflies x 2 ciclos + 8 de drain) = 432
-//   Descarga  :  128 ciclos (2 por bin, com out_ready sempre alto - ver nota
-//               de projeto sobre o escalonamento de 2 ciclos por bin em
-//               'unload_rd'/'out_pipe_adv') + 3 de flush
-//   TOTAL     : ~627 ciclos = 12,5 us @ 50 MHz
-//   Ocupacao  : 0,13% do orcamento de 10 ms -> folga de ~800x.
-//
-// ----------------------------------------------------------------------------
-// PROTOCOLO DE HANDSHAKE
-// ----------------------------------------------------------------------------
-//   start     : pulso de 1 ciclo que inicia a transformada (aceito em S_IDLE)
-//   enable    : habilitacao global; congela o FSM nos estados em que a parada
-//               e segura (S_IDLE, S_LOAD). Durante S_COMPUTE/S_DRAIN o
-//               pipeline aritmetico roda ate o fim, pois os multiplicadores
-//               DSP nao possuem clock-enable.
-//   in_valid / in_ready : handshake de entrada das amostras. O dado so e
-//               consumido quando ambos estao altos no mesmo ciclo, o que
-//               impede perda de amostras.
-//   out_ready : contrapressao na descarga. Com out_ready baixo, o contador de
-//               leitura e o pipeline de saida congelam e a memoria mantem o
-//               ultimo valor lido, impedindo SOBRESCRITA do dado de saida.
-//   busy      : alto enquanto a transformada esta em andamento.
-//   done      : pulso de 1 ciclo ao final da transformada.
-//   ready     : alto quando o modulo pode aceitar uma nova janela.
+// FFT_Control_FSM -- maquina de estados da FFT (carga, 6 estagios, saida)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -88,9 +8,6 @@ module FFT_Control_FSM #(
     parameter LOG2N   = 6,   // N = 64 pontos
     parameter BF_PIPE = 7,   // Latencia leitura->escrita (1 RAM + 6 butterfly)
 
-    // Mascara de escalonamento: bit i = 1 -> o estagio (i+1) divide por 2.
-    // O padrao 6'b001111 escala os estagios 1..4 e deixa 5 e 6 com ganho
-    // unitario, resultando em uma divisao TOTAL de 1/16 (ver FFT_Top.v).
     parameter [5:0] SCALE_MASK = 6'b001111
 )(
     input  wire                  clk,           // Clock do sistema (50 MHz)
@@ -160,9 +77,7 @@ module FFT_Control_FSM #(
     // Amostra efetivamente consumida (handshake completo)
     wire sample_taken = (state == S_LOAD) && in_valid && in_ready;
 
-    // ========================================================================
     // GERADOR DE ENDERECOS DOS BUTTERFLIES
-    // ========================================================================
     wire [LOG2N-1:0] addr_p;
     wire [LOG2N-1:0] addr_q;
 
@@ -176,9 +91,7 @@ module FFT_Control_FSM #(
         .tw_addr(tw_addr)
     );
 
-    // ========================================================================
     // INVERSAO DE BITS DO ENDERECO DE CARGA
-    // ========================================================================
     wire [LOG2N-1:0] load_addr_rev;
 
     FFT_Bit_Reverse #(
@@ -188,11 +101,7 @@ module FFT_Control_FSM #(
         .index_out(load_addr_rev)
     );
 
-    // ========================================================================
     // EMISSAO DE LEITURA DE BUTTERFLY
-    // ========================================================================
-    // Uma leitura e emitida a cada ciclo par (phase == 0) enquanto restarem
-    // butterflies no estagio corrente.
     wire read_issue = (state == S_COMPUTE) && (phase == 1'b0) && (bfly_cnt < NBFLY);
 
     assign tw_rd_en     = 1'b1;                 // ROM lida continuamente (baixo custo)
@@ -202,9 +111,7 @@ module FFT_Control_FSM #(
     // O alinhamento fino com o dado e feito DENTRO do butterfly (scale_pipe).
     assign bf_scale_en  = SCALE_MASK[stage_r - 3'd1];
 
-    // ========================================================================
     // LINHA DE ATRASO DOS ENDERECOS DE ESCRITA (write-back)
-    // ========================================================================
     // Acompanha o dado pelos BF_PIPE = 7 ciclos do caminho leitura->butterfly.
     reg [BF_PIPE-1:0] wb_valid;
     reg [LOG2N-1:0]   wb_p [0:BF_PIPE-1];
@@ -246,41 +153,13 @@ module FFT_Control_FSM #(
             bf_in_valid <= read_issue;
     end
 
-    // ========================================================================
     // CONTROLE DA DESCARGA
-    // ========================================================================
-    // BUG HISTORICO E CORRECAO:
-    //   A FFT_Memory NAO tem porta de clock-enable: sua saida registrada
-    //   (a_dout) se atualiza em TODO ciclo de clock, refletindo o endereco
-    //   apresentado 1 ciclo antes - independente de 'out_ready'. Se
-    //   'unload_cnt' avancasse em TODO ciclo com out_ready=1 (como na versao
-    //   original), um padrao IRREGULAR de out_ready podia fazer um endereco
-    //   ficar "visivel" em mem_a_dout durante exatamente 1 ciclo absoluto -
-    //   e, se esse unico ciclo calhasse de ser uma PARADA (out_ready=0) para
-    //   o lado de SAIDA, o pipeline gated (idx_d1/re_d1/magnitude) nunca
-    //   tinha a chance de capturar aquele valor: o bin correspondente era
-    //   PERDIDO (confirmado em simulacao: todos os bins de indice PAR
-    //   desapareciam sob um padrao de out_ready com periodo 3).
-    //
-    //   A CORRECAO usa o mesmo mecanismo de 'phase' de 2 ciclos ja empregado
-    //   em S_COMPUTE: cada endereco de leitura fica estavel por EXATAMENTE 2
-    //   ciclos aceitos (out_ready=1) antes de avancar para o proximo. O
-    //   pipeline de saida (out_pipe_adv) so captura no SEGUNDO desses dois
-    //   ciclos (unload_phase==1), quando mem_a_dout com certeza already
-    //   reflete o endereco atual (presente desde o ciclo anterior) - nunca
-    //   antes disso. Isso garante, para QUALQUER padrao de out_ready, que
-    //   todo bin tem pelo menos 1 ciclo aceito em que seu dado esta
-    //   corretamente assentado em mem_a_dout E e capturado. O custo e reduzir
-    //   a vazao maxima de descarga para 1 bin a cada 2 ciclos aceitos -
-    //   irrelevante frente a folga de ~900x do orcamento de 10 ms.
     assign unload_rd     = (state == S_UNLOAD) && out_ready && (unload_phase == 1'b0);
     assign unload_index  = unload_cnt[LOG2N-1:0];
     assign out_pipe_adv  = ((state == S_UNLOAD) && out_ready && (unload_phase == 1'b1))
                          || ((state == S_FLUSH) && out_ready);
 
-    // ========================================================================
     // MAQUINA DE ESTADOS PRINCIPAL
-    // ========================================================================
     always @(posedge clk) begin
         if (rst) begin
             state      <= S_IDLE;
@@ -298,7 +177,6 @@ module FFT_Control_FSM #(
             done <= 1'b0;   // 'done' e um pulso de 1 ciclo
 
             case (state)
-                // ------------------------------------------------------------
                 S_IDLE: begin
                     busy       <= 1'b0;
                     load_cnt   <= {(LOG2N+1){1'b0}};
@@ -310,9 +188,7 @@ module FFT_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 // Carga das 64 amostras, ja em ordem de bits invertidos
-                // ------------------------------------------------------------
                 S_LOAD: begin
                     if (sample_taken) begin
                         if (load_cnt == N - 1) begin
@@ -327,9 +203,7 @@ module FFT_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 // 32 butterflies do estagio corrente, 2 ciclos cada
-                // ------------------------------------------------------------
                 S_COMPUTE: begin
                     phase <= ~phase;
                     if (read_issue) begin
@@ -342,9 +216,7 @@ module FFT_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 // Esvazia o pipeline antes de iniciar o proximo estagio
-                // ------------------------------------------------------------
                 S_DRAIN: begin
                     phase     <= ~phase;
                     drain_cnt <= drain_cnt + 1'b1;
@@ -363,12 +235,7 @@ module FFT_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 // Descarga dos 64 bins com contrapressao (out_ready).
-                // 2 ciclos aceitos por bin (ver comentario acima de
-                // 'unload_rd'/'out_pipe_adv'): fase 0 apresenta o endereco,
-                // fase 1 captura o dado ja assentado e so entao avanca.
-                // ------------------------------------------------------------
                 S_UNLOAD: begin
                     if (out_ready) begin
                         unload_phase <= ~unload_phase;
@@ -383,9 +250,7 @@ module FFT_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 // Esvazia o pipeline de saida (RAM + magnitude)
-                // ------------------------------------------------------------
                 S_FLUSH: begin
                     if (out_ready) begin
                         if (flush_cnt == OUT_PIPE[1:0]) begin
@@ -396,7 +261,6 @@ module FFT_Control_FSM #(
                     end
                 end
 
-                // ------------------------------------------------------------
                 S_DONE: begin
                     done  <= 1'b1;
                     busy  <= 1'b0;
@@ -408,9 +272,7 @@ module FFT_Control_FSM #(
         end
     end
 
-    // ========================================================================
     // MULTIPLEXACAO DAS PORTAS DA MEMORIA
-    // ========================================================================
     // Combinacional: define quem usa cada porta em cada ciclo.
     always @(*) begin
         // Valores padrao: memoria ociosa

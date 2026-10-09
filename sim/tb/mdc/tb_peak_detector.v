@@ -1,5 +1,8 @@
-`timescale 1ns/1ps
+// ============================================================================
+// tb_peak_detector -- testbench do detector de picos
+// ============================================================================
 
+`timescale 1ns/1ps
 module tb_peak_detector;
 
     localparam FFT_N     = 64;
@@ -34,10 +37,8 @@ module tb_peak_detector;
 
     always #(CLK_PERIOD/2) clk = ~clk;
 
-    // -------------------------------------------------------------
     // roda um caso: envia o espectro (ja carregado em `spectrum`),
     // coleta os 3 indices de saida e compara com o esperado
-    // -------------------------------------------------------------
     task run_case(
         input [MAG_WIDTH-1:0] threshold,
         input [IDX_WIDTH-1:0] exp0, exp1, exp2,

@@ -1,28 +1,5 @@
 // ============================================================================
-// Module: SMMA_Panel
-// Description: INTERFACE DE SAIDA DA CLASSIFICACAO (enunciado, secao 4) para
-//              a DE0-CV: displays de 7 segmentos e LEDs.
-//
-// ----------------------------------------------------------------------------
-// MODO PADRAO (SW[8] = 0) -- identico ao painel original
-// ----------------------------------------------------------------------------
-//   HEX0     classe da ARVORE        HEX1  classe da CNN
-//   HEX2     classe VERDADEIRA       HEX3  'E' se houve erro (arvore ou FIR)
-//   HEX5:4   indice da janela (decimal)
-//
-//   LEDR[3:0] classe da arvore one-hot (SW[9]=1: scores da CNN)
-//   LEDR[4]   arvore == verdadeira   LEDR[5] CNN == verdadeira
-//   LEDR[6]   arvore == CNN          LEDR[7] modelo Python == verdadeira
-//   LEDR[8]   ocupado                LEDR[9] resultado valido
-//
-//   Classes: 0 normal, 1 desbalanceamento, 2 desalinhamento, 3 rolamento.
-//
-// ----------------------------------------------------------------------------
-// MODO MDC (SW[8] = 1) -- resultado do modulo MDC / frequencia fundamental
-// ----------------------------------------------------------------------------
-//   HEX3..HEX0  f0 estimada em Hz (decimal, 4 digitos; k0 x 50 Hz)
-//               HEX3 mostra 'E' se o MDC sinalizou resultado invalido
-//   HEX5:4 e LEDs continuam como no modo padrao.
+// SMMA_Panel -- saida: classes nos displays HEX e LEDs da DE0-CV
 // ============================================================================
 
 `timescale 1ns / 1ps

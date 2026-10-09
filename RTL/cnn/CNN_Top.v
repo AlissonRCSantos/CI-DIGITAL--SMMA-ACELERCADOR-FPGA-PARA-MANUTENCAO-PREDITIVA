@@ -1,51 +1,5 @@
 // ============================================================================
-// Module: CNN_Top
-// Description: Topo do acelerador CNN do SMMA (Smart Machine Monitoring
-//              Accelerator). Recebe um espectrograma 32x32 do sinal de
-//              vibracao (1 pixel por ciclo, ordem raster) e devolve a classe
-//              de estado do motor.
-//
-// ARQUITETURA COMPLETA (fluxo da esquerda para a direita)
-// -------------------------------------------------------
-//
-//  in_pixel                                                          out_class
-//  (Q1.15)                                                             (2 bits)
-//     |                                                                    ^
-//     v                                                                    |
-//  +-----------------+   janela 3x3   +----------------+  8 canais         |
-//  | CNN_Line_Buffer |--------------->| CNN_Conv_Layer |------------+      |
-//  |  2 line buffers |  win_valid/    | 8 MAC paralelos|  out_valid |      |
-//  |  padding = 1    |  win_ready     | + bias + ReLU  |            |      |
-//  +-----------------+                +----------------+            |      |
-//        ^                                    ^                     v      |
-//        | push_en                            |          +--------------+  |
-//        |                            +---------------+  | CNN_MaxPool  |  |
-//        |                            | CNN_Weight_ROM|  |   2x2 / s2   |  |
-//        |                            +---------------+  +--------------+  |
-//        |                                                       |         |
-//  +--------------------+                                        v         |
-//  |  CNN_Control_FSM   |                        +-------------------------+--+
-//  |  IDLE/STREAM/DRAIN |                        |  CNN_Dense_Classifier      |
-//  |  /DENSE/FINISH     |----------------------->|  GAP -> densa 8x4 -> argmax|
-//  +--------------------+   dense_run            +----------------------------+
-//
-// DIMENSOES DOS TENSORES
-//   entrada         : 32 x 32 x 1   =  1024 valores
-//   conv 3x3 + ReLU : 32 x 32 x 8   =  8192 valores  (padding 1 mantem 32x32)
-//   max pool 2x2    : 16 x 16 x 8   =  2048 valores
-//   GAP             :  1 x  1 x 8   =     8 valores
-//   densa           :          4    =     4 scores
-//   argmax          :          1    =  classe (0..3)
-//
-// CLASSES DE SAIDA
-//   0 = operacao normal
-//   1 = desbalanceamento
-//   2 = desalinhamento
-//   3 = desgaste de rolamento
-//
-// FORMATO NUMERICO: ponto fixo Q1.15 em toda a cadeia de dados; acumuladores
-// internos em Q?.30 com 8 bits de guarda (40 bits) para nao perder precisao
-// antes do reescalonamento final.
+// CNN_Top -- acelerador CNN: espectrograma 32x32 -> 4 scores e classe (enunciado 3.6)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -85,9 +39,7 @@ module CNN_Top #(
     localparam NUM_POOL   = (IMG_W/2) * (IMG_H/2);
     localparam POOL_IDX_W = 4;   // log2(IMG_W/2) = log2(16)
 
-    // ========================================================================
     // Fios de interligacao
-    // ========================================================================
     // FSM -> datapath
     wire                          frame_start;
     wire                          push_en;
@@ -112,21 +64,11 @@ module CNN_Top #(
     // Classificador -> FSM
     wire                          dense_valid;
 
-    // ------------------------------------------------------------------------
     // Handshake janela <-> convolucao (padrao valid/ready com saida registrada)
-    //
-    //   win_ack        : a convolucao esta levando a janela apresentada agora.
-    //   lb_advance_ok  : o line buffer pode dar mais um passo, ou seja, ou nao
-    //                    ha janela pendente, ou ela esta sendo consumida neste
-    //                    exato ciclo. E este sinal que impede a varredura de
-    //                    atropelar a convolucao e PERDER janelas.
-    // ------------------------------------------------------------------------
     wire win_ack       = win_valid && win_ready;
     wire lb_advance_ok = (!win_valid) || win_ready;
 
-    // ========================================================================
     // 1. Unidade de controle global (handshake + sequenciamento)
-    // ========================================================================
     CNN_Control_FSM #(
         .NUM_POOL(NUM_POOL)
     ) u_ctrl (
@@ -150,9 +92,7 @@ module CNN_Top #(
         .dense_run(dense_run)
     );
 
-    // ========================================================================
     // 2. Geracao de janelas 3x3 com line buffers e zero-padding
-    // ========================================================================
     CNN_Line_Buffer #(
         .WIDTH(WIDTH),
         .IMG_W(IMG_W),
@@ -173,9 +113,7 @@ module CNN_Top #(
         .out_col(win_col)
     );
 
-    // ========================================================================
     // 3. Camada convolucional: 8 filtros 3x3 + bias + ReLU
-    // ========================================================================
     CNN_Conv_Layer #(
         .WIDTH(WIDTH),
         .FRAC(FRAC),
@@ -192,9 +130,7 @@ module CNN_Top #(
         .out_data(conv_data)
     );
 
-    // ========================================================================
     // 4. Max pooling 2x2 (stride 2): 32x32x8 -> 16x16x8
-    // ========================================================================
     CNN_MaxPool #(
         .WIDTH(WIDTH),
         .NUM_CH(NUM_FILTERS),
@@ -212,9 +148,7 @@ module CNN_Top #(
         .out_data(pool_data)
     );
 
-    // ========================================================================
     // 5. Classificador: GAP -> camada densa 8x4 -> argmax
-    // ========================================================================
     CNN_Dense_Classifier #(
         .WIDTH(WIDTH),
         .FRAC(FRAC),

@@ -1,16 +1,5 @@
 // ============================================================================
-// Module: tb_Spectrogram_Buffer
-// Description: Testbench do buffer que monta a imagem 32x32 do espectrograma.
-//
-// O ponto critico deste bloco e a TRANSPOSICAO: os pixels entram por quadro
-// (todos os bins de um instante) e precisam sair por linha (todos os
-// instantes de um bin). Um erro de indice aqui nao quebra a simulacao -- so
-// embaralha a imagem, e a CNN passaria a classificar lixo silenciosamente.
-//
-// Por isso o estimulo e um padrao ONDE CADA PIXEL CARREGA SUA PROPRIA
-// COORDENADA (pixel = quadro*32 + bin). Assim a saida esperada e conhecida
-// exatamente para as 1024 posicoes, e qualquer troca de linha por coluna
-// aparece imediatamente.
+// tb_Spectrogram_Buffer -- testbench: transposicao 32x32 do espectrograma
 // ============================================================================
 
 `timescale 1ns / 1ps

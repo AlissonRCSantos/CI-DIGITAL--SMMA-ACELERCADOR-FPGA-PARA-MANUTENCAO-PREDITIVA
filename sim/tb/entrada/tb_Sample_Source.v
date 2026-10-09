@@ -1,20 +1,5 @@
 // ============================================================================
-// Module: tb_Sample_Source
-// Description: Testbench da fonte de amostras da demonstracao em FPGA,
-//              LIGADA ao FIR+decimador -- o primeiro teste de integracao
-//              entre dois modulos deste projeto.
-//
-// Verifica:
-//   1. contagem: cada janela entrega exatamente N_AMOSTRAS amostras;
-//   2. conteudo: as amostras batem com a ROM exportada do dataset;
-//   3. seletor: janelas diferentes entregam dados diferentes, e os rotulos
-//      (classe verdadeira / prevista) correspondem a janela escolhida;
-//   4. integracao: o FIR a jusante aceita o stream e produz a quantidade
-//      esperada de amostras decimadas, sem perder nada no handshake;
-//   5. taxa: com MODO_RAPIDO=0 o intervalo entre amostras e DIV_TAXA ciclos.
-//
-// Roda com MODO_RAPIDO=1 na maior parte (simulacao viavel) e faz uma
-// verificacao curta de temporizacao com MODO_RAPIDO=0 numa instancia a parte.
+// tb_Sample_Source -- testbench: ROM do dataset e taxa de amostragem
 // ============================================================================
 
 `timescale 1ns / 1ps

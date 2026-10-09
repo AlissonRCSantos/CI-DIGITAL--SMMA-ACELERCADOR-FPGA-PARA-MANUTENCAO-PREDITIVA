@@ -1,22 +1,5 @@
 // ============================================================================
-// Module: tb_Equivalencia
-// Description: Prova de EQUIVALENCIA entre esta integracao modular e a
-//              integracao anterior (top_level, commit 1971735), que ja havia
-//              sido gravada e testada na DE0-CV.
-//
-// vetores/equiv_esperado.hex foi capturado SIMULANDO O PROJETO ANTERIOR,
-// janela a janela (24 palavras por janela):
-//
-//     0..11  as 12 caracteristicas entregues a arvore (Q1.15)
-//    12..15  os 4 scores da CNN
-//    16      LEDR com SW[9] = 0        17  LEDR com SW[9] = 1
-//    18..23  HEX0..HEX5
-//
-// Este testbench roda as mesmas 12 janelas no projeto ATUAL e exige
-// igualdade BIT A BIT em tudo -- inclusive nas features, que nao aparecem no
-// painel. Se ele passa, o comportamento na placa e o mesmo de antes; as
-// 4 caracteristicas novas (f0 e a1..a3, posicoes 12..15 do vetor) nao
-// participam da decisao da arvore treinada.
+// tb_Equivalencia -- testbench: mesmo resultado da integracao anterior nas 12 janelas
 // ============================================================================
 
 `timescale 1ns / 1ps

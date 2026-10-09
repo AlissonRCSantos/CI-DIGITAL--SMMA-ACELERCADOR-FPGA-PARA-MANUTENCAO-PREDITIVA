@@ -1,18 +1,5 @@
 // ============================================================================
-// Module: tb_gauss_jordan_inv
-// Description: Testbench isolado do inversor de matriz (Gauss-Jordan com
-//              pivotamento parcial), nas DUAS configuracoes de formato:
-//
-//                DUT A: Q4.12 em 16 bits  (configuracao original da branch)
-//                DUT B: Q8.16 em 24 bits  (configuracao usada no SMMA_Top)
-//
-// Casos (inversas de referencia calculadas com numpy):
-//   1. 2x2  [[4,7],[2,6]]                      -> [[0.6,-0.7],[-0.2,0.4]]
-//   2. 3x3  [[0,2,1],[1,1,0],[2,0,1]]          pivo nulo na diagonal: exige
-//                                              TROCA DE LINHAS
-//   3. 4x4  tridiagonal Toeplitz (4 na diagonal, 1 fora) -- dimensao maxima
-//   4. 2x2  singular [[1,2],[2,4]]             -> 'singular' = 1
-// Tolerancia: 4 LSB do formato de cada DUT.
+// tb_gauss_jordan_inv -- testbench: inversas 2x2, 3x3, 4x4 e matriz singular
 // ============================================================================
 
 `timescale 1ns / 1ps

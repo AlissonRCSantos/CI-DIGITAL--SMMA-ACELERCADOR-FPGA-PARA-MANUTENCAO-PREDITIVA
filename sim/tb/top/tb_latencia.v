@@ -1,18 +1,7 @@
 // ============================================================================
-// tb_latencia -- mede a latencia de cada bloco DENTRO do SMMA_Top, numa janela
-// real (janela 3). Nao verifica a classificacao (isso e o tb_SMMA_Top); so
-// carimba o ciclo de cada evento do fluxo de dados.
-//
-//   FAST = 0 : fonte em tempo real, com DIV_TAXA reduzido para DIV (o pipeline
-//              nunca e o gargalo, entao o "rabo" depois da ultima amostra e o
-//              mesmo da placa). Latencia real = 8503*1953 + rabo.
-//   FAST = 1 : MODO_RAPIDO, a fonte entrega o mais rapido possivel -> mede a
-//              capacidade de processamento (janela limitada so por computacao).
-//
-// Uso:
-//   ./sim/run_regressao.sh tb_latencia                      (Icarus)
-//   ModelSim, a partir da pasta quartus/:  do ../sim/modelsim/sim_latencia.do
+// tb_latencia -- testbench: latencia de cada bloco numa janela
 // ============================================================================
+
 `timescale 1ns / 1ps
 module tb_latencia;
     parameter FAST = 0;

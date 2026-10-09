@@ -1,16 +1,5 @@
 // ============================================================================
-// Module: tb_Feature_Spectral
-// Description: Testbench do extrator das 8 caracteristicas espectrais:
-//              Spectrum_Accumulator (espectro medio dos 32 quadros) ligado
-//              diretamente ao Feature_Spectral, como no SMMA_Top.
-//
-// Os vetores sao 8 janelas REAIS do dataset (classes e cargas variadas,
-// todas da particao de teste). Para cada uma o arquivo traz os 1024 valores
-// de |X[k]| que entram e as 8 features que o modelo Python produz.
-//
-// A comparacao e BIT A BIT, e isso e essencial aqui: os limiares da arvore
-// foram aprendidos sobre estes numeros. Uma divergencia de poucos LSB nao
-// "quase acerta" -- ela move a fronteira de decisao e pode trocar a classe.
+// tb_Feature_Spectral -- testbench: 8 caracteristicas espectrais bit a bit
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -79,10 +68,6 @@ module tb_Feature_Spectral;
     // ---- produtor sincrono das magnitudes ----
     integer base_in, idx_in;
     reg     enviando;
-    // 'idx_in' e escrito SO por este processo. Zera-lo tambem no bloco
-    // initial criaria duas fontes para o mesmo registrador (corrida entre
-    // atribuicao bloqueante e nao-bloqueante); por isso o reset do indice
-    // acontece aqui, quando 'enviando' esta baixo.
     always @(posedge clk) begin
         if (rst || !enviando) begin
             in_valid <= 1'b0; in_mag <= {WIDTH{1'b0}}; idx_in <= 0;

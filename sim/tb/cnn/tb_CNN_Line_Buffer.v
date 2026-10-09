@@ -1,20 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_Line_Buffer
-// Verifica o gerador de janelas 3x3 com zero-padding.
-//
-// Estrategia: usa uma imagem PEQUENA (4x4) com valores unicos e conhecidos
-// (100, 200, ... 1600) e compara CADA UM dos 9 taps de CADA janela emitida
-// contra um modelo de referencia escrito como funcao Verilog. Assim o teste
-// cobre, de forma exaustiva:
-//
-//   * as 4 bordas (padding superior, inferior, esquerda e direita)
-//   * os 4 cantos (dois lados de padding ao mesmo tempo)
-//   * o interior (nenhum padding)
-//   * a ordem de emissao (raster), que e o que o max pooling assume adiante
-//   * a contagem: devem sair EXATAMENTE 16 janelas (mesmo tamanho da entrada,
-//     que e o efeito do padding = 1)
-//
-// A mesma logica escala para 32x32 sem alteracao: o modulo e parametrizavel.
+// tb_CNN_Line_Buffer -- testbench: janelas 3x3 com zero-padding
 // ============================================================================
 
 `timescale 1ns / 1ps

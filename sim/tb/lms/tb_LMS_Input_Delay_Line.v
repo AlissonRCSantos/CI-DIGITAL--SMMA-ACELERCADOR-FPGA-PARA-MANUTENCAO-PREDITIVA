@@ -1,8 +1,5 @@
 // ============================================================================
-// Module: tb_LMS_Input_Delay_Line
-// Description: Testbench to validate the LMS_Input_Delay_Line module.
-//              Verifies sample shifting, desired signal registration, 
-//              and addressable multiplexed reading.
+// tb_LMS_Input_Delay_Line -- testbench da linha de atraso do LMS
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -95,9 +92,6 @@ module tb_LMS_Input_Delay_Line;
             $display("[FAIL] out_d Capture | Got: %d, Expected: 100", out_d);
         end
 
-        // No primeiro deslocamento:
-        // shift_reg[0] (x(n-1)) deve ser 100
-        // Todos os outros devem ser 0
         verify_read(3'd0, 16'd100);
         verify_read(3'd1, 16'd0);
         verify_read(3'd7, 16'd0);
@@ -119,18 +113,10 @@ module tb_LMS_Input_Delay_Line;
             $display("[FAIL] out_d Capture | Got: %d, Expected: -200", out_d);
         end
 
-        // Registradores de atraso devem conter:
-        // shift_reg[0] (x(n-1)) = -200
-        // shift_reg[1] (x(n-2)) = 100
         verify_read(3'd0, -16'd200);
         verify_read(3'd1, 16'd100);
         verify_read(3'd2, 16'd0);
 
-        // --- TEST CASE 3: Sequência de escrita (Estresse de Shifting) ---
-        // Vamos preencher a linha de atraso com valores: 10, 20, 30, 40, 50, 60, 70, 80
-        // Injetando uma amostra de cada vez
-        // No final:
-        // x(n-1) = 80, x(n-2) = 70, ..., x(n-8) = 10
         begin : stress_shift
             integer k;
             for (k = 1; k <= 8; k = k + 1) begin
@@ -167,7 +153,7 @@ module tb_LMS_Input_Delay_Line;
         in_x = 16'd999;
         sample_valid = 0;
         #(CLK_PERIOD * 3);
-        
+
         verify_read(3'd0, 16'd80); // Ainda deve ser 80
         if (out_d === 16'd80) begin
             success_count = success_count + 1;

@@ -1,14 +1,6 @@
-# ============================================================================
-# sim_latencia.do -- roda o testbench de latencia (sim/tb/top/tb_latencia.v)
-#
-# Uso, no Transcript do ModelSim, com a pasta quartus/ como diretorio atual:
-#
-#   do ../sim/modelsim/sim_latencia.do          modo rapido (FAST=1)
+# Latencia de cada bloco (tb_latencia), com ondas. Rodar a partir de quartus/:
+#   do ../sim/modelsim/sim_latencia.do          modo rapido
 #   do ../sim/modelsim/sim_latencia.do 0 100    tempo real com DIV_TAXA=100
-#
-# Por que a partir de quartus/: os modulos abrem "vetores/*.hex" com caminho
-# relativo. Rodando de outra pasta, as ROMs ficam vazias e o resultado e lixo.
-# ============================================================================
 
 set fast 1
 set div  100
@@ -28,9 +20,7 @@ vlib work
 vmap work work
 
 # compila o RTL inteiro (uma pasta por modulo) e o testbench de latencia
-foreach dir {top entrada buffers fft mdc lms matriz ml cnn comum} {
-    foreach f [lsort [glob ../RTL/$dir/*.v]] { vlog -quiet -work work $f }
-}
+foreach f [lsort [glob ../RTL/*/*.v]] { vlog -quiet -work work $f }
 vlog -quiet -work work ../sim/tb/top/tb_latencia.v
 
 # simula; -onfinish stop mantem as ondas abertas depois do $finish

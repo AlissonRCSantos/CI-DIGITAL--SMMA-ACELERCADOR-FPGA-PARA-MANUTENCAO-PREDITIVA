@@ -1,31 +1,5 @@
 // ============================================================================
-// Module: SMMA_Global_Control
-// Description: UNIDADE DE CONTROLE GLOBAL do SMMA (enunciado, secao 4).
-//
-//   Uma janela completa, do dataset ao veredito, em cinco estados:
-//
-//     E_PARADO  --disparo && todos prontos-->  E_ARRANCA
-//     E_ARRANCA --1 ciclo------------------->  E_ADQUIRE
-//     E_ADQUIRE --fb_done (32 quadros)------>  E_DECIDE
-//     E_DECIDE  --arvore e CNN validas------>  E_PRONTO
-//     E_PRONTO  --1 ciclo------------------->  E_PARADO
-//
-//   Modo de operacao dos blocos (decisao de projeto, secao 4):
-//     - PIPELINE por stream dentro da janela: FIR -> quadros -> FFT ->
-//       espectro -> features avancam amostra a amostra pelo handshake;
-//     - PARALELO entre ramos: FFT/MDC, LMS, autocorrelacao/inversao e CNN
-//       consomem a MESMA janela ao mesmo tempo;
-//     - SEQUENCIAL entre janelas: uma nova janela so e aceita quando todos
-//       os blocos voltaram ao repouso (sinal 'todos_prontos').
-//
-//   Os pulsos de start de TODOS os blocos de aquisicao saem de um unico
-//   registrador ('arranca'), para que comecem no mesmo ciclo -- comecar um
-//   ramo um ciclo depois do outro desalinharia o vetor de caracteristicas.
-//
-//   A CNN tambem arranca aqui, e nao quando o espectrograma fecha: o 'done'
-//   do Spectrogram_Buffer so sobe DEPOIS de a imagem ter sido drenada.
-//   Arrancando junto, a CNN espera no handshake de carga, o que lhe e
-//   indiferente.
+// SMMA_Global_Control -- controle global: start unico, espera todos os blocos, veredito
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -122,9 +96,6 @@ module SMMA_Global_Control (
                     end
                 end
 
-                // Volta sozinho: uma tecla por medida. O painel nao apaga,
-                // porque r_valido e o veredito so sao limpos no proximo
-                // arranque.
                 E_PRONTO: est <= E_PARADO;
 
                 default: est <= E_PARADO;

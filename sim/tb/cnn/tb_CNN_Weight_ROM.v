@@ -1,20 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_Weight_ROM
-// Verifica se os pesos gravados na ROM correspondem EXATAMENTE aos pesos
-// treinados em Python.
-//
-// Os valores esperados vem de vetores/rom_pesos.hex, gerado pelo mesmo script
-// que gera a ROM (python/scripts/05_exportar_rtl.py). Ordem do arquivo:
-//     72 pesos conv (filtro f, tap t -> indice f*9+t)
-//      8 bias conv
-//     32 pesos densa (classe k, feature i -> indice k*8+i)
-//      4 bias densa
-//
-// Testes:
-//   1) Conferencia exaustiva dos 116 valores (prova que a organizacao "por
-//      tap" da ROM e o empacotamento {F7..F0} estao corretos).
-//   2) Enderecos fora da faixa devolvem zero (tap 9..15).
-//   3) Todos os pesos dentro da faixa Q1.15 (garantido pelo treino).
+// tb_CNN_Weight_ROM -- testbench: leitura da ROM de pesos
 // ============================================================================
 
 `timescale 1ns / 1ps

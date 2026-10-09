@@ -1,6 +1,6 @@
-// FP_Arith_Unit.v
-// Unidade de Soma e Subtração Parametrizável em Ponto Fixo (Verilog)
-// Projetado para operação em alta frequência (50MHz+) no FPGA.
+// ============================================================================
+// FP_Arith_Unit -- soma/subtracao parametrizavel em ponto fixo
+// ============================================================================
 
 `timescale 1ns / 1ps
 
@@ -95,7 +95,7 @@ module FP_Arith_Unit #(
         if (W_TEMP > W_Y) begin : g_saturation_check
             localparam UPPER_WIDTH = W_TEMP - W_Y + 1;
             wire [UPPER_WIDTH-1:0] upper_bits = shifted_sum[W_TEMP-1 : W_Y-1];
-            
+
             // Se o MSB (sinal) for 0, mas qualquer outro bit superior for 1 -> Overflow Positivo
             wire is_positive_overflow = (upper_bits[UPPER_WIDTH-1] == 1'b0) && (upper_bits[UPPER_WIDTH-2:0] != {(UPPER_WIDTH-1){1'b0}});
             // Se o MSB (sinal) for 1, mas qualquer outro bit superior for 0 -> Overflow Negativo (Underflow)

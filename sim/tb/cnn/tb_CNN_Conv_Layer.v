@@ -1,22 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_Conv_Layer
-// Verifica a camada convolucional completa (8 filtros + bias + ReLU).
-//
-// Os valores esperados vem de vetores/conv_esperado.hex, calculados de forma
-// INDEPENDENTE pelo modelo de referencia em ponto fixo (RTL/golden_model.py,
-// com os pesos treinados), reproduzindo exatamente:
-//        acc  = bias<<15 + soma(pixel[t] * peso[f][t])
-//        y    = ReLU( saturar( arredondar(acc >> 15) ) )
-//
-// Casos escolhidos e o que cada um prova:
-//   1) JANELA UNIFORME     -> saida = bias + nivel * (soma dos coeficientes).
-//   2) IMPULSO NO CENTRO   -> so o coeficiente central de cada filtro atua.
-//                             Prova o alinhamento correto tap<->peso.
-//   3) RAMPA               -> caso generico, todos os 9 taps contribuem.
-//   4) JANELA NEGATIVA     -> saidas negativas devem ser zeradas pelo ReLU.
-//
-// Tambem verifica o THROUGHPUT: janelas consecutivas devem ser aceitas a cada
-// 9 ciclos, sem bolha no pipeline.
+// tb_CNN_Conv_Layer -- testbench: convolucao bit a bit com o golden model
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -104,10 +87,8 @@ module tb_CNN_Conv_Layer;
         rst = 0;
         @(negedge clk);
 
-        // ------------------------------------------------------------------
         // CASO 1: janela uniforme (todos os pixels = 8192 = 0.25)
         // Detectores de borda somam zero -> saida = apenas o bias (com ReLU)
-        // ------------------------------------------------------------------
         $display("-- Caso 1: janela UNIFORME (0.25 em todos os 9 pixels)");
         carrega_caso(0);
         send_win(mkwin(16'sd8192,16'sd8192,16'sd8192,
@@ -116,9 +97,7 @@ module tb_CNN_Conv_Layer;
         repeat (14) @(negedge clk);
         check_out("uniforme");
 
-        // ------------------------------------------------------------------
         // CASO 2: impulso no centro -> so o coeficiente central atua
-        // ------------------------------------------------------------------
         $display("\n-- Caso 2: IMPULSO no centro da janela");
         carrega_caso(1);
         send_win(mkwin(16'sd0,16'sd0,16'sd0,
@@ -127,9 +106,7 @@ module tb_CNN_Conv_Layer;
         repeat (14) @(negedge clk);
         check_out("impulso");
 
-        // ------------------------------------------------------------------
         // CASO 3: rampa (todos os taps contribuem)
-        // ------------------------------------------------------------------
         $display("\n-- Caso 3: RAMPA crescente (caso generico)");
         carrega_caso(2);
         send_win(mkwin(16'sd0,16'sd4096,16'sd8192,
@@ -138,9 +115,7 @@ module tb_CNN_Conv_Layer;
         repeat (14) @(negedge clk);
         check_out("rampa");
 
-        // ------------------------------------------------------------------
         // CASO 4: janela negativa -> prova a acao do ReLU
-        // ------------------------------------------------------------------
         $display("\n-- Caso 4: janela NEGATIVA (prova do ReLU)");
         $display("   esperado: tudo que daria negativo vira exatamente 0");
         carrega_caso(3);
@@ -150,9 +125,7 @@ module tb_CNN_Conv_Layer;
         repeat (14) @(negedge clk);
         check_out("negativa");
 
-        // ------------------------------------------------------------------
         // CASO 5: THROUGHPUT -- janelas consecutivas a cada 9 ciclos
-        // ------------------------------------------------------------------
         $display("\n-- Caso 5: throughput em regime permanente");
         nout = 0;
         win_data  = mkwin(16'sd1000,16'sd1000,16'sd1000,16'sd1000,16'sd1000,

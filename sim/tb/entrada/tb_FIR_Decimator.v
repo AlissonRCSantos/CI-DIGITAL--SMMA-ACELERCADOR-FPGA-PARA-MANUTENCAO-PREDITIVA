@@ -1,20 +1,5 @@
 // ============================================================================
-// Module: tb_FIR_Decimator
-// Description: Testbench auto-verificavel do FIR anti-aliasing + decimador /8.
-//
-// Estimulo e referencia vem de vetores/fir_teste.hex, gerado por
-// 09_exportar_frontend.py a partir de 4096 amostras REAIS do dataset
-// (0Nm_BPFO_10 -- escolhido por ter conteudo espectral rico, exercitando o
-// filtro em toda a banda e nao so em baixa frequencia).
-//
-// A referencia usa a MESMA aritmetica inteira do hardware (arredondamento
-// meio-para-cima e saturacao), entao a comparacao e BIT A BIT.
-//
-// Alem dos valores, verifica:
-//   - a TAXA de saida: exatamente 1 amostra a cada 8 de entrada;
-//   - o ALINHAMENTO: a primeira saida sai na amostra 62 (linha de atraso
-//     cheia), que e o que o modo 'valid' da convolucao do modelo define;
-//   - contrapressao: com out_ready baixo, nada se perde nem se sobrescreve.
+// tb_FIR_Decimator -- testbench: FIR + decimacao bit a bit com Python
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -33,10 +18,6 @@ module tb_FIR_Decimator;
     reg                     in_valid;
     reg  signed [WIDTH-1:0] in_sample;
 
-    // out_ready precisa oscilar SOZINHO: a tarefa 'envia' pode ficar parada
-    // esperando in_ready, e o DUT (corretamente) segura a entrada enquanto
-    // houver saida pendente. Se out_ready ficasse congelado dentro da tarefa,
-    // o testbench travaria a si mesmo.
     reg                     bp_enable;
     reg [1:0]               bp_cnt;
     wire                    out_ready = bp_enable ? (bp_cnt != 2'd0) : 1'b1;
@@ -76,16 +57,7 @@ module tb_FIR_Decimator;
         end
     end
 
-    // ------------------------------------------------------------------
     // Produtor SINCRONO das amostras.
-    //
-    // Dirigir o handshake com @(negedge)/@(posedge) dentro de uma task e
-    // fragil: se 'in_valid' continuar alto por mais de um flanco em que
-    // 'in_ready' tambem esta alto, a MESMA amostra e aceita duas vezes.
-    // Foi exatamente o que aconteceu aqui (4231 aceites para 4096 amostras),
-    // inflando a contagem de saidas. Este processo avanca o indice APENAS
-    // quando a transferencia se completa, entao duplicar e impossivel.
-    // ------------------------------------------------------------------
     integer idx;
     reg     enviando;
 

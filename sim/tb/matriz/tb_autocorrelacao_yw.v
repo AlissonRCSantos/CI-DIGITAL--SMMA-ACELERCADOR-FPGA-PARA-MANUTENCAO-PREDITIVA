@@ -1,11 +1,5 @@
 // ============================================================================
-// Module: tb_autocorrelacao_yw
-// Description: Testbench da autocorrelacao normalizada (1a etapa do modulo de
-//              estimacao matricial). Verifica rho[0..3] de 6 janelas REAIS
-//              (vetores/temp_teste.hex) contra o modelo Python, BIT A BIT:
-//                rho[0] = 32767 (1,0 saturado em Q1.15)
-//                rho[1..3] = colunas 1..3 do arquivo
-//              e o protocolo de saida r_valid / r_index / r_data.
+// tb_autocorrelacao_yw -- testbench: rho[0..3] bit a bit com Python
 // ============================================================================
 
 `timescale 1ns / 1ps

@@ -1,19 +1,5 @@
 // ============================================================================
-// Module: tb_ML_Tree_Classifier
-// Description: Testbench auto-verificavel do classificador de arvore (PBL 3.5).
-//
-// Estrategia:
-//   Os vetores vem de vetores/clf_teste.hex, gerado por
-//   08_exportar_classificador.py a partir de janelas REAIS do dataset (Jung
-//   et al.) que o modelo nunca viu no treino. Cada caso traz as 12 features em
-//   Q1.15 e a classe que o modelo QUANTIZADO em Python produziu -- ou seja, a
-//   comparacao e BIT A BIT contra a referencia, nao "proxima o suficiente".
-//
-//   Alem da igualdade de classe, verifica o protocolo:
-//     - handshake de entrada (in_valid/in_ready) com origem lenta;
-//     - contrapressao na saida (out_ready baixo) sem perder resultado;
-//     - reuso sem reset entre classificacoes;
-//     - latencia dentro do esperado.
+// tb_ML_Tree_Classifier -- testbench: 64 vetores, classe = sklearn
 // ============================================================================
 
 `timescale 1ns / 1ps

@@ -1,45 +1,8 @@
+// ============================================================================
+// autocorrelacao_yw -- COEFFICIENT ACC.: autocorrelacao rho[0..3] da janela
+// ============================================================================
+
 `timescale 1ns/1ps
-
-// =====================================================================
-// autocorrelacao_yw.v
-//
-// Primeira etapa do modulo de ESTIMACAO MATRICIAL (enunciado 3.3):
-// calcula a autocorrelacao normalizada do sinal de vibracao,
-//
-//      r[k]   = sum_{n=k}^{N-1} x[n] * x[n-k]         k = 0..N_LAGS
-//      rho[k] = r[k] / r[0]                           (Q1.15)
-//
-// que forma a matriz de Toeplitz das equacoes de Yule-Walker (montada
-// e invertida pelo Yule_Walker_Solver + gauss_jordan_inv) e cujos
-// termos rho[1..3] tambem sao caracteristicas do classificador.
-//
-// ---------------------------------------------------------------------
-// ORIGEM E O QUE MUDOU EM RELACAO A BRANCH feat/inverse-matrix
-// ---------------------------------------------------------------------
-// A versao da branch guardava uma janela de 64 amostras num registrador
-// de deslocamento de 64 posicoes, em Q4.12, e so calculava depois de
-// encher o buffer. No sistema integrado a janela tem 1056 amostras
-// decimadas (32 quadros de FFT), e um buffer de 1056 x 16 bits em
-// registradores custaria ~17 mil flip-flops. Por isso o modulo foi
-// reescrito em forma de FLUXO (streaming), mantendo:
-//
-//   - o mesmo algoritmo (somas de produtos cruzados + normalizacao por
-//     r[0]);
-//   - os mesmos 2 multiplicadores combinacionais reaproveitados, agora
-//     um PAR de lags por ciclo a cada amostra (r0/r1, depois r2/r3);
-//   - acumuladores de 48 bits;
-//   - o fixed_point_divider da propria branch para a normalizacao;
-//   - o protocolo de saida r_valid / r_index / r_data, um lag por ciclo.
-//
-// Mudou: formato Q1.15 (o do resto do sistema) em vez de Q4.12, janela
-// parametrizavel (N_AMOSTRAS), e handshake de entrada (lms_ready) para
-// participar do Stream_Fork sem perder amostras.
-//
-// Aritmetica identica a features_autocorr_int() do modelo Python:
-// produto PLENO (sem arredondamento), |r[k]| << 15 dividido por r[0]
-// com truncamento, saturado em 32767, sinal aplicado depois.
-// =====================================================================
-
 module autocorrelacao_yw #(
     parameter WIDTH      = 16,     // Q1.15
     parameter FRAC       = 15,
@@ -93,9 +56,7 @@ module autocorrelacao_yw #(
     reg [2:0] norm_k;
     reg [2:0] send_count;
 
-    // -----------------------------------------------------------------
     // 2 multiplicadores combinacionais reaproveitados: k1 = 2p, k2 = 2p+1
-    // -----------------------------------------------------------------
     reg [2:0] k1_val, k2_val;
 
     wire signed [WIDTH-1:0] val_k1 = (k1_val == 3'd0) ? x_n : hist[k1_val - 1'b1];
@@ -105,12 +66,7 @@ module autocorrelacao_yw #(
     wire signed [2*WIDTH-1:0] mult1 = x_n * val_k1;
     wire signed [2*WIDTH-1:0] mult2 = x_n * val_k2;
 
-    // -----------------------------------------------------------------
     // Normalizacao: fixed_point_divider da branch, com WIDTH = ACC_W
-    //   numerador (pre-deslocado) = r[k] <<< FRAC
-    //   denominador               = r[0]
-    //   quociente                 = trunc(r[k]/r[0] * 2^FRAC)
-    // -----------------------------------------------------------------
     reg                        div_start;
     reg  signed [2*ACC_W-1:0]  div_numerator;
     reg  signed [ACC_W-1:0]    div_denominator;
@@ -181,7 +137,6 @@ module autocorrelacao_yw #(
                     end
                 end
 
-                // ---------------------------------------------------
                 S_FILL: begin
                     if (lms_valid && lms_ready) begin
                         x_n    <= lms_data;
@@ -191,9 +146,6 @@ module autocorrelacao_yw #(
                     end
                 end
 
-                // Um PAR de lags por ciclo, com os 2 multiplicadores:
-                //   p = 0 : r[0] += x[n]^2       r[1] += x[n]*x[n-1]
-                //   p = 1 : r[2] += x[n]*x[n-2]  r[3] += x[n]*x[n-3]
                 S_CALC: begin
                     raw_out[k1_val] <= raw_out[k1_val] + mult1;
                     if (k2_val <= N_LAGS)
@@ -218,9 +170,7 @@ module autocorrelacao_yw #(
                     end
                 end
 
-                // ---------------------------------------------------
                 // Normalizacao: rho[k] = r[k] / r[0], k = 0..N_LAGS
-                // ---------------------------------------------------
                 S_NORM_START: begin
                     div_numerator   <= {{ACC_W{raw_out[norm_k][ACC_W-1]}}, raw_out[norm_k]} <<< FRAC;
                     div_denominator <= raw_out[0];
@@ -247,7 +197,6 @@ module autocorrelacao_yw #(
                     end
                 end
 
-                // ---------------------------------------------------
                 S_SEND_OUT: begin
                     r_valid    <= 1'b1;
                     r_index    <= send_count;

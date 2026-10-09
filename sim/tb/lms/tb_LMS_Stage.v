@@ -1,24 +1,5 @@
 // ============================================================================
-// Module: tb_LMS_Stage
-// Description: Testbench do ESTAGIO LMS EM SERIE (LMS_Stage + LMS_Filter_Top),
-//              ligado como no SMMA_Top: as amostras ENTRAM no estagio e SAEM
-//              para o barramento depois de passar pelo filtro adaptativo.
-//
-// Duas instancias recebem o MESMO stream (6 janelas reais de
-// vetores/temp_teste.hex, 1056 amostras decimadas cada):
-//
-//   DUT0 (SAIDA_LMS = 0, configuracao do sistema)
-//     - toda amostra de entrada sai, na ordem, sem alteracao, sob
-//       contrapressao aleatoria na saida (sem perda, sem duplicacao);
-//     - r_lms BIT A BIT com o modelo Python.
-//
-//   DUT1 (SAIDA_LMS = 1)
-//     - o stream de saida e y(n) do LMS; conferido contra o modelo Python
-//       (aritmetica do LMS_Filter_Top) por duas assinaturas: soma de y(n) e
-//       soma de (n+1)*y(n) mod 2^32.
-//     Observacao medida: neste dataset y(n) fica quase nulo dentro de uma
-//     janela (o sinal tem amplitude pequena em Q1.15 e os pesos mal
-//     adaptam) -- por isso o sistema usa SAIDA_LMS = 0.
+// tb_LMS_Stage -- testbench: LMS em serie, repasse intacto e r_lms bit a bit
 // ============================================================================
 
 `timescale 1ns / 1ps

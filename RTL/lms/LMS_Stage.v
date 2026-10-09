@@ -1,55 +1,5 @@
 // ============================================================================
-// Module: LMS_Stage
-// Description: ESTAGIO LMS EM SERIE do SMMA (enunciado 3.4) -- o bloco "LMS"
-//              do diagrama de arquitetura, entre o filtro anti-alias e o
-//              barramento de dados (Data_Bus_Driver).
-//
-//              Toda amostra decimada ATRAVESSA este estagio: ele a recebe,
-//              conduz uma iteracao do LMS_Filter_Top (8 coeficientes,
-//              mu = 2^-3) e so entao a entrega ao barramento. Nenhum bloco
-//              a jusante ve uma amostra que nao tenha passado pelo LMS.
-//
-// ----------------------------------------------------------------------------
-// O LMS COMO FILTRO ADAPTATIVO DE LINHA (ALE) / PREDITOR LINEAR
-// ----------------------------------------------------------------------------
-//   Com um unico sensor, o sinal desejado d(n) e a propria amostra e a
-//   entrada do filtro e o passado:
-//
-//       in_x = x[n-1],   in_d = x[n]
-//       y(n) = sum_{i=0..7} w_i(n) x(n-1-i)        (componentes previsiveis)
-//       e(n) = d(n) - y(n)                         (ruido de banda larga)
-//       w_i(n+1) = w_i(n) + mu e(n) x(n-1-i)
-//
-//   Saidas do estagio:
-//     - stream para o barramento (out_*), selecionado por SAIDA_LMS:
-//         0 -> a amostra filtrada pelo FIR, x(n)       (padrao)
-//         1 -> a saida do LMS, y(n) (sinal "realcado", ruido reduzido)
-//     - r_lms = sum e^2 / sum d^2 em Q1.15 (feat_*), caracteristica do
-//       classificador: quanto do sinal o filtro adaptativo NAO consegue
-//       prever.
-//
-//   POR QUE O PADRAO E SAIDA_LMS = 0: a arvore de decisao e a CNN gravadas
-//   na ROM foram treinadas com o espectro e o espectrograma do sinal
-//   filtrado pelo FIR. Trocar o stream por y(n) muda o que chega a FFT, a
-//   autocorrelacao e a CNN, e os modelos teriam de ser retreinados (o
-//   resultado na placa mudaria). Com SAIDA_LMS = 0 o comportamento e
-//   identico ao validado; o parametro existe para essa evolucao.
-//
-// ----------------------------------------------------------------------------
-// ALINHAMENTO COM O MODELO TREINADO (smma/features.py, feature_lms_int)
-// ----------------------------------------------------------------------------
-//   - Cada janela comeca com pesos e linha de atraso ZERADOS ('lms_clear'
-//     pulsa o reset do LMS_Filter_Top no inicio da janela).
-//   - x[0] nunca entra no preditor: a amostra 0 e repassada sem iteracao do
-//     LMS (y(0) = 0) e o historico comeca vazio.
-//   - e(n) usado nas energias e o erro SATURADO (out_error do filtro).
-//
-// ----------------------------------------------------------------------------
-// RECURSOS E TEMPO
-// ----------------------------------------------------------------------------
-//   1 multiplicador 16x16 (e^2 e d^2, em sequencia) + 1 Divider_Q15.
-//   Por amostra: 26 ciclos do LMS_Filter_Top + ~5 de energia/repasse,
-//   contra 15.625 ciclos entre amostras decimadas (3,2 kHz @ 50 MHz).
+// LMS_Stage -- LMS em serie na entrada: repassa as amostras e calcula r_lms
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -98,9 +48,7 @@ module LMS_Stage #(
 
     localparam signed [WIDTH-1:0] SAT_MAX = (1 << (WIDTH-1)) - 1;
 
-    // ------------------------------------------------------------------------
     // Estado
-    // ------------------------------------------------------------------------
     reg [ACC_W-1:0]        se2, sd2;          // energias do erro e do sinal
     reg [11:0]             n_amostra;
     reg signed [WIDTH-1:0] e_reg, y_reg;
@@ -164,7 +112,6 @@ module LMS_Stage #(
             div_start <= 1'b0;
 
             case (state)
-                // ------------------------------------------------------
                 S_IDLE: begin
                     busy <= 1'b0;
                     if (start) begin
@@ -178,7 +125,6 @@ module LMS_Stage #(
                     end
                 end
 
-                // ------------------------------------------------------
                 S_ESP: begin
                     if (in_valid && in_ready) begin
                         lms_d <= in_sample;
@@ -207,9 +153,6 @@ module LMS_Stage #(
                     end
                 end
 
-                // Os pesos so terminam de ser gravados ~13 ciclos depois de
-                // valid_out; a proxima amostra so pode entrar com o filtro
-                // livre (busy = 0), senao leria pesos antigos.
                 S_DRAIN: begin
                     if (!lms_busy) begin
                         ma    <= e_reg;
@@ -228,10 +171,8 @@ module LMS_Stage #(
                     state <= S_EMITE;
                 end
 
-                // ------------------------------------------------------
                 // A amostra so segue para o barramento depois de passar
                 // pelo LMS; o produtor (FIR) fica retido enquanto isso.
-                // ------------------------------------------------------
                 S_EMITE: begin
                     if (out_ready)
                         state <= S_PROX;
@@ -244,10 +185,8 @@ module LMS_Stage #(
                     state     <= (n_amostra == N_AMOSTRAS - 1) ? S_DIV : S_ESP;
                 end
 
-                // ------------------------------------------------------
                 // r_lms = se2 / sd2. Energia nula -> sinal imprevisivel,
                 // r_lms = maximo (mesma convencao do modelo).
-                // ------------------------------------------------------
                 S_DIV: begin
                     if (div_done) begin
                         feat_lms <= div_zero ? SAT_MAX : $signed(div_q);

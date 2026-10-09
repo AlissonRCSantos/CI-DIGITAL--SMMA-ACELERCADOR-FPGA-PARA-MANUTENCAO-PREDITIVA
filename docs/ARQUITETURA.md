@@ -12,7 +12,7 @@ completada com os blocos obrigatórios que faltavam nele (destacados como
 
 ![Arquitetura final](diagramas/SMMA_arquitetura.png)
 
-(versões vetoriais: [SVG](diagramas/SMMA_arquitetura.svg) · [PDF](diagramas/SMMA_arquitetura.pdf))
+(versão para impressão: [PDF](diagramas/SMMA_arquitetura.pdf))
 
 ---
 
@@ -44,7 +44,7 @@ completada com os blocos obrigatórios que faltavam nele (destacados como
 | **Unidade de controle global** | `SMMA_Global_Control` | Exigida na seção 4: dá o `start` único a todos os blocos, espera o `ready` de todos e registra o veredito. |
 | **Interface de saída** | `SMMA_Panel` | Exigida na seção 4: mostra árvore, CNN e classe verdadeira nos HEX/LEDs da placa (e a f0 com `SW[8]`). |
 | **Comunicação** | handshake `valid/ready` + `Stream_Fork` | Os ramos FFT→(MEM_B, CNN) e MEM_B→(features, picos) também se dividem; o `Stream_Fork` garante que todos recebam os mesmos dados. |
-| **Aritmética comum** | `FP_Mult_Unit`, `FP_Arith_Unit`, `Divider_Q15`, `fixed_point_divider` | multiplicadores/divisores em ponto fixo usados pelos blocos acima. |
+| **Aritmética de ponto fixo** | `FP_Mult_Unit`, `FP_Arith_Unit`, `Divider_Q15`, `fixed_point_divider` | multiplicadores/divisores em ponto fixo usados pelos blocos acima. |
 
 ---
 
@@ -53,17 +53,17 @@ completada com os blocos obrigatórios que faltavam nele (destacados como
 | Requisito do enunciado | Seção | Módulo(s) | Pasta |
 |---|---|---|---|
 | Interface de entrada dos sensores | 4 | `Sample_Source`, `FIR_Decimator` | `RTL/entrada` |
-| Memória / buffers de amostras | 4 | `Frame_Builder` (MEM_A), `Spectrum_Accumulator` (MEM_B), `Spectrogram_Buffer` | `RTL/buffers` |
+| Memória / buffers de amostras | 4 | `Frame_Builder` (MEM_A), `Spectrum_Accumulator` (MEM_B); `Spectrogram_Buffer` | `RTL/memorias`; `RTL/cnn` |
 | Módulo MDC | 3.1 | `peak_detector` → `mdc_gcd` → `f0_estimator` | `RTL/mdc` |
-| Módulo FFT (64 pontos) | 3.2 | `FFT_Top` + 7 submódulos; `FFT_Log2_Compress` | `RTL/fft` |
+| Módulo FFT (64 pontos) | 3.2 | `FFT_Top` + 7 submódulos | `RTL/fft` |
 | Inversão de matriz (≤ 4×4) | 3.3 | `autocorrelacao_yw` → `Yule_Walker_Solver` ↔ `gauss_jordan_inv` (+ `fixed_point_divider`) | `RTL/matriz` |
 | Filtro adaptativo LMS (8 coef.) | 3.4 | `LMS_Filter_Top` + 5 submódulos, `LMS_Stage` | `RTL/lms` |
 | Acelerador de ML | 3.5 | `Feature_Spectral`, `Parameter_RegFile`, `ML_Tree_Classifier` | `RTL/ml` |
-| Acelerador CNN (32×32×1, 8 filtros 3×3) | 3.6 | `CNN_Top` + 8 submódulos | `RTL/cnn` |
+| Acelerador CNN (32×32×1, 8 filtros 3×3) | 3.6 | `FFT_Log2_Compress`, `Spectrogram_Buffer`, `CNN_Top` + 8 submódulos | `RTL/cnn` |
 | Unidade de controle global | 4 | `SMMA_Global_Control` | `RTL/top` |
-| Comunicação entre módulos | 4 | `Data_Bus_Driver`, `Stream_Fork`, handshake em todos | `RTL/top` |
+| Comunicação entre módulos | 4 | `Data_Bus_Driver`, `Stream_Fork`, handshake em todos | `RTL/barramento` |
 | Interface de saída | 4 | `SMMA_Panel` | `RTL/top` |
-| Aritmética de ponto fixo | 6.4 | `FP_Mult_Unit`, `FP_Arith_Unit`, `Divider_Q15` | `RTL/comum` |
+| Aritmética de ponto fixo | 6.4 | `FP_Mult_Unit`, `FP_Arith_Unit`, `Divider_Q15` | `RTL/aritmetica` |
 
 Origem: os módulos de FFT, LMS, MDC, picos, f0, Gauss-Jordan, divisor e CNN
 são os das branches (`fft`, `feat/LMS`, `feat/MDC`, `feat/peak_detector`,
@@ -203,9 +203,6 @@ A árvore em `quartus/vetores/arvore.hex` foi treinada com as posições 0..11 �
 por isso a classificação é idêntica à validada. As posições 12..15 chegam ao
 classificador; usá-las na decisão é retreinar e regravar a ROM.
 
-As interfaces porta a porta de cada módulo (larguras, protocolo, latência)
-estão documentadas no cabeçalho do respectivo arquivo `.v`.
-
 **Resultado na placa preservado:** o `tb_Equivalencia` compara, nas 12
 janelas, bit a bit, as 12 características usadas pela árvore, os 4 scores da
 CNN e todos os pinos do painel contra a integração anterior — 12/12 idênticas.
@@ -258,8 +255,25 @@ reduzido), em ciclos de 50 MHz.
 | árvore | percurso de nós com comparação ≤ | ROM 141×32, 1 comparador | **20** | 0 DSP |
 | CNN | conv 3×3 ×8 + ReLU + maxpool 2×2 + GAP + densa 8→4 | line buffer, 8 MACs em paralelo, FSM | **9 332** após o último bin | 8 DSP |
 
-Ver os cabeçalhos dos arquivos para pseudocódigo, estados e justificativas de
-cada bloco.
+Recursos medidos no Quartus (Fitter, compilação completa):
+
+| bloco | ALMs | registradores | M10K | DSP |
+|---|---|---|---|---|
+| `Sample_Source` (ROM do dataset) | 155 | 76 | 200 | 1 |
+| `FIR_Decimator` | 434 | 1 229 | 0 | 2 |
+| `LMS_Stage` + `LMS_Filter_Top` | 380 | 926 | 0 | 2 |
+| `Frame_Builder` (MEM_A) | 277 | 1 065 | 0 | 0 |
+| `FFT_Top` | 3 023 | 3 060 | 0 | 4 |
+| `Spectrum_Accumulator` (MEM_B) | 342 | 694 | 0 | 0 |
+| `Feature_Spectral` | 519 | 593 | 0 | 1 |
+| `peak_detector` + `mdc_gcd` + `f0_estimator` | 126 | 208 | 0 | 1 |
+| `autocorrelacao_yw` | 416 | 815 | 0 | 2 |
+| `Yule_Walker_Solver` + `gauss_jordan_inv` | 1 191 | 1 067 | 0 | 2 |
+| `Parameter_RegFile` + `ML_Tree_Classifier` | 289 | 577 | 1 | 0 |
+| `FFT_Log2_Compress` + `Spectrogram_Buffer` | 165 | 103 | 2 | 0 |
+| `CNN_Top` | 2 537 | 4 962 | 0 | 9 |
+| `SMMA_Global_Control` + `SMMA_Panel` | 385 | 18 | 0 | 0 |
+| **total** | **10 316 (56%)** | **15 416** | **203 (66%)** | **24 (36%)** |
 
 ---
 
@@ -292,10 +306,7 @@ cada bloco.
   avisa que falhas de rolamento produzem componentes não harmônicas. O módulo
   está correto (o `tb_MDC_Chain` reproduz o exemplo do enunciado:
   MDC(12, 18, 30) = 6); a interpretação física do k0 depende do espectro.
-- **Tempo no Quartus:** a síntese/fitting não pôde ser rodada neste ambiente.
-  A elaboração completa foi verificada com Yosys (0 problemas), mas confira no
-  TimeQuest que o projeto fecha em 50 MHz — os caminhos novos mais longos são o
-  multiplicador 24×24 do `gauss_jordan_inv` e o MAC do `Yule_Walker_Solver`.
-- **Recursos:** a integração anterior usava 9 085 ALMs (49%), 18 DSPs (27%) e
-  203 M10K (66%). Os blocos reintegrados acrescentam ~6 multiplicadores e
-  algumas centenas de registradores; confira no relatório do Fitter.
+- **Quartus (compilação completa na DE0-CV):** fecha a 50 MHz com folga —
+  slack de setup **+2,961 ns**, Fmax **58,7 MHz** (modelo lento, 85 °C). Usa
+  10 316 ALMs (56%), 203 blocos M10K (66%, quase todos da ROM do dataset) e
+  24 DSPs (36%).

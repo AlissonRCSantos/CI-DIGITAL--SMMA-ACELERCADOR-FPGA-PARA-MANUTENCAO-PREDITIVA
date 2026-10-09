@@ -1,9 +1,5 @@
 // ============================================================================
-// Module: tb_LMS_Filter_Top_v6
-// Description: System-level self-checking testbench for LMS_Filter_Top_v6.
-//              Tests the full handshake protocol (start, enable, valid_in, 
-//              ready, busy, valid_out) in a System Identification scenario
-//              with 400 samples.
+// tb_LMS_Filter_Top -- testbench do filtro LMS completo
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -19,12 +15,12 @@ module tb_LMS_Filter_Top;
     // Signals
     reg                 clk;
     reg                 rst;
-    
+
     // Handshake & Control Ports
     reg                 start;
     reg                 enable;
     reg                 valid_in;
-    
+
     wire                ready;
     wire                busy;
     wire                valid_out;
@@ -69,7 +65,7 @@ module tb_LMS_Filter_Top;
         begin
             seed = (seed * 1103515245 + 12345) & 31'h7FFFFFFF;
             // Map 16-bit to Q1.15 in range [-0.5, 0.5] to prevent overflow
-            get_rand_x = $signed(seed[30:15]) >>> 1; 
+            get_rand_x = $signed(seed[30:15]) >>> 1;
         end
     endfunction
 
@@ -89,8 +85,8 @@ module tb_LMS_Filter_Top;
     end
 
     // Unknown system desired output calculation: d(n) = 0.5*x(n) - 0.25*x(n-1) + 0.125*x(n-2)
-    wire signed [WIDTH-1:0] d_ideal = (x_delay[0] >>> 1) 
-                                    - (x_delay[1] >>> 2) 
+    wire signed [WIDTH-1:0] d_ideal = (x_delay[0] >>> 1)
+                                    - (x_delay[1] >>> 2)
                                     + (x_delay[2] >>> 3);
 
     // MSE tracking
@@ -125,18 +121,18 @@ module tb_LMS_Filter_Top;
 
         // Process loops for N_SAMPLES
         for (sample_count = 0; sample_count < N_SAMPLES; sample_count = sample_count + 1) begin
-            
+
             // 1. Wait until the module is ready and not busy
             while (ready !== 1'b1 || busy !== 1'b0) begin
                 @(posedge clk);
             end
-            
+
             @(negedge clk);
             // 2. Set new input sample and trigger handshake
             in_x = get_rand_x(1);
             start = 1'b1;
             valid_in = 1'b1;
-            
+
             @(negedge clk);
             // At this point, x_delay has updated combinationally and 'd_ideal' is fully stable.
             in_d = d_ideal;
@@ -159,8 +155,8 @@ module tb_LMS_Filter_Top;
 
             // Print status every 50 samples
             if (sample_count % 50 == 0 || sample_count == N_SAMPLES - 1) begin
-                $display("Amostra %3d | x(n)=%6d | d(n)=%6d | y(n)=%6d | e(n)=%6d | w0=%5d, w1=%5d, w2=%5d | Ready=%b, Busy=%b", 
-                         sample_count, $signed(x_delay[0]), $signed(d_ideal), $signed(out_y), $signed(out_error), 
+                $display("Amostra %3d | x(n)=%6d | d(n)=%6d | y(n)=%6d | e(n)=%6d | w0=%5d, w1=%5d, w2=%5d | Ready=%b, Busy=%b",
+                         sample_count, $signed(x_delay[0]), $signed(d_ideal), $signed(out_y), $signed(out_error),
                          $signed(w0), $signed(w1), $signed(w2), ready, busy);
             end
 

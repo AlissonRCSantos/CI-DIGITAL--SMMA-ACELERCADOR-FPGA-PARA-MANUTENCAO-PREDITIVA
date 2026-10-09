@@ -1,47 +1,5 @@
 // ============================================================================
-// Module: Sample_Source
-// Description: Fonte de amostras para a DEMONSTRACAO EM FPGA (enunciado 6.7).
-//              ROM com janelas reais do dataset, entregues na taxa do
-//              acelerometro (25,6 kHz) atraves de handshake valid/ready.
-//
-// ----------------------------------------------------------------------------
-// PARA QUE SERVE
-// ----------------------------------------------------------------------------
-//   O enunciado exige demonstrar o projeto gravado na placa "utilizando sinais
-//   de entrada e saida que permitam verificar o processamento". Nao ha
-//   acelerometro ligado a FPGA, entao este modulo substitui o sensor: guarda
-//   trechos REAIS de vibracao do dataset (Jung et al., KAIST) e os reproduz
-//   com a mesma temporizacao que o sensor teria.
-//
-//   Do ponto de vista do resto do sistema ele e INDISTINGUIVEL de um ADC: a
-//   mesma interface valid/ready, a mesma taxa. Trocar por um conversor real
-//   depois nao exige mudar mais nada a jusante.
-//
-// ----------------------------------------------------------------------------
-// CONTEUDO DA ROM
-// ----------------------------------------------------------------------------
-//   N_JANELAS janelas x N_AMOSTRAS amostras, em Q1.15 (fundo de escala
-//   +-32 g). As janelas cobrem 4 classes x 3 cargas e vem TODAS da particao
-//   de TESTE -- nunca vistas no treino. Demonstrar com dados de treino nao
-//   provaria nada, porque o modelo os memorizou.
-//
-//   'rotulo' entrega, para a janela selecionada:
-//       bits [3:2] classe verdadeira    bits [1:0] classe prevista no modelo
-//   Isso permite a placa mostrar lado a lado o esperado e o obtido. Uma das
-//   12 janelas (normal a 4 Nm) e classificada ERRADA pelo modelo -- isso e
-//   proposital: o sistema acerta ~93%, nao 100%, e a demonstracao mostra a
-//   realidade.
-//
-// ----------------------------------------------------------------------------
-// TEMPORIZACAO
-// ----------------------------------------------------------------------------
-//   50 MHz / 25,6 kHz = 1953,125 ciclos por amostra. Usamos 1953, o que da
-//   25.601,6 Hz -- erro de 0,006%, tres ordens de grandeza abaixo da
-//   resolucao de 50 Hz por bin da FFT, portanto irrelevante.
-//
-//   Com MODO_RAPIDO=1 a fonte entrega as amostras o mais rapido que o
-//   consumidor aceitar, o que encurta a simulacao; em 0 respeita a taxa real
-//   (uma janela leva 332 ms, bom para uma demonstracao ao vivo).
+// Sample_Source -- SENSOR Xa: ROM com 12 janelas do dataset, entregues a 25,6 kHz
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -78,11 +36,7 @@ module Sample_Source #(
     localparam ADDR_W = 20;                  // 12 * 8503 = 102.036 < 2^20
     localparam CNT_W  = 11;                  // conta ate DIV_TAXA
 
-    // ------------------------------------------------------------------------
     // Memorias
-    // ------------------------------------------------------------------------
-    // ramstyle: a ROM do dataset (~1,6 Mbit) TEM de ir para M10K. Em LUTs ela
-    // ocupa ~33 mil ALUTs e o projeto nao cabe na 5CEBA4 da DE0-CV.
     (* ramstyle = "M10K" *) reg [WIDTH-1:0] rom [0:TOTAL-1];
     reg [3:0]       rotulos [0:N_JANELAS-1];
     initial begin
@@ -94,9 +48,7 @@ module Sample_Source #(
     assign classe_verdadeira = rot[3:2];
     assign classe_esperada   = rot[1:0];
 
-    // ------------------------------------------------------------------------
     // Reproducao
-    // ------------------------------------------------------------------------
     reg [ADDR_W-1:0] addr;        // posicao absoluta na ROM
     reg [ADDR_W-1:0] restantes;   // amostras que faltam na janela
     reg [CNT_W-1:0]  divisor;     // gerador da taxa de 25,6 kHz
@@ -106,15 +58,7 @@ module Sample_Source #(
     // que impede sobrescrever uma amostra que o FIR ainda nao leu.
     wire pode_emitir = busy && tick && !(out_valid && !out_ready);
 
-    // ------------------------------------------------------------------------
     // Leitura da ROM num always SEPARADO, sem reset e sem enable.
-    //
-    // E o unico formato que o Quartus mapeia em M10K: com a leitura dentro do
-    // always com reset sincrono (como estava), ele implementava a ROM inteira
-    // em logica. 'addr_prox' e o valor que 'addr' tera no proximo ciclo, entao
-    // rom_q == rom[addr] sempre -- mesma temporizacao de antes, inclusive com
-    // MODO_RAPIDO=1 emitindo uma amostra por ciclo.
-    // ------------------------------------------------------------------------
     wire [ADDR_W-1:0] addr_prox =
           rst                ? {ADDR_W{1'b0}}
         : (!busy && start)   ? janela * N_AMOSTRAS

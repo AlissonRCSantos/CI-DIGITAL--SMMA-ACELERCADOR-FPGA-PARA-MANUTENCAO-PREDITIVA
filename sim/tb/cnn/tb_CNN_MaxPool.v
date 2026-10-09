@@ -1,21 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_MaxPool
-// Verifica o max pooling 2x2 stride 2 em streaming.
-//
-// Usa um mapa 4x4 com DOIS canais em paralelo, com valores unicos:
-//   canal 0: cresce  (100, 200, ... 1600)  -> o maximo cai no canto inferior-direito
-//   canal 1: decresce(1600, 1500, ... 100) -> o maximo cai no canto superior-esquerdo
-//
-// Usar dois canais com ordenacoes OPOSTAS e proposital: se houvesse qualquer
-// troca de canal (crosstalk) na logica de comparacao, os resultados sairiam
-// invertidos e o teste falharia imediatamente.
-//
-// Mapeamento esperado (canal 0):
-//    entrada 4x4          saida 2x2
-//    1   2   3   4        max(1,2,5,6)=6    max(3,4,7,8)=8
-//    5   6   7   8    ->  max(9,10,13,14)=14 max(11,12,15,16)=16
-//    9  10  11  12
-//   13  14  15  16
+// tb_CNN_MaxPool -- testbench do max pooling 2x2
 // ============================================================================
 
 `timescale 1ns / 1ps

@@ -1,36 +1,5 @@
 // ============================================================================
-// Module: tb_SMMA_Top
-// Description: Testbench PONTA A PONTA do sistema completo.
-//
-// Exercita o caminho inteiro -- ROM do dataset, FIR, decimacao, montagem de
-// quadros, FFT, espectro medio, MDC, LMS, autocorrelacao, inversao de matriz,
-// o vetor de 16 caracteristicas, arvore e CNN -- pelos MESMOS pinos da placa
-// (KEY e SW), sem alcancar nenhum sinal interno. E isso que torna o teste
-// util: se ele passa, a DE0-CV faz o mesmo.
-//
-// ----------------------------------------------------------------------------
-// O QUE SE VERIFICA, E POR QUE
-// ----------------------------------------------------------------------------
-//   1. A classe da ARVORE bate com a previsao do modelo Python para cada uma
-//      das 12 janelas. Esta e a verificacao que vale: confirma que a cadeia
-//      inteira em hardware reproduz o modelo treinado. Comparar apenas com o
-//      rotulo verdadeiro nao serviria -- o hardware poderia acertar o rotulo
-//      por acaso enquanto calcula as features erradas.
-//
-//   2. A acuracia contra o rotulo VERDADEIRO. Esperado 11/12: o modelo erra
-//      4Nm_Normal (le como desbalanceamento). O erro e do modelo, nao do
-//      hardware, e o teste exige que o hardware o REPRODUZA.
-//
-//   3. Que nenhum bloco trava e que o sistema aceita janelas em sequencia sem
-//      reset -- o caso que mais quebrou blocos isolados neste projeto foi
-//      justamente a segunda execucao.
-//
-//   4. O modulo MDC no painel (SW[8] = 1): f0 = 50 Hz em todas as janelas.
-//      O motor do dataset gira a 3010 rpm (50,17 Hz), que cai no bin 1 da
-//      FFT de 64 pontos a 3,2 kHz (50 Hz/bin).
-//
-// MODO_RAPIDO = 1 desliga o divisor de taxa de 25,6 kHz da fonte. Sem isso uma
-// janela levaria 16 milhoes de ciclos de simulacao.
+// tb_SMMA_Top -- testbench ponta a ponta pelos pinos da placa
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -68,9 +37,6 @@ module tb_SMMA_Top;
     integer f0_lido;
     reg [1:0] hw_arv, hw_cnn, hw_ver, esp_ver, esp_mod;
 
-    // Decodifica o display de 7 segmentos de volta para o digito, para que o
-    // teste leia o painel como a pessoa na bancada le -- e nao os registradores
-    // internos. Um erro no decodificador apareceria aqui.
     function [3:0] le_seg7;
         input [6:0] s;
         begin

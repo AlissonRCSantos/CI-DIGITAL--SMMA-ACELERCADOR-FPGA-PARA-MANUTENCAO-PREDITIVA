@@ -1,8 +1,5 @@
 // ============================================================================
-// Module: LMS_Input_Delay_Line
-// Description: Addressable Input Delay Line (Shift Register) for folded LMS.
-//              Holds the history of input samples x(n-1) to x(n-8) and captures
-//              the current input sample as the desired signal d(n).
+// LMS_Input_Delay_Line -- linha de atraso x(n-1)..x(n-8) do LMS
 // ============================================================================
 
 `timescale 1ns / 1ps

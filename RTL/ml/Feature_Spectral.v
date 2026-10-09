@@ -1,41 +1,5 @@
 // ============================================================================
-// Module: Feature_Spectral
-// Description: Extrai as 8 caracteristicas ESPECTRAIS do classificador
-//              numerico (enunciado 3.5) a partir do ESPECTRO MEDIO da janela,
-//              entregue pelo Spectrum_Accumulator.
-//
-// ----------------------------------------------------------------------------
-// AS 8 SAIDAS (todas em Q1.15, na ordem em que o classificador as espera)
-// ----------------------------------------------------------------------------
-//   0 r_1x      spec[1]  / E     1x da rotacao (50 Hz)  -> DESBALANCEAMENTO
-//   1 r_2x      spec[2]  / E     2x (100 Hz)
-//   2 r_3x      spec[3]  / E     3x (150 Hz)            -> DESALINHAMENTO
-//   3 r_banda1  spec[4:7]  / E   200-400 Hz  (BPFO 179, BPFI 272 Hz)
-//   4 r_banda2  spec[8:15] / E   400-800 Hz
-//   5 r_banda3  spec[16:31]/ E   800-1600 Hz            -> ROLAMENTO
-//   6 log2E     log2 da energia total (aproximacao de Mitchell)
-//   7 centroide centro de massa espectral, normalizado
-//
-//   Seis delas sao RAZOES pela energia total: nao dependem do nivel absoluto
-//   do sinal, e e por isso que a arvore aguenta a variacao de carga bem
-//   melhor que a CNN.
-//
-// ----------------------------------------------------------------------------
-// ARITMETICA -- precisa casar BIT A BIT com smma/features.py
-// ----------------------------------------------------------------------------
-//   Os limiares da arvore foram aprendidos sobre ESTES valores, entao
-//   qualquer diferenca desloca as fronteiras de decisao. Por isso:
-//     - a media dos 32 quadros e um DESLOCAMENTO (>>5), feito no
-//       Spectrum_Accumulator;
-//     - as razoes usam divisao INTEIRA truncada, (x << 15) / E;
-//     - log2 e a aproximacao de MITCHELL (mesma de FFT_Log2_Compress.v).
-//
-// ----------------------------------------------------------------------------
-// RECURSOS
-// ----------------------------------------------------------------------------
-//   1 divisor por restauracao (Divider_Q15, compartilhado nas 7 divisoes),
-//   1 multiplicador pequeno 5x16 para o centroide. ZERO DSP.
-//   Latencia: 32 bins + 7x16 de divisao ~= 150 ciclos.
+// Feature_Spectral -- BANDAS BPFO/BPFI: 8 caracteristicas espectrais em Q1.15
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -66,9 +30,7 @@ module Feature_Spectral #(
     output wire signed [WIDTH-1:0]  out_feature
 );
 
-    // ------------------------------------------------------------------------
     // Somas derivadas do espectro medio
-    // ------------------------------------------------------------------------
     localparam EW = ACC_W + 5;
     reg [EW-1:0]    E;        // energia total (bins 1..31)
     reg [EW-1:0]    s_pond;   // sum(i * spec[i]) para o centroide
@@ -78,9 +40,7 @@ module Feature_Spectral #(
 
     wire [ACC_W-1:0] spec_i = {{(ACC_W-WIDTH){1'b0}}, in_mag};
 
-    // ------------------------------------------------------------------------
     // Divisor compartilhado
-    // ------------------------------------------------------------------------
     reg          div_start;
     reg  [31:0]  div_num, div_den;
     wire         div_ready, div_done;
@@ -93,10 +53,8 @@ module Feature_Spectral #(
         .quociente(div_q), .div_zero(div_zero)
     );
 
-    // ------------------------------------------------------------------------
     // log2 de Mitchell para E -- combinacional. Opera sobre E+1, igual ao
     // FFT_Log2_Compress e ao modelo Python.
-    // ------------------------------------------------------------------------
     wire [EW-1:0] E1 = E + 1'b1;
     integer k;
     reg [4:0] e_exp;
@@ -112,9 +70,7 @@ module Feature_Spectral #(
                             + {{5{1'b0}}, e_mant};
     wire [15:0]   log2_sat  = (log2_full > 32767) ? 16'd32767 : log2_full[15:0];
 
-    // ------------------------------------------------------------------------
     // Resultados
-    // ------------------------------------------------------------------------
     reg signed [WIDTH-1:0] feat [0:N_FEAT-1];
     reg [2:0]              idx;
 
@@ -149,7 +105,6 @@ module Feature_Spectral #(
             div_start <= 1'b0;
 
             case (state)
-                // ------------------------------------------------------
                 S_IDLE: begin
                     busy <= 1'b0;
                     if (start) begin
@@ -160,10 +115,8 @@ module Feature_Spectral #(
                     end
                 end
 
-                // ------------------------------------------------------
                 // Recebe os 32 bins do espectro medio. O bin 0 (DC) entra
                 // no handshake mas nao em nenhuma soma.
-                // ------------------------------------------------------
                 S_SOMA: begin
                     if (in_valid && in_ready) begin
                         if (bin_cnt != 6'd0) begin
@@ -186,11 +139,7 @@ module Feature_Spectral #(
                     end
                 end
 
-                // ------------------------------------------------------
                 // 7 divisoes sequenciais + log2, uma feature por vez.
-                // 'div_done' e testado ANTES de 'div_ready': no ciclo em que
-                // o divisor termina ele levanta os DOIS sinais.
-                // ------------------------------------------------------
                 S_DIV: begin
                     if (div_done) begin
                         feat[idx] <= div_q;
@@ -218,7 +167,6 @@ module Feature_Spectral #(
                     end
                 end
 
-                // ------------------------------------------------------
                 S_OUT: begin
                     if (out_ready) begin
                         if (idx == N_FEAT - 1) begin

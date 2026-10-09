@@ -1,7 +1,11 @@
+// ============================================================================
+// f0_estimator -- frequencia fundamental f0 = k0 * fs / N (enunciado 3.1)
+// ============================================================================
+
 module f0_estimator #(
-    parameter integer FFT_N     = 64,  
-    parameter integer IDX_WIDTH = 6,   
-    parameter integer FS_WIDTH  = 20  
+    parameter integer FFT_N     = 64,
+    parameter integer IDX_WIDTH = 6,
+    parameter integer FS_WIDTH  = 20
 )(
     input  wire                  clk,
     input  wire                  rst_n,
@@ -18,8 +22,8 @@ module f0_estimator #(
 
     output reg                   out_valid,
     input  wire                  out_ready,
-    output reg  [FS_WIDTH-1:0]           f0_int,  
-    output reg  [IDX_WIDTH-1:0]          f0_frac  
+    output reg  [FS_WIDTH-1:0]           f0_int,
+    output reg  [IDX_WIDTH-1:0]          f0_frac
 );
 
     // Checagem de parametro so para simulacao: o Quartus nao executa
@@ -43,7 +47,7 @@ module f0_estimator #(
 
     reg [IDX_WIDTH-1:0] k0_reg;
     reg [FS_WIDTH-1:0]  fs_reg;
-    reg [IDX_WIDTH+FS_WIDTH-1:0] product; 
+    reg [IDX_WIDTH+FS_WIDTH-1:0] product;
 
     assign in_ready = (state == S_IDLE);
 
@@ -63,7 +67,6 @@ module f0_estimator #(
 
             case (state)
 
-            // -----------------------------------------------------
             S_IDLE: begin
                 busy <= 1'b0;
                 if (in_valid && in_ready) begin
@@ -74,12 +77,10 @@ module f0_estimator #(
                 end
             end
 
-
             S_MUL: begin
                 product <= k0_reg * fs_reg;
                 state   <= S_FINALIZE;
             end
-
 
             S_FINALIZE: begin
                 f0_int    <= product[IDX_WIDTH+FS_WIDTH-1:IDX_WIDTH];

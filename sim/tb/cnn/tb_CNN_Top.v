@@ -1,30 +1,5 @@
 // ============================================================================
-// Testbench: tb_CNN_Top
-// Teste de SISTEMA do acelerador CNN completo, com ESPECTROGRAMAS REAIS.
-//
-// As imagens vem do conjunto de TESTE do dataset de vibracao (Jung et al.,
-// 2023): 2 espectrogramas 32x32 de cada classe, gerados pelo mesmo caminho
-// FFT -> espectrograma especificado em python/smma/espectrograma.py.
-// Arquivos (gerados por python/scripts/05_exportar_rtl.py):
-//   vetores/top_imagens.hex  : N_IMG x 1024 pixels Q1.15 (ordem raster,
-//                              linha = bin de frequencia, coluna = tempo)
-//   vetores/top_esperado.hex : por imagem, 14 palavras =
-//                              8 features, 4 scores, classe esperada
-//                              (golden model bit-exato), classe REAL
-//   vetores/top_origem.txt   : de qual arquivo/condicao veio cada imagem
-//
-// SAIDA: o que o HARDWARE respondeu para cada imagem e gravado em
-//   sim_out/top_saida_hw.txt  (ou top_saida_hw.txt, se sim_out/ nao existir)
-// e o script gerar_png_espectrogramas.py transforma isso em figuras PNG na
-// pasta sim/golden/espectrogramas_teste/ (python sim/golden/gerar_png_espectrogramas.py).
-//
-// O teste PASSA quando o hardware reproduz o golden model bit a bit
-// (features, scores e classe). A comparacao com a classe REAL e informativa:
-// mostra se a rede treinada acertou o diagnostico.
-//
-// Alem da funcionalidade, o teste mede:
-//   * o numero de ciclos por imagem  (requisito: 1 janela a cada 10 ms)
-//   * o reuso do acelerador em quadros consecutivos, sem reset entre eles
+// tb_CNN_Top -- testbench: CNN inteira com 8 espectrogramas reais, bit a bit
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -79,9 +54,7 @@ module tb_CNN_Top;
         .out_class(out_class), .out_scores(out_scores), .out_features(out_features)
     );
 
-    // ------------------------------------------------------------------------
     // Copia a imagem n e seus valores esperados
-    // ------------------------------------------------------------------------
     task load_img(input integer p);
         begin
             for (i = 0; i < NPIX; i = i + 1) img[i] = todas[p*NPIX + i];
@@ -93,9 +66,7 @@ module tb_CNN_Top;
         end
     endtask
 
-    // ------------------------------------------------------------------------
     // Entrega uma imagem completa respeitando o handshake in_valid / in_ready
-    // ------------------------------------------------------------------------
     task run_frame;
         begin
             @(negedge clk); start = 1'b1;
@@ -122,9 +93,7 @@ module tb_CNN_Top;
         end
     endtask
 
-    // ------------------------------------------------------------------------
     // Confere features, scores e classe
-    // ------------------------------------------------------------------------
     task check_frame;
         begin
             for (ch = 0; ch < 8; ch = ch + 1) begin
@@ -199,9 +168,7 @@ module tb_CNN_Top;
         end else
             $display("-- Apos reset: ready=1, aguardando imagem\n");
 
-        // ==================================================================
         // N_IMG espectrogramas reais, processados em sequencia sem reset
-        // ==================================================================
         for (n = 0; n < N_IMG; n = n + 1) begin
             load_img(n);
             $display("-- Imagem %0d  (ver vetores/top_origem.txt)", n);
@@ -211,9 +178,7 @@ module tb_CNN_Top;
         end
         $display("-- Diagnostico da rede treinada nestas %0d imagens: %0d acertos", N_IMG, acertos);
 
-        // ==================================================================
         // Requisito temporal do enunciado
-        // ==================================================================
         $display("\n-- Requisito temporal: 1 janela processada a cada 10 ms");
         checks = checks + 1;
         if (ciclos > 500000) begin
@@ -223,9 +188,7 @@ module tb_CNN_Top;
             $display("  [ OK  ] %0d ciclos = %0d us  (folga de %0dx sobre os 10 ms)",
                      ciclos, (ciclos*20)/1000, 10000/((ciclos*20)/1000));
 
-        // ==================================================================
         // Reuso: quatro quadros processados em sequencia, sem reset
-        // ==================================================================
         $display("\n-- Reuso do acelerador");
         checks = checks + 1;
         if (ready !== 1'b1) begin

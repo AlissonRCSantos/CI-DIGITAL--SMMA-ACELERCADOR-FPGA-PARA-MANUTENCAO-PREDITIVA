@@ -1,15 +1,5 @@
 // ============================================================================
-// Module: tb_Frame_Builder
-// Description: Testbench do montador de quadros da FFT.
-//
-// A entrada e uma RAMPA (amostra n vale n), escolhida de proposito: com ela o
-// valor de cada amostra E o seu indice, entao o TB pode afirmar que o quadro f
-// contem exatamente as amostras f*32 .. f*32+63. Um sinal "realista" tornaria
-// um erro de deslocamento de 32 amostras praticamente invisivel -- e e esse o
-// erro que este bloco pode cometer.
-//
-// Verifica tambem o que importa no sistema: que nenhuma amostra se perde
-// quando o bloco baixa in_ready para despejar um quadro.
+// tb_Frame_Builder -- testbench: quadros de 64 com salto 32
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -127,9 +117,6 @@ module tb_Frame_Builder;
             $display("[FAIL] Reset: ready=%b busy=%b", ready, busy);
         end
 
-        // duas janelas: a segunda prova que o bloco reinicia limpo (os
-        // ponteiros do circular tem de voltar ao zero, nao continuar de onde
-        // pararam)
         for (rodada = 0; rodada < 2; rodada = rodada + 1) begin
             bp_enable = rodada;          // a 2a janela roda com contrapressao
             q_atual = 0; p_atual = 0; n_quadros_vistos = 0; n_aceitas = 0;

@@ -1,62 +1,5 @@
 // ============================================================================
-// Module: SMMA_Top
-// Description: Top level do SMMA -- Smart Machine Monitoring Accelerator.
-//              Acelerador em FPGA para manutencao preditiva de motores
-//              industriais (PBL de Circuitos Digitais IV).
-//
-//              Alvo: DE0-CV, Cyclone V 5CEBA4F23C7N, 50 MHz.
-//
-// ============================================================================
-// ARQUITETURA (diagrama do grupo, com os blocos obrigatorios que faltavam)
-// ============================================================================
-//
-//  Xa --> Sample_Source --> FIR_Decimator --> [ LMS ] --> DATA BUS DRIVER
-//         (sensor emulado)  (anti-alias, /8)  LMS_Stage    Data_Bus_Driver
-//                                             <-> LMS_Filter_Top   |
-//                                                  |               |
-//              r_lms ------------------------------+               |
-//                                                                  |
-//   +--------------------------------------------------------------+
-//   |                                                              |
-//   v  ramo FFT                                                    v  ramo matriz
-//  MEM_A ----------> FFT --------------> MEM_B                  coefficient
-//  Frame_Builder     FFT_Top             Spectrum_Accumulator   accumulator
-//  (64 amostras)     (64 pts)       |    (espectro medio)       autocorrelacao_yw
-//                                   |        |      |               |
-//                                   |  PEAK  |      | bandas        v
-//                                   | DETECT.|      | BPFO/BPFI  GAUSS_JORDAN
-//                                   |  peak_ |      | Feature_   Yule_Walker_Solver
-//                                   | detector      | Spectral   <-> gauss_jordan_inv
-//                                   |    |          |               |
-//                                   | EUCLIDES      |               |
-//                                   | mdc_gcd ->    |               |
-//                                   | f0_estimator  |               |
-//                                   |    |          |               |
-//                                   |    +----------+---> PARAMETER REGFILE <--+
-//                                   |                     Parameter_RegFile
-//                                   |                          |
-//                                   |                    DECISION TREE
-//                                   |                    ML_Tree_Classifier
-//                                   v                          |
-//                       FFT_Log2_Compress -> Spectrogram_Buffer -> CNN_Top
-//                                                              |       |
-//                              SMMA_Global_Control  ---->  SMMA_Panel (HEX/LEDR)
-//
-//   Acrescentados ao diagrama (obrigatorios pelo enunciado ou pela fisica):
-//     FIR_Decimator     sem decimacao a FFT de 64 pts teria bins de 400 Hz e
-//                       todas as frequencias de falha cairiam no bin 0
-//     f0_estimator      converte o k0 do Euclides em frequencia (3.1)
-//     ramo CNN          acelerador CNN obrigatorio (3.6 e secao 4)
-//     controle/painel   unidade de controle global e interface de saida (4)
-//
-// ============================================================================
-// PAINEL (DE0-CV) -- ver SMMA_Panel.v
-// ============================================================================
-//   KEY[0]   reset (ativo em baixo na placa, invertido aqui)
-//   KEY[1]   dispara uma janela
-//   SW[3:0]  escolhe a janela do dataset (0..11)
-//   SW[8]    1 = mostra f0 (MDC) em Hz nos HEX3..HEX0
-//   SW[9]    1 = mostra os scores da CNN nos LEDs em vez do estado
+// SMMA_Top -- top level do SMMA na DE0-CV (diagrama em docs/diagramas)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -92,13 +35,7 @@ module SMMA_Top #(
 
     wire clk = CLOCK_50;
 
-    // ------------------------------------------------------------------------
     // Reset e disparo
-    //
-    // Os botoes da DE0-CV sao ativos em baixo; o projeto todo usa reset
-    // sincrono ativo em ALTO, entao a inversao acontece aqui, uma unica vez.
-    // Dois registradores de sincronizacao: KEY e assincrono ao CLOCK_50.
-    // ------------------------------------------------------------------------
     reg [1:0] key_s0, key_s1, key_s2;
     always @(posedge clk) begin
         key_s0 <= ~KEY;
@@ -111,9 +48,7 @@ module SMMA_Top #(
     // Start comum a todos os blocos da janela (gerado pelo controle global)
     wire arranca;
 
-    // ========================================================================
     // INTERFACE DE ENTRADA DOS SENSORES (Xa: acelerometro x do mancal A)
-    // ========================================================================
     wire                     src_busy, src_done, src_valid, src_ready;
     wire signed [WIDTH-1:0]  src_sample;
     wire [1:0]               classe_verdadeira, classe_modelo;
@@ -142,17 +77,7 @@ module SMMA_Top #(
         .overflow(fir_overflow)
     );
 
-    // ========================================================================
     // MODULO LMS (EM SERIE): toda amostra filtrada pelo FIR atravessa o LMS
-    // antes de chegar ao barramento de dados.
-    //
-    //   FIR_Decimator -> LMS_Stage <-> LMS_Filter_Top -> Data_Bus_Driver
-    //
-    // SAIDA_LMS = 0: o barramento recebe a amostra filtrada pelo FIR, que e o
-    // sinal com que a arvore e a CNN foram treinadas (resultado identico ao
-    // validado). Com SAIDA_LMS = 1 o barramento passa a receber y(n), a saida
-    // do filtro adaptativo -- exige retreinar os dois classificadores.
-    // ========================================================================
     wire                     ls_ready, ls_busy, ls_done;
     wire                     ls_out_valid, ls_out_ready;
     wire signed [WIDTH-1:0]  ls_out_sample;
@@ -188,9 +113,7 @@ module SMMA_Top #(
         .feat_ready(ls_feat_ready), .feat_valid(ls_feat_valid), .feat_lms(ls_feat_lms)
     );
 
-    // ========================================================================
     // DATA BUS DRIVER: dados filtrados -> MEM_A/FFT e acumulador/Gauss-Jordan
-    // ========================================================================
     wire signed [WIDTH-1:0]  bus_sample;
     wire                     fb_in_valid, ac_in_valid;
     wire                     fb_in_ready, ac_in_ready;
@@ -204,9 +127,7 @@ module SMMA_Top #(
         .out_sample(bus_sample)
     );
 
-    // ========================================================================
     // MEM_A -- buffer de amostras da FFT: quadros de 64 pontos, salto 32
-    // ========================================================================
     wire                     fb_ready, fb_busy, fb_done;
     wire                     fb_out_valid, fb_out_ready;
     wire signed [WIDTH-1:0]  fb_out_sample;
@@ -223,12 +144,7 @@ module SMMA_Top #(
         .out_frame_ini(fb_frame_ini), .out_frame_fim(fb_frame_fim)
     );
 
-    // ========================================================================
     // MODULO FFT (64 pontos, radix-2 DIT, Q1.15, ganho /16)
-    //
-    // A FFT_Top so levanta in_ready em S_LOAD, isto e, DEPOIS do pulso de
-    // start. O quadro fica retido ate a transformada estar armada.
-    // ========================================================================
     wire                     fft_ready, fft_busy, fft_done, fft_in_ready;
     wire                     fft_out_valid, fft_out_ready;
     wire [5:0]               fft_out_index;
@@ -258,12 +174,7 @@ module SMMA_Top #(
         .out_real(), .out_imag(), .out_mag(fft_out_mag), .stage_dbg()
     );
 
-    // ------------------------------------------------------------------------
     // Fork (b): |X[k]| dos bins uteis -> espectro medio + espectrograma
-    //
-    // Sinal real: so os bins 0..31 carregam informacao. Os bins 32..63 sao
-    // ACEITOS e descartados (deixar de aceita-los travaria a FFT).
-    // ------------------------------------------------------------------------
     wire bin_util = (fft_out_index < N_BINS);
     wire bin_fork_ready;
     wire sa_in_valid, lg_in_valid;
@@ -278,9 +189,7 @@ module SMMA_Top #(
 
     assign fft_out_ready = bin_util ? bin_fork_ready : 1'b1;
 
-    // ========================================================================
     // MEM_B -- memoria de espectros: espectro medio dos 32 quadros
-    // ========================================================================
     wire              sa_ready, sa_busy, sa_done;
     wire              sa_out_valid, sa_out_ready;
     wire [5:0]        sa_out_bin;
@@ -296,9 +205,7 @@ module SMMA_Top #(
         .out_bin(sa_out_bin), .out_mag(sa_out_mag)
     );
 
-    // ------------------------------------------------------------------------
     // Fork (c): espectro medio -> features espectrais + detector de picos
-    // ------------------------------------------------------------------------
     wire fs_in_valid, pk_in_valid;
     wire fs_in_ready, pk_in_ready;
 
@@ -309,9 +216,7 @@ module SMMA_Top #(
         .out_ready({pk_in_ready, fs_in_ready})
     );
 
-    // ========================================================================
     // Caracteristicas espectrais (8), inclusive as bandas de BPFO/BPFI
-    // ========================================================================
     wire                     fs_ready, fs_busy, fs_done;
     wire                     fs_out_valid, fs_out_ready;
     wire signed [WIDTH-1:0]  fs_out_feature;
@@ -326,14 +231,7 @@ module SMMA_Top #(
         .out_feature(fs_out_feature)
     );
 
-    // ========================================================================
     // PEAK DETECTOR -> EUCLIDES (MDC) -> frequencia fundamental
-    //
-    //   peak_detector : 3 maiores maximos locais acima de PICO_LIMIAR no
-    //                   espectro medio (bins 1..30)
-    //   mdc_gcd       : k0 = MDC(picos), Euclides por subtracoes
-    //   f0_estimator  : f0 = k0 * fs / N  (N = 64 -> divisao por deslocamento)
-    // ========================================================================
     wire              pk_busy, pk_done;
     wire              pk_out_valid, pk_out_ready;
     wire [5:0]        pk_out_data;
@@ -405,13 +303,7 @@ module SMMA_Top #(
         end
     end
 
-    // ========================================================================
     // COEFFICIENT ACCUMULATOR -> GAUSS_JORDAN (estimacao de parametros)
-    //
-    //   autocorrelacao_yw  : rho[0..3] da janela      -> matriz de Toeplitz
-    //   Yule_Walker_Solver : carrega R, a = R^-1 r     (controle + MAC)
-    //   gauss_jordan_inv   : R^-1 por Gauss-Jordan com pivotamento parcial
-    // ========================================================================
     wire                     ac_ready, ac_busy;
     wire                     ac_r_valid;
     wire [2:0]               ac_r_index;
@@ -468,9 +360,7 @@ module SMMA_Top #(
         .read_data(inv_read_data)
     );
 
-    // ========================================================================
     // PARAMETER REGFILE: vetor de caracteristicas do classificador
-    // ========================================================================
     wire                     col_ready, col_busy, col_done;
     wire                     col_out_valid, col_out_ready;
     wire signed [WIDTH-1:0]  col_out_feature;
@@ -487,9 +377,7 @@ module SMMA_Top #(
         .out_feature(col_out_feature)
     );
 
-    // ========================================================================
     // DECISION TREE (acelerador de Machine Learning)
-    // ========================================================================
     wire        tree_start, tree_ready, tree_busy, tree_done;
     wire        tree_out_valid, tree_out_error;
     wire [1:0]  tree_class;
@@ -505,12 +393,7 @@ module SMMA_Top #(
         .out_class(tree_class), .out_error(tree_out_error)
     );
 
-    // ========================================================================
     // ESPECTROGRAMA + ACELERADOR CNN
-    //
-    // O 'en' do compressor serve de skid de um nivel: com en = sb_in_ready, o
-    // pixel registrado so e substituido quando o buffer puder receber.
-    // ========================================================================
     wire             log2_valid;
     wire [WIDTH-1:0] log2_pixel;
 
@@ -550,9 +433,7 @@ module SMMA_Top #(
         .out_class(cnn_class), .out_scores(cnn_scores), .out_features()
     );
 
-    // ========================================================================
     // UNIDADE DE CONTROLE GLOBAL
-    // ========================================================================
     wire todos_prontos = fb_ready && sa_ready && fs_ready && sb_ready
                       && ls_ready && ac_ready && yw_ready && col_ready
                       && !pk_busy && !mdc_busy && !f0_busy
@@ -575,9 +456,7 @@ module SMMA_Top #(
         .r_valido(r_valido), .ocupado(ocupado)
     );
 
-    // ========================================================================
     // INTERFACE DE SAIDA DA CLASSIFICACAO
-    // ========================================================================
     SMMA_Panel u_panel (
         .SW(SW),
         .r_valido(r_valido), .r_tree_class(r_tree_class),

@@ -1,5 +1,7 @@
-// Inversor NxN (N=2,3,4) por Gauss-Jordan com pivotamento parcial.
-// Interface pronta para integracao no acelerador - DE0-CV.
+// ============================================================================
+// gauss_jordan_inv -- inversao de matriz NxN (N<=4) por Gauss-Jordan com pivotamento
+// ============================================================================
+
 module gauss_jordan_inv #(
     parameter WIDTH = 16, parameter FRAC = 12, parameter N_MAX = 4,
     parameter signed [WIDTH-1:0] EPSILON = 16'sd8
@@ -37,9 +39,6 @@ module gauss_jordan_inv #(
     wire signed [WIDTH-1:0] div_quotient;
     wire div_done, div_by_zero;
 
-    // Um unico multiplicador compartilhado entre NORMALIZE e ELIM_STEP.
-    // Como os dois estados nunca ocorrem ao mesmo tempo, esta descricao evita
-    // que o sintetizador infira um DSP para cada caminho aritmetico.
     wire signed [WIDTH-1:0] mult_a = (state == S_NORMALIZE)
                                       ? mem[row_ptr[k[1:0]]][col_cnt] : factor;
     wire signed [WIDTH-1:0] mult_b = (state == S_NORMALIZE)

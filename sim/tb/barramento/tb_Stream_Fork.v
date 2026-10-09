@@ -1,9 +1,5 @@
 // ============================================================================
-// Module: tb_Stream_Fork
-// Description: Testbench do mecanismo de comunicacao (join de N consumidores).
-//   Um produtor envia 200 palavras; 3 consumidores com 'ready' aleatorios e
-//   independentes. Cada consumidor tem de receber TODAS as palavras, na
-//   ordem, exatamente uma vez -- nem perda, nem sobrescrita, nem duplicacao.
+// tb_Stream_Fork -- testbench do join com 3 consumidores
 // ============================================================================
 
 `timescale 1ns / 1ps

@@ -1,48 +1,18 @@
 // ============================================================================
-// Module: tb_FFT_Top
-// Description: Testbench auto-verificavel do modulo FFT de 64 pontos do SMMA.
-//
-// Estrategia de verificacao:
-//   O testbench NAO reimplementa a aritmetica de ponto fixo do DUT. Em vez
-//   disso, calcula a DFT IDEAL em ponto flutuante (via $cos/$sin) e compara o
-//   resultado do hardware com essa referencia, dentro de uma tolerancia
-//   derivada da analise de quantizacao feita em golden_model.py
-//   (erro maximo medido: 2 LSB). Isso valida simultaneamente o algoritmo, o
-//   escalonamento por estagio, os fatores de rotacao, a inversao de bits e o
-//   escalonamento das portas de memoria.
-//
-// Casos de teste:
-//   1. Impulso unitario   -> espectro plano (valida todos os twiddles)
-//   2. Nivel DC           -> toda energia no bin 0
-//   3. Tom puro no bin 4  -> valida a ordem natural de saida (bit-reversal)
-//   4. Tom puro no bin 13 -> bin impar, fase nao nula
-//   5. Vibracao de motor  -> fundamental no bin 6 + harmonicas em 12 e 18,
-//                            exatamente o exemplo do enunciado (MDC = 6)
-//   6. Contrapressao      -> repete o caso 5 com out_ready intermitente,
-//                            provando que o handshake nao perde nem
-//                            sobrescreve dados
-//   7. Reset no meio      -> reset durante o calculo e nova transformada
-//
-// Entregavel 6.6: o testbench imprime entradas, resultados esperados, obtidos
-// e a analise das diferencas numericas (erro maximo e RMS em LSB).
+// tb_FFT_Top -- testbench: FFT bit a bit com o modelo, sob contrapressao
 // ============================================================================
 
 `timescale 1ns / 1ps
 
 module tb_FFT_Top;
 
-    // ------------------------------------------------------------------
     // Parametros
-    // ------------------------------------------------------------------
     parameter WIDTH      = 16;
     parameter LOG2N      = 6;
     parameter N          = 64;
     parameter CLK_PERIOD = 20;       // 50 MHz
     parameter real PI    = 3.14159265358979323846;
 
-    // Mascara de escalonamento repassada ao DUT. O ganho total da FFT e
-    // 2^-(numero de bits em 1), calculado aqui para que estimulo, referencia
-    // ideal e DUT fiquem SEMPRE coerentes ao se mudar a mascara.
     parameter [5:0] SCALE_MASK = 6'b001111;
 
     function integer escala_de;              // 2^(popcount(mask))
@@ -62,9 +32,7 @@ module tb_FFT_Top;
     parameter TOL_LSB     = 8;
     parameter TOL_MAG_LSB = 40;      // magnitude usa aproximacao de 6,8%
 
-    // ------------------------------------------------------------------
     // Sinais do DUT
-    // ------------------------------------------------------------------
     reg                     clk;
     reg                     rst;
     reg                     start;
@@ -73,14 +41,7 @@ module tb_FFT_Top;
     reg  signed [WIDTH-1:0] in_real;
     reg  signed [WIDTH-1:0] in_imag;
 
-    // ------------------------------------------------------------------
     // Geradores de contrapressao:
-    //   bp_enable  -> out_ready baixo em 1 de cada 3 ciclos (padrao fixo)
-    //   bp_random  -> out_ready pseudo-aleatorio (LFSR de 8 bits), para
-    //                 varrer padroes irregulares que o padrao fixo nao
-    //                 cobre (ex.: varias paradas seguidas, 2 avancos
-    //                 seguidos por multiplas paradas, etc.)
-    // ------------------------------------------------------------------
     reg       bp_enable;
     reg [1:0] bp_cnt;
     reg       bp_random;
@@ -92,9 +53,6 @@ module tb_FFT_Top;
     always @(negedge clk) begin
         if (bp_cnt == 2'd2) bp_cnt <= 2'd0;
         else                bp_cnt <= bp_cnt + 1'b1;
-        // LFSR Galois de 8 bits (polinomio x^8+x^6+x^5+x^4+1) - padrao
-        // pseudo-aleatorio determinístico, suficiente para um teste de
-        // handshake (nao precisa de qualidade criptografica).
         lfsr <= {lfsr[0], lfsr[7:1]} ^ (lfsr[0] ? 8'hB4 : 8'h00);
     end
 
@@ -109,9 +67,7 @@ module tb_FFT_Top;
     wire [WIDTH-1:0]        out_mag;
     wire [2:0]              stage_dbg;
 
-    // ------------------------------------------------------------------
     // Memorias do testbench
-    // ------------------------------------------------------------------
     reg signed [WIDTH-1:0] stim_re  [0:N-1];
     reg signed [WIDTH-1:0] stim_im  [0:N-1];
     reg signed [WIDTH-1:0] got_re   [0:N-1];
@@ -127,9 +83,7 @@ module tb_FFT_Top;
     integer n_collected   = 0;
     integer i, k;
 
-    // ------------------------------------------------------------------
     // Instancia do DUT
-    // ------------------------------------------------------------------
     FFT_Top #(
         .WIDTH(WIDTH),
         .FRAC(15),
@@ -156,19 +110,10 @@ module tb_FFT_Top;
         .stage_dbg(stage_dbg)
     );
 
-    // ------------------------------------------------------------------
     // Gerador de clock (50 MHz)
-    // ------------------------------------------------------------------
     always #(CLK_PERIOD/2) clk = ~clk;
 
-    // ------------------------------------------------------------------
     // Coletor dos bins de saida
-    // ------------------------------------------------------------------
-    // A transferencia so se completa quando out_valid E out_ready estao
-    // altos no MESMO ciclo (handshake pronto/valido). Sob contrapressao
-    // (out_ready baixo) o dado permanece "congelado" em out_valid=1 ate
-    // ser consumido; contar apenas out_valid faria o mesmo bin ser
-    // registrado mais de uma vez.
     always @(posedge clk) begin
         if (!rst && out_valid && out_ready) begin
             got_re[out_index]   <= out_real;
@@ -179,9 +124,7 @@ module tb_FFT_Top;
         end
     end
 
-    // ==================================================================
     // TAREFAS AUXILIARES
-    // ==================================================================
 
     // Limpa o buffer de coleta antes de cada transformada
     task clear_results;
@@ -422,9 +365,7 @@ module tb_FFT_Top;
         end
     endtask
 
-    // ==================================================================
     // SEQUENCIA PRINCIPAL
-    // ==================================================================
     initial begin
         clk       = 0;
         rst       = 1;
@@ -457,19 +398,12 @@ module tb_FFT_Top;
             $display("[FAIL] Reset: ready=%b busy=%b (esperado 1 e 0)", ready, busy);
         end
 
-        // ================================================================
         $display("\n--- TESTE 1: Impulso unitario (espectro plano) ---");
         gen_impulse;
         compute_ideal;
         run_fft;
         check_spectrum("Impulso");
 
-        // ---- Verificacao EXPLICITA do ganho da FFT ----
-        // Para x[n] = delta[n] com x[0] = 1.0, a DFT vale X[k] = 1.0 em TODOS
-        // os bins, logo a saida do hardware deve ser exatamente 1/ESCALA_FFT.
-        // Este e o teste que trava a regressao do ganho: se alguem voltar a
-        // escalar os 6 estagios (divisao por 64), a CNN - treinada com
-        // ESCALA_FFT=16 - passa a receber magnitudes 4x menores.
         begin : check_ganho
             integer esperado_ganho, obtido_ganho, dif_ganho;
             esperado_ganho = 32767 / ESCALA_FFT;      // 1.0 em Q1.15 dividido pela escala
@@ -488,15 +422,11 @@ module tb_FFT_Top;
             end
         end
 
-        // ================================================================
         $display("\n--- TESTE 2: Nivel DC (energia concentrada no bin 0) ---");
         gen_dc;
         compute_ideal;
         run_fft;
         check_spectrum("Nivel DC");
-        // Energia esperada no bin 0: x[n] = 0.125 constante -> X[0] = 0.125*N,
-        // dividido pela escala da FFT. Calculado a partir de ESCALA_FFT para
-        // que a checagem continue valida se a mascara de escala mudar.
         begin : check_dc
             integer mag0_esperado;
             mag0_esperado = (32768 / 8) * N / ESCALA_FFT;   // 0.125 * 64 / escala
@@ -511,7 +441,6 @@ module tb_FFT_Top;
             end
         end
 
-        // ================================================================
         $display("\n--- TESTE 3: Tom puro no bin 4 ---");
         gen_tone(4, 0.25, 0.0);
         compute_ideal;
@@ -526,7 +455,6 @@ module tb_FFT_Top;
             $display("[FAIL] Pico nao esta no bin 4 -> erro de bit-reversal!");
         end
 
-        // ================================================================
         $display("\n--- TESTE 4: Tom puro no bin 13 com fase ---");
         gen_tone(13, 0.25, 0.4);
         compute_ideal;
@@ -534,7 +462,6 @@ module tb_FFT_Top;
         check_spectrum("Tom bin 13");
         show_peaks;
 
-        // ================================================================
         $display("\n--- TESTE 5: Vibracao de motor (fundamental 6 + harmonicas 12 e 18) ---");
         gen_motor;
         compute_ideal;
@@ -543,7 +470,6 @@ module tb_FFT_Top;
         show_peaks;
         $display("       -> Estes indices alimentam o modulo MDC: MDC(6,12,18) = 6");
 
-        // ================================================================
         $display("\n--- TESTE 6: Contrapressao na saida (out_ready intermitente) ---");
         gen_motor;
         compute_ideal;
@@ -552,9 +478,6 @@ module tb_FFT_Top;
         bp_enable = 1'b0;
         check_spectrum("Contrapressao");
 
-        // Variante com padrao PSEUDO-ALEATORIO (LFSR) de out_ready, para
-        // cobrir sequencias irregulares (varias paradas seguidas, etc.)
-        // que o padrao fixo de periodo 3 nao exercita.
         gen_motor;
         compute_ideal;
         bp_random = 1'b1;
@@ -563,7 +486,6 @@ module tb_FFT_Top;
         check_spectrum("Contrapressao aleatoria");
         $display("       -> Nenhum bin perdido nem sobrescrito com out_ready intermitente");
 
-        // ================================================================
         $display("\n--- TESTE 7: Reset assincrono no meio do calculo ---");
         gen_tone(8, 0.25, 0.0);
         compute_ideal;
@@ -596,7 +518,6 @@ module tb_FFT_Top;
         run_fft;
         check_spectrum("Pos-reset");
 
-        // ================================================================
         $display("\n======================================================================");
         $display(" RESUMO: %0d teste(s) OK, %0d com falha", success_count, fail_count);
         if (fail_count == 0)

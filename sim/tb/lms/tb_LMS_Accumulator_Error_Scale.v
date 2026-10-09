@@ -1,16 +1,5 @@
 // ============================================================================
-// Module: tb_LMS_Accumulator_Error_Scale_v2
-// Description: Self-checking testbench to validate the LMS_Accumulator_Error_Scale
-//              module in Verilog under Q1.15 fixed-point representation.
-//              Corrected version using valid Verilog identifiers (no hyphens).
-//
-// Tests:
-//   - Initial reset and clear accumulator states
-//   - Accumulation of 8 partial products (Fase 1 Filtering)
-//   - Correct output saturation for y(n)
-//   - Accurate subtraction of e(n) = d(n) - y(n) with saturation
-//   - Accurate arithmetic scaling mu * e(n) with 4-bit SRA
-//   - Correct timing of the valid_u_e handshake strobe (clearing on next cycle)
+// tb_LMS_Accumulator_Error_Scale -- testbench do acumulador/erro do LMS
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -102,21 +91,17 @@ module tb_LMS_Accumulator_Error_Scale;
         rst = 0;
         $display("[INFO] Reset desativado.");
 
-        // --------------------------------------------------------------------
         // TESTE 1: Acumulacao normal sem saturacao
-        // d = 0.6 (19661)
-        // 8 parcelas de 1000 => y = 8000 (0.244). erro = 19661 - 8000 = 11661. mu_e = 11661 >>> 4 = 728
-        // --------------------------------------------------------------------
         $display("\n--- TESTE 1: Acumulacao Normal (Sem Saturacao) ---");
         @(negedge clk);
         clear_acc = 1;
         in_d = 16'h4CCD; // 19661 (0.6)
-        
+
         @(negedge clk);
         clear_acc = 0;
         valid_y_part = 1;
         in_y_part = 16'd1000; // 1
-        
+
         repeat (7) begin
             @(negedge clk);
             in_y_part = 16'd1000;
@@ -145,22 +130,17 @@ module tb_LMS_Accumulator_Error_Scale;
 
         #(CLK_PERIOD * 2);
 
-        // --------------------------------------------------------------------
         // TESTE 2: Saturação de Y (Overflow Positivo)
-        // d = 0.5 (16384)
-        // 8 parcelas de 10000 => y = 80000 (estoura Q1.15) => sat_y = 32767
-        // erro = 16384 - 32767 = -16383. mu_e = -16383 >>> 4 = -1024
-        // --------------------------------------------------------------------
         $display("\n--- TESTE 2: Overflow de Y (Saturacao em +0.9999) ---");
         @(negedge clk);
         clear_acc = 1;
         in_d = 16'h4000; // 16384 (0.5)
-        
+
         @(negedge clk);
         clear_acc = 0;
         valid_y_part = 1;
         in_y_part = 16'd10000;
-        
+
         repeat (7) begin
             @(negedge clk);
             in_y_part = 16'd10000;
@@ -176,22 +156,17 @@ module tb_LMS_Accumulator_Error_Scale;
 
         #(CLK_PERIOD * 2);
 
-        // --------------------------------------------------------------------
         // TESTE 3: Saturação de Erro (Overflow de Subtração)
-        // d = -1.0 (-32768), y_acumulado = 32767 => erro = -32768 - 32767 = -65535
-        // erro_sat = -32768
-        // mu_e = -65535 >>> 4 = -4096 (16'hF000 em 16-bit)
-        // --------------------------------------------------------------------
         $display("\n--- TESTE 3: Saturação do Erro (Overflow de Subtração) ---");
         @(negedge clk);
         clear_acc = 1;
         in_d = 16'h8000; // -32768 (-1.0)
-        
+
         @(negedge clk);
         clear_acc = 0;
         valid_y_part = 1;
         in_y_part = 16'd4095; // Q1.15 max 32767 / 8 = 4095.8
-        
+
         repeat (7) begin
             @(negedge clk);
             in_y_part = 16'd4095; // total ~ 32760
@@ -207,23 +182,17 @@ module tb_LMS_Accumulator_Error_Scale;
 
         #(CLK_PERIOD * 2);
 
-        // --------------------------------------------------------------------
         // TESTE 4: Saturação de Y (Overflow Negativo)
-        // d = 0.5 (16384)
-        // 8 parcelas de -8000 => y = -64000 (estoura Q1.15) => sat_y = -32768
-        // erro = 16384 - (-32768) = 49152 (estoura Q1.15) => erro_sat = 32767
-        // mu_e = 49152 >>> 4 = 3072 (16'h0C00)
-        // --------------------------------------------------------------------
         $display("\n--- TESTE 4: Underflow de Y & Overflow Positivo de Erro ---");
         @(negedge clk);
         clear_acc = 1;
         in_d = 16'h4000; // 16384 (0.5)
-        
+
         @(negedge clk);
         clear_acc = 0;
         valid_y_part = 1;
         in_y_part = -16'd8000;
-        
+
         repeat (7) begin
             @(negedge clk);
             in_y_part = -16'd8000;
@@ -239,9 +208,7 @@ module tb_LMS_Accumulator_Error_Scale;
 
         #(CLK_PERIOD * 3);
 
-        // --------------------------------------------------------------------
         // CONSOLIDACAO DOS RESULTADOS
-        // --------------------------------------------------------------------
         $display("\n======================================================================");
         $display("                      RELATORIO FINAL DE SIMULACAO                    ");
         $display("======================================================================");

@@ -1,14 +1,7 @@
-// =====================================================================
-// f0_estimator_tb.v
-// Testbench do modulo f0_estimator
-//
-// Casos cobertos:
-//   1) k0=6, fs=10000 Hz  -> f0 = 6*10000/64 = 937,5 Hz
-//      (mesmo k0 calculado pelo modulo MDC no exemplo do enunciado)
-//   2) k0=8, fs=8000 Hz   -> f0 = 8*8000/64 = 1000 Hz (fracao exata = 0)
-//   3) k0=0                -> f0 = 0 Hz (nenhum pico / DC)
-//   4) k0=63 (maximo), fs=20000 Hz -> maior valor possivel de f0
-// =====================================================================
+// ============================================================================
+// tb_f0_estimator -- testbench do estimador de f0
+// ============================================================================
+
 `timescale 1ns/1ps
 
 module tb_f0_estimator;
