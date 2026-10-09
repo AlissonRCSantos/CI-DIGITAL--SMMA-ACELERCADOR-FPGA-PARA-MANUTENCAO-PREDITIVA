@@ -1,0 +1,68 @@
+
+State Machine - |SMMA_Top|Feature_Spectral:u_fs|state
+Name state.S_DIV state.S_SOMA state.S_ACC state.S_IDLE state.S_OUT 
+state.S_IDLE 0 0 0 0 0 
+state.S_ACC 0 0 1 1 0 
+state.S_SOMA 0 1 0 1 0 
+state.S_DIV 1 0 0 1 0 
+state.S_OUT 0 0 0 1 1 
+
+State Machine - |SMMA_Top|Frame_Builder:u_fb|state
+Name state.S_IDLE state.S_DESPEJA state.S_ENCHE 
+state.S_IDLE 0 0 0 
+state.S_ENCHE 1 0 1 
+state.S_DESPEJA 1 1 0 
+
+State Machine - |SMMA_Top|Spectrogram_Buffer:u_sb|state
+Name state.S_IDLE state.S_LE state.S_ENCHE 
+state.S_IDLE 0 0 0 
+state.S_ENCHE 1 0 1 
+state.S_LE 1 1 0 
+
+State Machine - |SMMA_Top|est
+Name est.E_DECIDE est.E_ADQUIRE est.E_ARRANCA est.E_PARADO est.E_PRONTO 
+est.E_PARADO 0 0 0 0 0 
+est.E_ARRANCA 0 0 1 1 0 
+est.E_ADQUIRE 0 1 0 1 0 
+est.E_DECIDE 1 0 0 1 0 
+est.E_PRONTO 0 0 0 1 1 
+
+State Machine - |SMMA_Top|CNN_Top:u_cnn|CNN_Control_FSM:u_ctrl|state
+Name state.ST_DENSE state.ST_DRAIN state.ST_STREAM state.ST_IDLE state.ST_FINISH 
+state.ST_IDLE 0 0 0 0 0 
+state.ST_STREAM 0 0 1 1 0 
+state.ST_DRAIN 0 1 0 1 0 
+state.ST_DENSE 1 0 0 1 0 
+state.ST_FINISH 0 0 0 1 1 
+
+State Machine - |SMMA_Top|FFT_Top:u_fft|FFT_Control_FSM:u_control|state
+Name state.S_DONE state.S_FLUSH state.S_UNLOAD state.S_DRAIN state.S_COMPUTE state.S_LOAD state.S_IDLE 
+state.S_IDLE 0 0 0 0 0 0 0 
+state.S_LOAD 0 0 0 0 0 1 1 
+state.S_COMPUTE 0 0 0 0 1 0 1 
+state.S_DRAIN 0 0 0 1 0 0 1 
+state.S_UNLOAD 0 0 1 0 0 0 1 
+state.S_FLUSH 0 1 0 0 0 0 1 
+state.S_DONE 1 0 0 0 0 0 1 
+
+State Machine - |SMMA_Top|ML_Tree_Classifier:u_tree|state
+Name state.S_WALK state.S_FETCH state.S_LOAD state.S_IDLE state.S_OUT 
+state.S_IDLE 0 0 0 0 0 
+state.S_LOAD 0 0 1 1 0 
+state.S_FETCH 0 1 0 1 0 
+state.S_WALK 1 0 0 1 0 
+state.S_OUT 0 0 0 1 1 
+
+State Machine - |SMMA_Top|Feature_Temporal:u_ft|state
+Name state.S_OUT state.S_DIV state.S_DESL state.S_AC state.S_W state.S_SD2 state.S_SE2 state.S_ERR state.S_Y state.S_ESP state.S_IDLE 
+state.S_IDLE 0 0 0 0 0 0 0 0 0 0 0 
+state.S_ESP 0 0 0 0 0 0 0 0 0 1 1 
+state.S_Y 0 0 0 0 0 0 0 0 1 0 1 
+state.S_ERR 0 0 0 0 0 0 0 1 0 0 1 
+state.S_SE2 0 0 0 0 0 0 1 0 0 0 1 
+state.S_SD2 0 0 0 0 0 1 0 0 0 0 1 
+state.S_W 0 0 0 0 1 0 0 0 0 0 1 
+state.S_AC 0 0 0 1 0 0 0 0 0 0 1 
+state.S_DESL 0 0 1 0 0 0 0 0 0 0 1 
+state.S_DIV 0 1 0 0 0 0 0 0 0 0 1 
+state.S_OUT 1 0 0 0 0 0 0 0 0 0 1 

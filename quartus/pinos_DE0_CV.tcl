@@ -1,134 +1,7 @@
-# ============================================================================
-# SMMA -- Smart Machine Monitoring Accelerator
-# Atribuicoes do Quartus Prime
-#
-# Alvo: Terasic DE0-CV  --  Cyclone V 5CEBA4F23C7N  --  50 MHz
-# ============================================================================
+# Aplica a pinagem da DE0-CV ao projeto ABERTO no Quartus.
+# Uso: Tools > Tcl Scripts... > selecione este arquivo > Run
+# (ou, no Tcl Console: source pinos_DE0_CV.tcl)
 
-set_global_assignment -name FAMILY "Cyclone V"
-set_global_assignment -name DEVICE 5CEBA4F23C7
-set_global_assignment -name TOP_LEVEL_ENTITY SMMA_Top
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
-
-set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
-set_global_assignment -name SDC_FILE SMMA.sdc
-
-# ----------------------------------------------------------------------------
-# Onde o Quartus acha os .hex do $readmemh
-#
-# Os modulos referenciam "vetores/arvore.hex" e companhia por caminho RELATIVO.
-# Na simulacao o caminho vale a partir de RTL/; aqui vale a partir do diretorio
-# do projeto, por isso a busca inclui ../RTL. Sem isto a sintese infere ROMs
-# ZERADAS e passa sem erro -- o classificador sairia respondendo sempre a mesma
-# classe, que e um sintoma facil de confundir com um bug de logica.
-# ----------------------------------------------------------------------------
-set_global_assignment -name SEARCH_PATH ../RTL
-set_global_assignment -name SEARCH_PATH ../RTL/vetores
-
-# ----------------------------------------------------------------------------
-# Fontes RTL
-# ----------------------------------------------------------------------------
-
-# -- top level e controle --
-set_global_assignment -name VERILOG_FILE ../RTL/SMMA_Top.v
-
-# -- aquisicao: dataset em ROM, FIR anti-alias e decimacao /8 --
-set_global_assignment -name VERILOG_FILE ../RTL/Sample_Source.v
-set_global_assignment -name VERILOG_FILE ../RTL/FIR_Decimator.v
-set_global_assignment -name VERILOG_FILE ../RTL/Frame_Builder.v
-
-# -- FFT de 64 pontos --
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Top.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Control_FSM.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Addr_Gen.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Bit_Reverse.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Butterfly.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Memory.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Twiddle_ROM.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Magnitude.v
-set_global_assignment -name VERILOG_FILE ../RTL/FFT_Log2_Compress.v
-set_global_assignment -name VERILOG_FILE ../RTL/FP_Mult_Unit.v
-set_global_assignment -name VERILOG_FILE ../RTL/FP_Arith_Unit.v
-
-# -- caracteristicas e classificador numerico --
-set_global_assignment -name VERILOG_FILE ../RTL/Feature_Spectral.v
-set_global_assignment -name VERILOG_FILE ../RTL/Feature_Temporal.v
-set_global_assignment -name VERILOG_FILE ../RTL/Divider_Q15.v
-set_global_assignment -name VERILOG_FILE ../RTL/ML_Tree_Classifier.v
-
-# -- espectrograma e CNN --
-set_global_assignment -name VERILOG_FILE ../RTL/Spectrogram_Buffer.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Top.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Control_FSM.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Line_Buffer.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Conv_Layer.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_MAC_Unit.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_ReLU.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_MaxPool.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Dense_Classifier.v
-set_global_assignment -name VERILOG_FILE ../RTL/CNN_Weight_ROM.v
-
-# ============================================================================
-# PINOS -- CONFERIR ANTES DE GRAVAR
-# ============================================================================
-#
-# Estas atribuicoes seguem o mapeamento usual da DE0-CV, mas NAO foram
-# conferidas contra o manual da sua placa. Gravar com pinos errados nao
-# funciona e, nos pinos de saida, pode danificar a FPGA.
-#
-# A forma segura, e a que se recomenda: no Quartus, usar
-#     Assignments > Import Assignments
-# e importar o "DE0_CV.qsf" que acompanha o CD/Resources da Terasic. Ele traz a
-# pinagem oficial, inclusive os niveis de I/O. Depois disso as linhas abaixo
-# podem ser apagadas.
-#
-# Os nomes dos pinos do top level (CLOCK_50, KEY, SW, LEDR, HEX0..HEX5) foram
-# escolhidos iguais aos do DE0_CV.qsf da Terasic exatamente para que essa
-# importacao casse sem renomear nada.
-# ============================================================================
-
-
-
-
-
-# Os seis displays de 7 segmentos sao a parte da qual menos se tem certeza.
-# Importe-os do DE0_CV.qsf da Terasic.
-#
-#   HEX0[6:0] ... HEX5[6:0]
-#
-# O projeto trata os segmentos como ATIVOS EM BAIXO, que e o caso na DE0-CV.
-
-# ----------------------------------------------------------------------------
-# Niveis de I/O
-# ----------------------------------------------------------------------------
-set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
-
-# ----------------------------------------------------------------------------
-# Pinos nao usados: em alta impedancia, nao em terra.
-#
-# A DE0-CV tem pinos ligados a perifericos (SDRAM, VGA, PS/2) que este projeto
-# nao usa. Deixa-los como saida em nivel baixo, que e o padrao do Quartus,
-# coloca a FPGA disputando esses barramentos.
-# ----------------------------------------------------------------------------
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
-
-# ----------------------------------------------------------------------------
-# Sintese
-# ----------------------------------------------------------------------------
-set_global_assignment -name OPTIMIZATION_MODE BALANCED
-set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
-
-# As ROMs (dataset, pesos da CNN, arvore, twiddles) somam ~200 kB e tem de ir
-# para blocos M10K. Em LUTs nao cabem.
-set_global_assignment -name AUTO_RAM_RECOGNITION ON
-set_global_assignment -name AUTO_ROM_RECOGNITION ON
-
-set_global_assignment -name LAST_QUARTUS_VERSION "20.1.0 Lite Edition"
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name BOARD "DE0-CV Development Board"
 set_location_assignment PIN_M9 -to CLOCK_50
 set_location_assignment PIN_U7 -to KEY[0]
 set_location_assignment PIN_W9 -to KEY[1]
@@ -259,6 +132,6 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX5[3]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX5[4]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX5[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HEX5[6]
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
-set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+
+export_assignments
+post_message "SMMA: 65 pinos da DE0-CV aplicados e gravados no SMMA.qsf"

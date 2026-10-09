@@ -81,7 +81,9 @@ module Sample_Source #(
     // ------------------------------------------------------------------------
     // Memorias
     // ------------------------------------------------------------------------
-    reg [WIDTH-1:0] rom     [0:TOTAL-1];
+    // ramstyle: a ROM do dataset (~1,6 Mbit) TEM de ir para M10K. Em LUTs ela
+    // ocupa ~33 mil ALUTs e o projeto nao cabe na 5CEBA4 da DE0-CV.
+    (* ramstyle = "M10K" *) reg [WIDTH-1:0] rom [0:TOTAL-1];
     reg [3:0]       rotulos [0:N_JANELAS-1];
     initial begin
         $readmemh(ARQ_AMOSTRAS, rom);
@@ -103,6 +105,25 @@ module Sample_Source #(
     // Nao avanca enquanto a amostra anterior nao tiver sido consumida: e o
     // que impede sobrescrever uma amostra que o FIR ainda nao leu.
     wire pode_emitir = busy && tick && !(out_valid && !out_ready);
+
+    // ------------------------------------------------------------------------
+    // Leitura da ROM num always SEPARADO, sem reset e sem enable.
+    //
+    // E o unico formato que o Quartus mapeia em M10K: com a leitura dentro do
+    // always com reset sincrono (como estava), ele implementava a ROM inteira
+    // em logica. 'addr_prox' e o valor que 'addr' tera no proximo ciclo, entao
+    // rom_q == rom[addr] sempre -- mesma temporizacao de antes, inclusive com
+    // MODO_RAPIDO=1 emitindo uma amostra por ciclo.
+    // ------------------------------------------------------------------------
+    wire [ADDR_W-1:0] addr_prox =
+          rst                ? {ADDR_W{1'b0}}
+        : (!busy && start)   ? janela * N_AMOSTRAS
+        : (busy && pode_emitir) ? addr + 1'b1
+        :                      addr;
+
+    reg [WIDTH-1:0] rom_q;
+    always @(posedge clk)
+        rom_q <= rom[addr_prox];
 
     always @(posedge clk) begin
         if (rst) begin
@@ -130,7 +151,7 @@ module Sample_Source #(
                 divisor <= (divisor == DIV_TAXA - 1) ? {CNT_W{1'b0}}
                                                      : (divisor + 1'b1);
                 if (pode_emitir) begin
-                    out_sample <= rom[addr];
+                    out_sample <= rom_q;        // == rom[addr]
                     out_valid  <= 1'b1;
                     addr       <= addr + 1'b1;
                     if (restantes == 1) begin

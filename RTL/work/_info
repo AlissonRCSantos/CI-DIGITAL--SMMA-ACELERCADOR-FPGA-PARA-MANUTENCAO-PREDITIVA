@@ -1,0 +1,779 @@
+m255
+K4
+z2
+!s11f vlog 2020.1 2020.02, Feb 28 2020
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dC:/Users/Sara/Desktop/CI DIGITAL - CEPEDI/PBL/CI-DIGITAL--SMMA-ACELERCADOR-FPGA-PARA-MANUTENCAO-PREDITIVA/RTL
+vCNN_Control_FSM
+Z1 !s110 1791049321
+!i10b 1
+!s100 LOzkccN[JzRX1nebL?Jek2
+Z2 !s11b Dg1SIo80bB@j0V0VzS_@n1
+I0VN;CS;dh;5zam5EW3GLa3
+Z3 VDg1SIo80bB@j0V0VzS_@n1
+R0
+Z4 w1788559412
+8CNN_Control_FSM.v
+FCNN_Control_FSM.v
+!i122 0
+L0 47 133
+Z5 OV;L;2020.1;71
+r1
+!s85 0
+31
+Z6 !s108 1791049321.000000
+!s107 CNN_Control_FSM.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_Control_FSM.v|
+!i113 1
+Z7 o-quiet -work work
+Z8 tCvgOpt 0
+n@c@n@n_@control_@f@s@m
+vCNN_Conv_Layer
+R1
+!i10b 1
+!s100 FZI0^=OaaUYW9SC2oFQ?33
+R2
+IZYl8?J@Fjklz[@=3kWSQP1
+R3
+R0
+R4
+8CNN_Conv_Layer.v
+FCNN_Conv_Layer.v
+!i122 1
+L0 49 174
+R5
+r1
+!s85 0
+31
+R6
+!s107 CNN_Conv_Layer.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_Conv_Layer.v|
+!i113 1
+R7
+R8
+n@c@n@n_@conv_@layer
+vCNN_Dense_Classifier
+R1
+!i10b 1
+!s100 3czbY10hTGdN:?PVY`bYE3
+R2
+Id0NzXLZUW9eXQAXVDdka70
+R3
+R0
+R4
+8CNN_Dense_Classifier.v
+FCNN_Dense_Classifier.v
+!i122 2
+L0 49 220
+R5
+r1
+!s85 0
+31
+R6
+!s107 CNN_Dense_Classifier.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_Dense_Classifier.v|
+!i113 1
+R7
+R8
+n@c@n@n_@dense_@classifier
+vCNN_Line_Buffer
+R1
+!i10b 1
+!s100 dzRTH[i^3TDKVO6:2m3an2
+R2
+I^?R@FB_?]fNKd=z7<8AdV3
+R3
+R0
+R4
+8CNN_Line_Buffer.v
+FCNN_Line_Buffer.v
+!i122 3
+L0 58 133
+R5
+r1
+!s85 0
+31
+R6
+!s107 CNN_Line_Buffer.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_Line_Buffer.v|
+!i113 1
+R7
+R8
+n@c@n@n_@line_@buffer
+vCNN_MAC_Unit
+Z9 !s110 1791049322
+!i10b 1
+!s100 V>NaLkMdh:coPfVf>bRf93
+R2
+I9kK3@kn3gQbBbbab=a7zm1
+R3
+R0
+R4
+8CNN_MAC_Unit.v
+FCNN_MAC_Unit.v
+!i122 4
+L0 45 87
+R5
+r1
+!s85 0
+31
+R6
+!s107 CNN_MAC_Unit.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_MAC_Unit.v|
+!i113 1
+R7
+R8
+n@c@n@n_@m@a@c_@unit
+vCNN_MaxPool
+R9
+!i10b 1
+!s100 ICj7fGPAATaElU>C[82;]1
+R2
+I=Q[13ibfH=E5JBl9:1^Lo3
+R3
+R0
+R4
+8CNN_MaxPool.v
+FCNN_MaxPool.v
+!i122 5
+L0 40 107
+R5
+r1
+!s85 0
+31
+Z10 !s108 1791049322.000000
+!s107 CNN_MaxPool.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_MaxPool.v|
+!i113 1
+R7
+R8
+n@c@n@n_@max@pool
+vCNN_ReLU
+R9
+!i10b 1
+!s100 10ECk<Q7UfhB?TclG96n]2
+R2
+I2L2M^OLZZOUBV>@5no]d[0
+R3
+R0
+R4
+8CNN_ReLU.v
+FCNN_ReLU.v
+!i122 6
+L0 39 38
+R5
+r1
+!s85 0
+31
+R10
+!s107 CNN_ReLU.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_ReLU.v|
+!i113 1
+R7
+R8
+n@c@n@n_@re@l@u
+vCNN_Top
+R9
+!i10b 1
+!s100 K3X3e3;>NdL2:EBdfB1PW2
+R2
+IKQAP7N9H:`gjj^Fga:z@60
+R3
+R0
+R4
+8CNN_Top.v
+FCNN_Top.v
+!i122 7
+L0 53 187
+R5
+r1
+!s85 0
+31
+R10
+!s107 CNN_Top.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_Top.v|
+!i113 1
+R7
+R8
+n@c@n@n_@top
+vCNN_Weight_ROM
+R9
+!i10b 1
+!s100 U=SWGNjbG8Vz<Wi@=5[3K0
+R2
+IF4JmdG<5?Eo]l=IO`3Gj81
+R3
+R0
+w1790806819
+8CNN_Weight_ROM.v
+FCNN_Weight_ROM.v
+!i122 8
+L0 33 94
+R5
+r1
+!s85 0
+31
+R10
+!s107 CNN_Weight_ROM.v|
+!s90 -reportprogress|300|-quiet|-work|work|CNN_Weight_ROM.v|
+!i113 1
+R7
+R8
+n@c@n@n_@weight_@r@o@m
+vDivider_Q15
+Z11 !s110 1791049323
+!i10b 1
+!s100 P]5=6@MgM=UVaA`CdEC;50
+R2
+I?[8Y9KUWO=_@7KkmIhC[32
+R3
+R0
+Z12 w1791028919
+8Divider_Q15.v
+FDivider_Q15.v
+!i122 9
+L0 37 89
+R5
+r1
+!s85 0
+31
+R10
+!s107 Divider_Q15.v|
+!s90 -reportprogress|300|-quiet|-work|work|Divider_Q15.v|
+!i113 1
+R7
+R8
+n@divider_@q15
+vFeature_Spectral
+Z13 !s110 1791049325
+!i10b 1
+!s100 <]T@G_:SVe0PiY>6gUE5;3
+R2
+IfJCi:cH4QiS00AX>66n6o0
+R3
+R0
+R12
+8Feature_Spectral.v
+FFeature_Spectral.v
+!i122 22
+L0 46 235
+R5
+r1
+!s85 0
+31
+Z14 !s108 1791049325.000000
+!s107 Feature_Spectral.v|
+!s90 -reportprogress|300|-quiet|-work|work|Feature_Spectral.v|
+!i113 1
+R7
+R8
+n@feature_@spectral
+vFeature_Temporal
+R13
+!i10b 1
+!s100 H2N5=<[^>XMIDa;>Yl>002
+R2
+ISAjSaL[hS=BBA6MhR0=5L2
+R3
+R0
+R12
+8Feature_Temporal.v
+FFeature_Temporal.v
+!i122 23
+L0 52 331
+R5
+r1
+!s85 0
+31
+R14
+!s107 Feature_Temporal.v|
+!s90 -reportprogress|300|-quiet|-work|work|Feature_Temporal.v|
+!i113 1
+R7
+R8
+n@feature_@temporal
+vFFT_Addr_Gen
+R11
+!i10b 1
+!s100 J5l:FZ:]d?`YamaKNccg90
+R2
+IS7PW]VLGmhlV;IGCImcRQ1
+R3
+R0
+R12
+8FFT_Addr_Gen.v
+FFFT_Addr_Gen.v
+!i122 10
+L0 36 36
+R5
+r1
+!s85 0
+31
+Z15 !s108 1791049323.000000
+!s107 FFT_Addr_Gen.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Addr_Gen.v|
+!i113 1
+R7
+R8
+n@f@f@t_@addr_@gen
+vFFT_Bit_Reverse
+Z16 !s110 1791049324
+!i10b 1
+!s100 iP6gkL2_ocki6OV:6kS?S0
+R2
+IYBeInP9Mh_gF9AMZ7cADd0
+R3
+R0
+R12
+8FFT_Bit_Reverse.v
+FFFT_Bit_Reverse.v
+!i122 11
+L0 27 15
+R5
+r1
+!s85 0
+31
+R15
+!s107 FFT_Bit_Reverse.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Bit_Reverse.v|
+!i113 1
+R7
+R8
+n@f@f@t_@bit_@reverse
+vFFT_Butterfly
+R16
+!i10b 1
+!s100 CkNLYPTZFg0RU_1=f5Nd40
+R2
+ILzLYTcFd4WTP;=Go8Q:j^0
+R3
+R0
+R12
+8FFT_Butterfly.v
+FFFT_Butterfly.v
+!i122 12
+L0 58 215
+R5
+r1
+!s85 0
+31
+Z17 !s108 1791049324.000000
+!s107 FFT_Butterfly.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Butterfly.v|
+!i113 1
+R7
+R8
+n@f@f@t_@butterfly
+vFFT_Control_FSM
+R16
+!i10b 1
+!s100 OXF>JQG`N?RQ_2nVze]Bi1
+R2
+I5JgL7alLOh7`7dZ_kYF4]1
+R3
+R0
+R12
+8FFT_Control_FSM.v
+FFFT_Control_FSM.v
+!i122 13
+L0 87 368
+R5
+r1
+!s85 0
+31
+R17
+!s107 FFT_Control_FSM.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Control_FSM.v|
+!i113 1
+R7
+R8
+n@f@f@t_@control_@f@s@m
+vFFT_Log2_Compress
+R16
+!i10b 1
+!s100 QgBUO<92h]Of@63V0[XI>0
+R2
+IYhOoMgd[]A]<On;22LUfa2
+R3
+R0
+R12
+8FFT_Log2_Compress.v
+FFFT_Log2_Compress.v
+!i122 14
+L0 46 65
+R5
+r1
+!s85 0
+31
+R17
+!s107 FFT_Log2_Compress.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Log2_Compress.v|
+!i113 1
+R7
+R8
+n@f@f@t_@log2_@compress
+vFFT_Magnitude
+R16
+!i10b 1
+!s100 Vo][6_W5]Bi_X10O;U]9g1
+R2
+IdB@^1W1SY9SI>3=;eXdn70
+R3
+R0
+R12
+8FFT_Magnitude.v
+FFFT_Magnitude.v
+!i122 15
+L0 36 66
+R5
+r1
+!s85 0
+31
+R17
+!s107 FFT_Magnitude.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Magnitude.v|
+!i113 1
+R7
+R8
+n@f@f@t_@magnitude
+vFFT_Memory
+R16
+!i10b 1
+!s100 d[S;M6nAdicN_4@Qf_[o00
+R2
+IT6ZAXJN5lOiI4C@al80<32
+R3
+R0
+R12
+8FFT_Memory.v
+FFFT_Memory.v
+!i122 16
+L0 32 56
+R5
+r1
+!s85 0
+31
+R17
+!s107 FFT_Memory.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Memory.v|
+!i113 1
+R7
+R8
+n@f@f@t_@memory
+vFFT_Top
+R16
+!i10b 1
+!s100 D48n[4aOYYAG<_Z;iIac;1
+R2
+IZoSlgnJXd?5@dhhzcb`ke1
+R3
+R0
+R12
+8FFT_Top.v
+FFFT_Top.v
+!i122 17
+L0 85 358
+R5
+r1
+!s85 0
+31
+R17
+!s107 FFT_Top.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Top.v|
+!i113 1
+R7
+R8
+n@f@f@t_@top
+vFFT_Twiddle_ROM
+R16
+!i10b 1
+!s100 Z<9dMnb8h8leSQel0@6Cn3
+R2
+I_GhTi0e[0N_0hkiB@Q9Bm2
+R3
+R0
+R12
+8FFT_Twiddle_ROM.v
+FFFT_Twiddle_ROM.v
+!i122 18
+L0 29 69
+R5
+r1
+!s85 0
+31
+R17
+!s107 FFT_Twiddle_ROM.v|
+!s90 -reportprogress|300|-quiet|-work|work|FFT_Twiddle_ROM.v|
+!i113 1
+R7
+R8
+n@f@f@t_@twiddle_@r@o@m
+vFIR_Decimator
+R13
+!i10b 1
+!s100 ^4^[H8^HZoR>KRFZG2V>R3
+R2
+IJg80WKRB>WMR3G3:W@gCV3
+R3
+R0
+R12
+8FIR_Decimator.v
+FFIR_Decimator.v
+!i122 19
+L0 49 152
+R5
+r1
+!s85 0
+31
+R17
+!s107 FIR_Decimator.v|
+!s90 -reportprogress|300|-quiet|-work|work|FIR_Decimator.v|
+!i113 1
+R7
+R8
+n@f@i@r_@decimator
+vFP_Arith_Unit
+R13
+!i10b 1
+!s100 FzkWaCW_iLSI4BbMO25>_0
+R2
+I9QmQe><<C]mEX_;1jN=D^2
+R3
+R0
+R12
+8FP_Arith_Unit.v
+FFP_Arith_Unit.v
+!i122 20
+L0 7 129
+R5
+r1
+!s85 0
+31
+R14
+!s107 FP_Arith_Unit.v|
+!s90 -reportprogress|300|-quiet|-work|work|FP_Arith_Unit.v|
+!i113 1
+R7
+R8
+n@f@p_@arith_@unit
+vFP_Mult_Unit
+R13
+!i10b 1
+!s100 7cPlLoLhmiBR>R0Bl^a^M1
+R2
+IY]TFn>6DEdGob3hMk=?;<3
+R3
+R0
+R12
+8FP_Mult_Unit.v
+FFP_Mult_Unit.v
+!i122 21
+L0 22 99
+R5
+r1
+!s85 0
+31
+R14
+!s107 FP_Mult_Unit.v|
+!s90 -reportprogress|300|-quiet|-work|work|FP_Mult_Unit.v|
+!i113 1
+R7
+R8
+n@f@p_@mult_@unit
+vFrame_Builder
+Z18 !s110 1791049326
+!i10b 1
+!s100 ^n=ENV_1:i36UTECzfL4<1
+R2
+II;<QT?O<24P]65^@5CILL3
+R3
+R0
+R12
+8Frame_Builder.v
+FFrame_Builder.v
+!i122 24
+L0 44 125
+R5
+r1
+!s85 0
+31
+R14
+!s107 Frame_Builder.v|
+!s90 -reportprogress|300|-quiet|-work|work|Frame_Builder.v|
+!i113 1
+R7
+R8
+n@frame_@builder
+vLMS_Accumulator_Error_Scale
+R18
+!i10b 1
+!s100 ]d6z6HiSURK?I<4@MlJ5l2
+R2
+I;4_O4_naajgdIj3PB8OWj1
+R3
+R0
+R12
+8LMS_Accumulator_Error_Scale.v
+FLMS_Accumulator_Error_Scale.v
+!i122 25
+L0 17 108
+R5
+r1
+!s85 0
+31
+Z19 !s108 1791049326.000000
+!s107 LMS_Accumulator_Error_Scale.v|
+!s90 -reportprogress|300|-quiet|-work|work|LMS_Accumulator_Error_Scale.v|
+!i113 1
+R7
+R8
+n@l@m@s_@accumulator_@error_@scale
+vLMS_Control_FSM
+R18
+!i10b 1
+!s100 ?[h2CTfUhagUlOZI5V3_M1
+R2
+I4FbeP5A:KPUCROoJgBm@21
+R3
+R0
+R12
+8LMS_Control_FSM.v
+FLMS_Control_FSM.v
+!i122 26
+L0 22 160
+R5
+r1
+!s85 0
+31
+R19
+!s107 LMS_Control_FSM.v|
+!s90 -reportprogress|300|-quiet|-work|work|LMS_Control_FSM.v|
+!i113 1
+R7
+R8
+n@l@m@s_@control_@f@s@m
+vLMS_Filter_Top
+R18
+!i10b 1
+!s100 ZG1`Tc8z2`Ci[4hI4clLe1
+R2
+Ig4<D>8IbXJ>e<5PX:;kSD3
+R3
+R0
+R12
+8LMS_Filter_Top.v
+FLMS_Filter_Top.v
+!i122 27
+L0 17 170
+R5
+r1
+!s85 0
+31
+R19
+!s107 LMS_Filter_Top.v|
+!s90 -reportprogress|300|-quiet|-work|work|LMS_Filter_Top.v|
+!i113 1
+R7
+R8
+n@l@m@s_@filter_@top
+vLMS_Input_Delay_Line
+Z20 !s110 1791049327
+!i10b 1
+!s100 oa4FK@b@n0hPHn@cGF7jn3
+R2
+IezHTcJQK7<6zJLZ_kJaJ?0
+R3
+R0
+R12
+8LMS_Input_Delay_Line.v
+FLMS_Input_Delay_Line.v
+!i122 28
+L0 10 35
+R5
+r1
+!s85 0
+31
+R19
+!s107 LMS_Input_Delay_Line.v|
+!s90 -reportprogress|300|-quiet|-work|work|LMS_Input_Delay_Line.v|
+!i113 1
+R7
+R8
+n@l@m@s_@input_@delay_@line
+vLMS_Processing_Element
+R20
+!i10b 1
+!s100 PK2JKQNnkTQ7Td=AHCfWD0
+R2
+IEMP8c9l59mUWT4C5KV<9h0
+R3
+R0
+R12
+8LMS_Processing_Element.v
+FLMS_Processing_Element.v
+!i122 29
+L0 23 135
+R5
+r1
+!s85 0
+31
+Z21 !s108 1791049327.000000
+!s107 LMS_Processing_Element.v|
+!s90 -reportprogress|300|-quiet|-work|work|LMS_Processing_Element.v|
+!i113 1
+R7
+R8
+n@l@m@s_@processing_@element
+vLMS_Weight_Storage
+R20
+!i10b 1
+!s100 <=6IhG]R7DjKhZF`K;k<`0
+R2
+IFL]Je`aVjd3B7eW=[zAIn0
+R3
+R0
+R12
+8LMS_Weight_Storage.v
+FLMS_Weight_Storage.v
+!i122 30
+L0 17 49
+R5
+r1
+!s85 0
+31
+R21
+!s107 LMS_Weight_Storage.v|
+!s90 -reportprogress|300|-quiet|-work|work|LMS_Weight_Storage.v|
+!i113 1
+R7
+R8
+n@l@m@s_@weight_@storage
+vML_Tree_Classifier
+R20
+!i10b 1
+!s100 Iz2FB<]^IMU[RA_kB7]DG2
+R2
+I_U=JSj?flg8i[TdlO@aoL3
+R3
+R0
+w1791033816
+8ML_Tree_Classifier.v
+FML_Tree_Classifier.v
+!i122 31
+L0 64 190
+R5
+r1
+!s85 0
+31
+R21
+!s107 ML_Tree_Classifier.v|
+!s90 -reportprogress|300|-quiet|-work|work|ML_Tree_Classifier.v|
+!i113 1
+R7
+R8
+n@m@l_@tree_@classifier
